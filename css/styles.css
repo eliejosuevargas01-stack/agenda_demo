@@ -5029,6 +5029,10 @@ body.agenda-page {
   gap: 15px;
 }
 
+body.account-page{
+  overflow-y: auto;
+}
+
 .account-page .data-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

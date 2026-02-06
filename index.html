@@ -607,7 +607,12 @@
 
         function normalizeCityUF(str){
             if (!str) return '';
-            const tokens = String(str).split('-').map(s => s.trim()).filter(Boolean);
+            const cleaned = String(str)
+                .replace(/\s*\/\s*/g, ' - ')
+                .replace(/\s*,\s*/g, ' - ')
+                .replace(/\s*\|\s*/g, ' - ')
+                .trim();
+            const tokens = cleaned.split('-').map(s => s.trim()).filter(Boolean);
             if (!tokens.length) return '';
             const city = tokens[0];
             const uf = tokens.find(t => t.length === 2 && /^[A-Za-z]{2}$/.test(t)) || tokens[1];
@@ -633,7 +638,7 @@
             if (!label) return '';
             let q = String(label).replace(/\s+/g, ' ').trim();
             if (!q) return '';
-            q = q.replace(/\s*-\s*/g, ', ');
+            q = q.replace(/\s*\/\s*/g, ', ').replace(/\s*-\s*/g, ', ');
             if (!/brasil|brazil/i.test(q)) q = `${q}, Brasil`;
             return q;
         }
@@ -1199,10 +1204,8 @@
             const dataObj = getEventDate(event);
             const taskMeta = resolveTaskType(event, session, tipo_da_tarefa);
             const eventId = getEventId(event);
-            const diariasRaw = event.numero_de_diarias ?? event.diarias ?? event.qtd_diarias ?? event.numero_diarias ?? 1;
-            const diariasNum = Math.max(1, parseInt(parseNum(diariasRaw), 10) || 1);
             const spanStart = dataObj instanceof Date ? dataObj : null;
-            const spanEnd = spanStart ? new Date(spanStart.getFullYear(), spanStart.getMonth(), spanStart.getDate() + diariasNum - 1) : null;
+            const spanEnd = spanStart ? new Date(spanStart.getFullYear(), spanStart.getMonth(), spanStart.getDate()) : null;
             const color = colorForEvent(eventId);
 
             return {
@@ -1410,8 +1413,43 @@
 
         function dedupeEventsById(list){
             const base = uniqueEventsById(Array.isArray(list) ? list : []);
-            const bySignature = dedupeEventsBySignature(base);
-            return collapseConsecutiveEventSpans(bySignature);
+            const grouped = new Map();
+            const passthrough = [];
+            base.forEach(ev => {
+                const key = eventGroupKey(ev);
+                if (!key) {
+                    passthrough.push(ev);
+                    return;
+                }
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key).push(ev);
+            });
+            const result = [];
+            grouped.forEach(items => {
+                items.sort((a, b) => {
+                    const da = getEventDate(a);
+                    const db = getEventDate(b);
+                    if (!da && !db) return 0;
+                    if (!da) return 1;
+                    if (!db) return -1;
+                    return da - db;
+                });
+                let merged = items[0];
+                for (let i = 1; i < items.length; i++) {
+                    merged = mergeDuplicateEvents(merged, items[i]);
+                }
+                const diariasRaw = merged.numero_de_diarias ?? merged.diarias ?? merged.qtd_diarias ?? merged.numero_diarias ?? 1;
+                const diariasNum = Math.max(1, parseInt(parseNum(diariasRaw), 10) || 1);
+                const start = getEventDate(merged);
+                if (start instanceof Date && !Number.isNaN(start.getTime())) {
+                    const startDay = startOfDay(start);
+                    merged._spanStart = startDay;
+                    merged._spanEnd = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + diariasNum - 1);
+                    merged._date = startDay;
+                }
+                result.push(merged);
+            });
+            return result.concat(passthrough);
         }
 
         function isVisitaEvent(ev){
@@ -1602,7 +1640,7 @@
                 const dayStyle = mainColor ? `style="--day-color:${mainColor}"` : '';
                 const chips = hasEvents
                     ? eventsForDay.slice(0,4).map((ev) => {
-                        const diarias = getDiariasCount(ev);
+                        const diarias = Math.max(1, parseInt(parseNum(ev.numero_de_diarias ?? ev.diarias ?? ev.qtd_diarias ?? ev.numero_diarias ?? 1), 10) || 1);
                         const title = ev.nome_da_escola || ev.cidade || 'Evento';
                         return `<span class="day-event-chip" style="--ev-color:${ev._color || '#7b5cff'}" title="${title}">${diarias}</span>`;
                     }).join('') + (eventsForDay.length > 4 ? `<span class="day-event-chip more">+${eventsForDay.length - 4}</span>` : '')
@@ -2178,7 +2216,7 @@
                     const brindeOk = ['1','true','sim','yes','ok','s'].includes(brindeField);
                     const brindeLabel = brindeOk ? 'Brinde incluso' : 'Sem brinde';
                     const duracao = getDurationLabel(ev);
-                    const diariasCount = getDiariasCount(ev);
+                    const diariasCount = Math.max(1, parseInt(parseNum(ev.numero_de_diarias ?? ev.diarias ?? ev.qtd_diarias ?? ev.numero_diarias ?? 1), 10) || 1);
                     const rotaContinua = ev.rota_continua === true || ev.rota_continua === 'true' || ev.rota_continua === 1;
                     const destLatVal = formatCoord(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
                     const destLonVal = formatCoord(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);

@@ -75,7 +75,7 @@
                         </div>
                         <div class="stat-card">
                             <div class="stat-value" id="total-astronomers">0</div>
-                            <div class="stat-label">Astrônomos</div>
+                            <div class="stat-label">Finalizados</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-value" id="total-cities">0</div>
@@ -516,7 +516,7 @@
                 const cidade = (event?.cidade && event.cidade.toString().trim()) ? event.cidade : (event?.cidade_destino || 'Cidade não informada');
                 const local = (event?.local_instalacao && event.local_instalacao.toString().toLowerCase()!=='null') ? event.local_instalacao : (event?.endereco || 'Local não informado');
                 const alunos = event?.numero_alunos_empresa ?? event?.numero_de_alunos ?? '0';
-                const id = event?.id ?? event?.id_evento ?? event?.id_evento_unico ?? 'N/A';
+                const id = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? null;
                 const feedback = (event?.avaliacao_astronomo ?? '').toString();
                 const isFinalizado = isFinalizadoEvent(event);
                 return {
@@ -705,6 +705,7 @@
             const feedback = event.feedback || event.comentario || event.comentarios || '';
             const alunos = event.numero_alunos || event.numero_alunos_empresa || '—';
             const local = event.local || event.local_instalacao || event.endereco || 'Local não informado';
+            const eventIdLabel = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? '';
 
             eventModalBody.innerHTML = `
                 <div class="history-modal__header">
@@ -717,6 +718,7 @@
                             <span class="history-chip"><i class="fas fa-city"></i>${cidadeNome}</span>
                             <span class="history-chip"><i class="fas fa-user-astronaut"></i>${event.astronomo || 'Astrônomo não informado'}</span>
                             <span class="history-chip"><i class="fas fa-coins"></i>${valorLabel}</span>
+                            ${eventIdLabel ? `<span class="history-chip"><i class="fas fa-hashtag"></i>ID ${eventIdLabel}</span>` : ''}
                         </div>
                     </div>
                 </div>
@@ -761,10 +763,35 @@
                         <span class="label">Feedback</span>
                         <span class="value">${feedback}</span>
                     </div>` : ''}
+                <div class="history-modal__actions" style="margin-top:16px; display:flex; justify-content:flex-end; gap:12px;">
+                    <button class="btn btn-primary" id="btn-lancar-despesas-historico">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                        Lançar despesas deste evento
+                    </button>
+                </div>
             `;
 
             eventModal.classList.add('show');
             eventModal.setAttribute('aria-hidden', 'false');
+
+            const btnLaunch = document.getElementById('btn-lancar-despesas-historico');
+            if (btnLaunch) {
+                btnLaunch.addEventListener('click', () => {
+                    const eventId = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? null;
+                    if (!eventId) {
+                        showNotification('Evento sem ID. Não é possível lançar despesas.', 'error');
+                        return;
+                    }
+                    const payload = { ...(event || {}) };
+                    payload.id = eventId;
+                    payload._open_expenses = true;
+                    payload._from_historico = true;
+                    try{
+                        localStorage.setItem('despesas_evento_selecionado', JSON.stringify(payload));
+                    }catch(_){}
+                    window.location.href = 'despesas.html';
+                }, { once: true });
+            }
         }
 
         // ========== FUNÇÕES DE PAGINAÇÃO ==========
@@ -952,9 +979,12 @@
         function updateStats() {
             const totalEvents = completedEvents.length;
             const completedCount = completedEvents.filter(event => event && event._finalizado).length;
-            const totalAstronomers = new Set(completedEvents.map(event => event.astronomo).filter(Boolean)).size;
+            const totalAstronomers = completedCount;
             const totalCities = new Set(completedEvents.map(event => cityBaseName(event.cidade)).filter(Boolean)).size;
-            const totalValue = completedEvents.reduce((sum, event) => sum + (parseFloat(event.valor_total) || 0), 0);
+            const totalValue = completedEvents.reduce((sum, event) => {
+                if (!event || !event._finalizado) return sum;
+                return sum + (parseFloat(event.valor_total) || 0);
+            }, 0);
             const completionRate = totalEvents > 0 ? ((completedCount / totalEvents) * 100).toFixed(1) : 0;
             
             totalEventsElement.textContent = totalEvents.toLocaleString('pt-BR');

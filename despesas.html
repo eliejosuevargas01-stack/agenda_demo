@@ -554,7 +554,7 @@
                     }
                     return null;
                 };
-                const preferMedia = (mediaVal, normalVal) => Number.isFinite(mediaVal) ? mediaVal : normalVal;
+                const preferMedia = (mediaVal, normalVal) => (Number.isFinite(mediaVal) && mediaVal > 0) ? mediaVal : normalVal;
                 const defaults = sessionDefaults();
                 const rotaContinua = isContinuousRoute(ev, routeInfo);
                 const combustivelMedia = pick('gasto_combustivel_media', 'combustivel_media');
@@ -898,16 +898,24 @@
                         return;
                     }
                     const match = allEvents.find(ev => String(ev.id) === String(pendingId));
-                    if (!match) return;
+                    const targetEvent = normalizeEvent(pending);
+                    if (targetEvent && !targetEvent.id) {
+                        targetEvent.id = pendingId || targetEvent.id_evento || targetEvent.id_evento_unico || targetEvent.id_agendamento || targetEvent.uuid || targetEvent.evento_id || null;
+                    }
+                    if (!targetEvent) {
+                        localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
+                        return;
+                    }
                     // Garante que o select mostra o evento e a lista é atualizada
                     currentPeriodFilter = 'all';
                     const selectEl = document.getElementById('event-select-despesas');
-                    if (selectEl) selectEl.value = match.id;
-                    selectedEvent = match;
-                    renderSelectedEventDetails(match);
+                    if (selectEl && match) selectEl.value = match.id;
+                    selectedEvent = targetEvent;
+                    renderSelectedEventDetails(targetEvent);
                     updateSummaryCards();
                     if (pending && pending._open_expenses) {
-                        openExpensesModal(match);
+                        if (typeof setTab === 'function') setTab('reais');
+                        openExpensesModal(targetEvent);
                     }
                     localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                 }catch(err){
@@ -1249,13 +1257,23 @@
             const expensesForm = document.getElementById('expenses-form');
             const expCancelBtn = document.getElementById('exp-cancel');
             function openExpensesModal(ev) {
-                document.getElementById('exp-id-evento').value = ev?.id || '';
+                const eventId = ev?.id || ev?.id_evento || ev?.id_evento_unico || ev?.id_agendamento || ev?.uuid || ev?.evento_id || '';
+                if (!eventId) {
+                    showNotification('Evento sem ID. Não é possível lançar despesas.', 'error');
+                    return;
+                }
+                document.getElementById('exp-id-evento').value = eventId;
                 const idLabel = document.getElementById('exp-id-label');
                 if (idLabel) {
                     const nome = ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead || ev?.cidade || '';
-                    const idText = ev?.id ? `ID: ${ev.id}` : '';
+                    const idText = eventId ? `ID: ${eventId}` : '';
                     const nomeText = nome ? ` • ${nome}` : '';
                     idLabel.textContent = idText || nomeText ? `${idText}${nomeText}`.trim() : '';
+                }
+                const expIdVisible = document.getElementById('exp-id-visible');
+                if (expIdVisible) {
+                    expIdVisible.textContent = eventId ? `ID do evento: ${eventId}` : '';
+                    expIdVisible.style.display = eventId ? 'block' : 'none';
                 }
                 const estimates = extractExpenseEstimates(ev, ev.routeInfo);
                 document.getElementById('exp-combustivel').value = estimates.combustivel?.toFixed(2) || '';
@@ -1290,12 +1308,27 @@
             async function submitExpensesForm(e) {
                 e.preventDefault();
                 const id_evento = document.getElementById('exp-id-evento').value;
-                const combustivel = parseCurrencyBR(document.getElementById('exp-combustivel').value || 0);
-                const hospedagem = parseCurrencyBR(document.getElementById('exp-hospedagem').value || 0);
-                const alimentacao = parseCurrencyBR(document.getElementById('exp-alimentacao').value || 0);
-                const pedagios = parseCurrencyBR(document.getElementById('exp-pedagios').value || 0);
-                const monitor = parseCurrencyBR(document.getElementById('exp-monitor').value || 0);
-                const outros = parseCurrencyBR(document.getElementById('exp-outros').value || 0);
+                const inComb = document.getElementById('exp-combustivel');
+                const inHosp = document.getElementById('exp-hospedagem');
+                const inAli = document.getElementById('exp-alimentacao');
+                const inPed = document.getElementById('exp-pedagios');
+                const inMon = document.getElementById('exp-monitor');
+                const inOut = document.getElementById('exp-outros');
+                const normalizeInput = (el) => {
+                    if (!el) return 0;
+                    const raw = (el.value || '').trim();
+                    if (raw === '') {
+                        el.value = '0';
+                        return 0;
+                    }
+                    return parseCurrencyBR(raw || 0);
+                };
+                const combustivel = normalizeInput(inComb);
+                const hospedagem = normalizeInput(inHosp);
+                const alimentacao = normalizeInput(inAli);
+                const pedagios = normalizeInput(inPed);
+                const monitor = normalizeInput(inMon);
+                const outros = normalizeInput(inOut);
                 if (!id_evento) { showNotification('Evento inválido.', 'error'); return; }
                 try {
                     const ev = allEvents.find(item => String(item.id) === String(id_evento)) || selectedEvent || {};
@@ -1334,10 +1367,6 @@
                     console.log('Resposta do webhook:', result);
                     showNotification('Despesas lançadas com sucesso.', 'success');
                     closeExpensesModal();
-                    const s = getUserSession();
-                    if (s?.id_astronomo != null) {
-                        try { await callAgendaWebhook('gerar_media_de_gastos', { id_astronomo: s.id_astronomo }); } catch (err) { console.warn('Não foi possível gerar médias:', err); }
-                    }
                     fetchEvents();
                 } catch (err) {
                     console.error('Erro ao lançar despesas:', err);
@@ -1376,6 +1405,7 @@
         <div class="modal-content" role="document">
             <button class="close-btn" id="expenses-modal-close" aria-label="Fechar">&times;</button>
             <div class="modal-title"><i class="fas fa-file-invoice-dollar"></i> Lançar Despesas <span id="exp-id-label" style="margin-left:8px; font-size:0.9rem; color: var(--muted, rgba(255,255,255,0.75));"></span></div>
+            <div id="exp-id-visible" style="margin-top:6px; font-size:0.95rem; color: rgba(255,255,255,0.85); display:none;"></div>
             <div class="estimates-panel" id="exp-estimates-panel"></div>
             <form id="expenses-form" class="form-grid">
                 <input type="hidden" id="exp-id-evento" />
