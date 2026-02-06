@@ -1114,9 +1114,8 @@
         }
 
         function buildWhatsappLink(ev){
-            const sess = getLoggedSession();
-            const astronomerPhone = normalizePhone(sess?.telefone || sess?.celular || sess?.whatsapp || sess?.contato);
             const candidates = [
+                ev.telefone_contato,
                 ev.telefone_responsavel_evento,
                 ev.telefone_responsavel,
                 ev.telefone_do_responsavel,
@@ -1128,19 +1127,11 @@
                 ev.fone_responsavel,
                 ev.responsavel_whatsapp,
                 ev.telefone_evento,
-                ev.telefone_escola,
-                ev.telefone,
-                ev.whatsapp,
-                ev.celular,
-                ev.contato,
-                ev.fone,
-                ev.phone,
-                ev.phone_number
+                ev.telefone_escola
             ];
             for (const phone of candidates){
                 const digits = normalizePhone(phone);
                 if (!digits) continue;
-                if (astronomerPhone && digits === astronomerPhone) continue;
                 return `https://wa.me/${digits}`;
             }
             return null;
