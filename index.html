@@ -2362,11 +2362,11 @@
                 }
 
                 eventsDataRaw = rawEventos.map(ev => normalizeEvent(ev, sess));
-                eventsData = dedupeEventsById(eventsDataRaw);
-                const ignoredCount = Math.max(0, eventsDataRaw.length - eventsData.length);
+                // Deduplicação desativada: usamos sempre o payload completo.
+                eventsData = eventsDataRaw;
                 applyRotaContinuaBlocks(eventsData);
                 applyRouteOverrides(eventsData, sess);
-                saveAgendaCache(eventsData, sess);
+                saveAgendaCache(eventsDataRaw, sess);
                 syncRotasCache(eventsData, sess);
                 if (btnOpenRotas) btnOpenRotas.disabled = false;
                 // redefine filtro (ids podem mudar conforme login)
@@ -2374,8 +2374,8 @@
                     currentTaskFilter = getSelectedTaskFilter();
                 }
 
-                statusTextEl.textContent = `Agenda carregada: ${eventsData.length} evento(s).`;
-                showDuplicatePopup(ignoredCount);
+                const rawCount = Array.isArray(eventsDataRaw) ? eventsDataRaw.length : 0;
+                statusTextEl.textContent = `Agenda carregada: ${rawCount} evento(s).`;
                 if (!selectedDate || !(selectedDate instanceof Date) || Number.isNaN(selectedDate.getTime())) {
                     const firstEvent = eventsData
                         .map(ev => ev && ev._date)
@@ -2448,13 +2448,14 @@
                         const parsed = rawCache ? JSON.parse(rawCache) : null;
                         if (parsed && Array.isArray(parsed.events) && parsed.events.length) {
                             eventsDataRaw = parsed.events.map(ev => normalizeEvent(ev, sess));
-                            eventsData = dedupeEventsById(eventsDataRaw);
-                            const ignoredCount = Math.max(0, eventsDataRaw.length - eventsData.length);
+                            // Deduplicação desativada: usamos sempre o payload completo.
+                            eventsData = eventsDataRaw;
                             applyRotaContinuaBlocks(eventsData);
                             applyRouteOverrides(eventsData, sess);
                             syncRotasCache(eventsData, sess);
                             btnOpenRotas.disabled = false;
-                            showDuplicatePopup(ignoredCount);
+                            const rawCount = Array.isArray(eventsDataRaw) ? eventsDataRaw.length : 0;
+                            statusTextEl.textContent = `Agenda carregada: ${rawCount} evento(s).`;
                             computeContinuousRoutes(eventsData)
                                 .then(metrics => {
                                     applyContinuousRouteMetrics(eventsData, metrics);

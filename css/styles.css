@@ -3211,32 +3211,40 @@ body.agenda-page {
 }
 
 .agenda-page .calendar-header-row {
-  padding: 8px 10px;
-  background: rgba(255, 255, 255, 0.03);
+  padding: 10px 14px;
+  background: linear-gradient(120deg, rgba(18, 24, 58, 0.9), rgba(9, 12, 34, 0.9));
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(123, 92, 255, 0.25);
+  box-shadow: inset 0 -1px 0 rgba(52, 209, 243, 0.08), 0 8px 18px rgba(5, 8, 20, 0.35);
 }
 
 .agenda-page .calendar-month-label {
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #fff;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--accent-cyan);
   text-transform: uppercase;
-  letter-spacing: 2px;
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
+  letter-spacing: 1.6px;
+  text-shadow: 0 0 12px rgba(52, 209, 243, 0.35);
 }
 
 .agenda-page .calendar-nav-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
-  padding: 4px 8px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  transition: 0.3s;
+  background: rgba(15, 22, 45, 0.9);
+  border: 1px solid rgba(123, 92, 255, 0.3);
+  color: #e2e8f0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04), 0 4px 10px rgba(0,0,0,0.25);
+}
+.agenda-page .calendar-nav-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(52, 209, 243, 0.6);
+  box-shadow: 0 8px 18px rgba(52, 209, 243, 0.18);
 }
 
 .agenda-page .calendar-nav-btn:hover {
@@ -3742,6 +3750,22 @@ body.agenda-page {
 .agenda-page .events-scroll {
   padding: 10px;
   overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(123, 92, 255, 0.6) rgba(255, 255, 255, 0.08);
+}
+.agenda-page .events-scroll::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.agenda-page .events-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.agenda-page .events-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(123, 92, 255, 0.75), rgba(52, 209, 243, 0.6));
+  border-radius: 999px;
+  border: 2px solid rgba(8, 10, 26, 0.6);
 }
 .agenda-page .events-empty {
   padding: 12px;
