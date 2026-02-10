@@ -325,7 +325,7 @@
         // ==== Estado simples ====
         let eventsData = [];          // eventos normalizados (dedupe)
         let eventsDataRaw = [];       // eventos normalizados (sem dedupe)
-        let showDuplicates = false;
+        let showDuplicates = true;
         let currentMonthDate = new Date(); // data base do mês atual
         let selectedDate = startOfDay(new Date());      // dia selecionado no calendário
         let currentTaskFilter = { type: 'visita', id: null };
@@ -1543,21 +1543,23 @@
         }
 
         function getEffectiveEvents(){
-            return showDuplicates ? eventsDataRaw : eventsData;
+            return Array.isArray(eventsDataRaw) ? eventsDataRaw : [];
         }
 
         function toggleDuplicateView(force){
-            if (typeof force === 'boolean') showDuplicates = force;
-            else showDuplicates = !showDuplicates;
+            showDuplicates = true;
             renderCalendar();
             renderEventsList();
             renderDayEventsDetails();
         }
 
         function showDuplicatePopup(ignoredCount){
+            // Popup de duplicados desativado a pedido.
+            // Mantido aqui para reativação futura:
+            /*
             if (!ignoredCount) return;
             if (!window.AstroPopup || typeof window.AstroPopup.show !== 'function') return;
-            const actionLabel = showDuplicates ? 'Ocultar eventos duplicados' : 'Ver eventos duplicados';
+            const actionLabel = 'Duplicados visíveis';
             window.AstroPopup.show(
                 'Eventos duplicados idênticos foram ignorados. Se quiser ver mais, clique em Ver eventos duplicados.',
                 'info',
@@ -1567,10 +1569,11 @@
                     closeOnAction: false,
                     onAction: (btn) => {
                         toggleDuplicateView();
-                        if (btn) btn.textContent = showDuplicates ? 'Ocultar eventos duplicados' : 'Ver eventos duplicados';
+                        if (btn) btn.textContent = 'Duplicados visíveis';
                     }
                 }
             );
+            */
         }
 
         // ==== Filtro por tipo de tarefa ====
@@ -1631,9 +1634,8 @@
                 const dayStyle = mainColor ? `style="--day-color:${mainColor}"` : '';
                 const chips = hasEvents
                     ? eventsForDay.slice(0,4).map((ev) => {
-                        const diarias = Math.max(1, parseInt(parseNum(ev.numero_de_diarias ?? ev.diarias ?? ev.qtd_diarias ?? ev.numero_diarias ?? 1), 10) || 1);
                         const title = ev.nome_da_escola || ev.cidade || 'Evento';
-                        return `<span class="day-event-chip" style="--ev-color:${ev._color || '#7b5cff'}" title="${title}">${diarias}</span>`;
+                        return `<span class="day-event-chip" style="--ev-color:${ev._color || '#7b5cff'}" title="${title}">•</span>`;
                     }).join('') + (eventsForDay.length > 4 ? `<span class="day-event-chip more">+${eventsForDay.length - 4}</span>` : '')
                     : '';
 
@@ -2300,7 +2302,7 @@
         async function carregarAgenda(){
             const sess = getLoggedSession();
             currentSession = sess;
-            showDuplicates = false;
+            showDuplicates = true;
             const hasSession = !!(sess && sess.id_astronomo != null);
             statusTextEl.textContent = hasSession
                 ? 'Conectando ao servidor...'
