@@ -53,6 +53,17 @@
         .compare-detail-status.ok { color:#065f46; border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
         .compare-detail-status.warn { color:#92400e; border-color: rgba(245,158,11,0.45); background: rgba(245,158,11,0.12); }
         .compare-detail-status.bad { color:#991b1b; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); }
+        .compare-detail-empty { padding: 10px; font-size: 0.82rem; color: var(--text-secondary); border: 1px dashed var(--border-color); border-radius: 8px; text-align: center; }
+        .column-filter-accordion { border:1px solid var(--border-color); border-radius: var(--radius); background:#fff; box-shadow: var(--shadow-sm); }
+        .column-filter-accordion summary { padding:10px 12px; font-weight:700; color: var(--text-main); cursor:pointer; list-style:none; }
+        .column-filter-accordion summary::-webkit-details-marker { display:none; }
+        .column-filter-accordion summary::after { content:"▾"; float:right; color: var(--text-secondary); }
+        .column-filter-accordion[open] summary::after { content:"▴"; }
+        .column-filter-list { padding:10px 12px 14px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; border-top:1px solid var(--border-color); }
+        .column-filter-item { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius: 10px; border:1px solid var(--border-color); background: #f8fafc; font-size: 0.8rem; color: var(--text-main); cursor:pointer; }
+        .column-filter-item input { accent-color: var(--primary); }
+        .column-filter-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .btn.btn-small { padding: 6px 10px; font-size: 0.8rem; }
         .navigation { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 16px; }
         .nav-button { text-decoration:none; border:1px solid var(--border-color); background: #fff; color: var(--text-main); padding: 8px 12px; border-radius: var(--radius); font-weight: 600; font-size: 0.9rem; }
         .nav-button:hover { border-color: #cbd5e1; background: var(--bg-hover); }
@@ -98,6 +109,22 @@
                     <button id="btn-clear" class="btn btn-secondary">Limpar resultado</button>
                     <span class="debug-status" id="debug-status-secondary"></span>
                 </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span>Colunas para comparar</span>
+                    <div class="column-filter-actions">
+                        <button class="btn btn-secondary btn-small" id="btn-columns-all">Todas</button>
+                        <button class="btn btn-secondary btn-small" id="btn-columns-none">Nenhuma</button>
+                    </div>
+                </div>
+                <details class="column-filter-accordion" open>
+                    <summary>Selecionar colunas</summary>
+                    <div class="column-filter-list" id="column-filters">
+                        <span class="debug-empty">Carregue os dados para ver as colunas.</span>
+                    </div>
+                </details>
             </div>
 
             <div class="panel-card">
@@ -156,12 +183,36 @@
         const rawEnrichedEl = document.getElementById('raw-enriched');
         const btnRun = document.getElementById('btn-run-debug');
         const btnClear = document.getElementById('btn-clear');
+        const columnFiltersEl = document.getElementById('column-filters');
+        const btnColumnsAll = document.getElementById('btn-columns-all');
+        const btnColumnsNone = document.getElementById('btn-columns-none');
 
         let SELECTED_ASTRONOMER = null;
+        let availableColumns = [];
+        let columnLabels = new Map();
+        let selectedColumns = new Set();
+        let columnsInitialized = false;
+        let lastOriginalEvents = [];
+        let lastEnrichedEvents = [];
 
         function setStatus(message) {
             if (statusEl) statusEl.textContent = message;
             if (statusSecondaryEl) statusSecondaryEl.textContent = message;
+        }
+
+        if (btnColumnsAll) {
+            btnColumnsAll.addEventListener('click', () => {
+                selectedColumns = new Set(availableColumns);
+                renderColumnFilters();
+                renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+            });
+        }
+        if (btnColumnsNone) {
+            btnColumnsNone.addEventListener('click', () => {
+                selectedColumns = new Set();
+                renderColumnFilters();
+                renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+            });
         }
 
         async function readResponsePayload(resp) {
@@ -252,6 +303,73 @@
         function normalizeFieldLabel(key){
             let label = String(key || '').replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
             return label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
+        function buildColumnCatalog(originals, enriched){
+            const keys = new Set();
+            const labels = new Map();
+            const addKeys = (ev) => {
+                getComparableEntries(ev).forEach(([key]) => {
+                    keys.add(key);
+                    if (!labels.has(key)) labels.set(key, normalizeFieldLabel(key));
+                });
+            };
+            (originals || []).forEach(addKeys);
+            (enriched || []).forEach(addKeys);
+            const ordered = Array.from(keys).sort((a, b) => {
+                const la = labels.get(a) || a;
+                const lb = labels.get(b) || b;
+                return la.localeCompare(lb, 'pt-BR');
+            });
+            return { ordered, labels };
+        }
+
+        function renderColumnFilters(){
+            if (!columnFiltersEl) return;
+            if (!availableColumns.length) {
+                columnFiltersEl.innerHTML = '<span class="debug-empty">Carregue os dados para ver as colunas.</span>';
+                return;
+            }
+            columnFiltersEl.innerHTML = availableColumns.map(key => {
+                const label = columnLabels.get(key) || normalizeFieldLabel(key);
+                const checked = selectedColumns.has(key);
+                return `
+                    <label class="column-filter-item">
+                        <input type="checkbox" data-col-key="${key}" ${checked ? 'checked' : ''}>
+                        <span>${label}</span>
+                    </label>
+                `;
+            }).join('');
+            columnFiltersEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    const key = input.getAttribute('data-col-key');
+                    if (!key) return;
+                    if (input.checked) selectedColumns.add(key);
+                    else selectedColumns.delete(key);
+                    renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+                });
+            });
+        }
+
+        function syncColumnFilters(originals, enriched){
+            const catalog = buildColumnCatalog(originals, enriched);
+            availableColumns = catalog.ordered;
+            columnLabels = catalog.labels;
+            if (!availableColumns.length) {
+                renderColumnFilters();
+                return;
+            }
+            if (!columnsInitialized) {
+                selectedColumns = new Set(availableColumns);
+                columnsInitialized = true;
+            } else {
+                const next = new Set();
+                availableColumns.forEach(key => {
+                    if (selectedColumns.has(key)) next.add(key);
+                });
+                selectedColumns = next;
+            }
+            renderColumnFilters();
         }
 
         function buildComparableMap(ev){
@@ -362,7 +480,8 @@
             const originalMap = originalEvent ? buildComparableMap(originalEvent) : {};
             const enrichedMap = enrichedEvent ? buildComparableMap(enrichedEvent) : {};
             const keys = Array.from(new Set([...origEntries.map(([k])=>k), ...enrichedEntries.map(([k])=>k)]));
-            const detailRows = keys.map((key) => {
+            const filteredKeys = selectedColumns.size ? keys.filter(key => selectedColumns.has(key)) : keys;
+            const detailRows = filteredKeys.map((key) => {
                 const aVal = stringifyVal(originalEvent ? (key in originalMap ? originalMap[key] : originalEvent[key]) : '');
                 const bVal = stringifyVal(enrichedEvent ? (key in enrichedMap ? enrichedMap[key] : enrichedEvent[key]) : '');
                 const bothMissing = (!aVal && !bVal);
@@ -392,6 +511,8 @@
                     </div>
                 `;
             }).filter(Boolean).join('');
+
+            const detailsBody = detailRows || `<div class="compare-detail-empty">Selecione colunas para comparar.</div>`;
 
             const origTitle = originalEvent ? `Original #${displayIndex}` : 'Original (ausente)';
             const enrichedTitle = 'Enriquecida';
@@ -431,7 +552,7 @@
                             <div>Agenda Astrônomo</div>
                             <div>Status</div>
                         </div>
-                        ${detailRows}
+                        ${detailsBody}
                     </div>
                 </div>
             `;
@@ -440,6 +561,9 @@
         function renderCompareList(originalEvents, enrichedEvents){
             const originals = Array.isArray(originalEvents) ? originalEvents : [];
             const enriched = Array.isArray(enrichedEvents) ? enrichedEvents : [];
+            lastOriginalEvents = originals;
+            lastEnrichedEvents = enriched;
+            syncColumnFilters(originals, enriched);
             if (!originals.length && !enriched.length) {
                 missingContainer.innerHTML = '<div class="debug-empty">Nenhum evento para comparar.</div>';
                 return;
@@ -643,6 +767,13 @@
             rawDebugEl.textContent = 'Sem dados.';
             rawEnrichedEl.textContent = 'Sem dados.';
             missingContainer.innerHTML = '<div class="debug-empty">Nenhum dado carregado.</div>';
+            availableColumns = [];
+            columnLabels = new Map();
+            selectedColumns = new Set();
+            columnsInitialized = false;
+            lastOriginalEvents = [];
+            lastEnrichedEvents = [];
+            renderColumnFilters();
             setStatus('Pronto para comparar as tabelas.');
         }
 

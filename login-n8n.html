@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Alternativo - n8n</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .login-alt-wrap {
+            max-width: 520px;
+            margin: 8vh auto 0;
+            padding: 20px;
+        }
+        .login-alt-card {
+            background: rgba(12, 18, 44, 0.92);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 24px 60px rgba(2, 6, 23, 0.55);
+        }
+        .login-alt-title {
+            font-size: 1.6rem;
+            margin-bottom: 6px;
+            color: #dbeafe;
+        }
+        .login-alt-sub {
+            margin: 0 0 18px;
+            color: #94a3b8;
+            line-height: 1.45;
+        }
+        .login-alt-form {
+            display: grid;
+            gap: 14px;
+        }
+        .login-alt-label {
+            display: block;
+            margin-bottom: 6px;
+            color: #cbd5e1;
+            font-weight: 600;
+        }
+        .login-alt-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(148, 163, 184, 0.35);
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 12px 13px;
+            font-size: 0.95rem;
+        }
+        .login-alt-input:focus {
+            border-color: rgba(56, 189, 248, 0.65);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.12);
+        }
+        .login-alt-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .login-alt-remember {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            font-size: 0.9rem;
+        }
+        .login-alt-btn {
+            border: 1px solid rgba(56, 189, 248, 0.45);
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.28), rgba(59, 130, 246, 0.28));
+            color: #e2e8f0;
+            border-radius: 10px;
+            padding: 11px 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .login-alt-btn:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .login-alt-msg {
+            margin-top: 12px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 0.92rem;
+            display: none;
+        }
+        .login-alt-msg.info { display: block; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.35); color: #bfdbfe; }
+        .login-alt-msg.success { display: block; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); color: #a7f3d0; }
+        .login-alt-msg.error { display: block; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #fecaca; }
+        .login-alt-footer {
+            margin-top: 16px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
+        .login-alt-footer a {
+            color: #38bdf8;
+            text-decoration: none;
+        }
+        .login-alt-footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="presentation-page">
+    <div class="space-layer stars"></div>
+    <div class="space-layer twinkle"></div>
+    <div class="space-layer nebula"></div>
+    <div class="space-layer galaxies"></div>
+
+    <main class="login-alt-wrap">
+        <section class="login-alt-card">
+            <h1 class="login-alt-title">Login via n8n</h1>
+            <p class="login-alt-sub">Este login envia usuario e senha para o webhook. O n8n decide se o acesso deve ser liberado.</p>
+
+            <form id="login-alt-form" class="login-alt-form">
+                <div>
+                    <label for="usuario" class="login-alt-label">Usuario</label>
+                    <input id="usuario" name="usuario" class="login-alt-input" type="text" autocomplete="username" required>
+                </div>
+                <div>
+                    <label for="senha" class="login-alt-label">Senha</label>
+                    <input id="senha" name="senha" class="login-alt-input" type="password" autocomplete="current-password" required>
+                </div>
+
+                <div class="login-alt-row">
+                    <label class="login-alt-remember">
+                        <input id="remember" type="checkbox">
+                        Lembrar usuario
+                    </label>
+                    <button id="btn-login" class="login-alt-btn" type="submit">Entrar</button>
+                </div>
+            </form>
+
+            <div id="login-alt-msg" class="login-alt-msg"></div>
+
+            <div class="login-alt-footer">
+                <a href="login.html">Voltar para login atual</a>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const AUTH_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/novo-astronomo-1';
+        const AUTH_ACTION = 'login';
+        const form = document.getElementById('login-alt-form');
+        const inputUsuario = document.getElementById('usuario');
+        const inputSenha = document.getElementById('senha');
+        const remember = document.getElementById('remember');
+        const btnLogin = document.getElementById('btn-login');
+        const msg = document.getElementById('login-alt-msg');
+
+        function showMessage(text, type) {
+            msg.textContent = text;
+            msg.className = 'login-alt-msg ' + (type || 'info');
+        }
+
+        function clearMessage() {
+            msg.textContent = '';
+            msg.className = 'login-alt-msg';
+        }
+
+        function firstObject(value) {
+            if (!value) return null;
+            if (Array.isArray(value)) return value.length ? firstObject(value[0]) : null;
+            if (typeof value === 'object') return value;
+            return null;
+        }
+
+        function normalizeResponse(data) {
+            if (!data) return { payload: null, user: null };
+            let payload = data;
+            if (Array.isArray(payload)) payload = payload[0] || null;
+            if (payload && typeof payload === 'object') {
+                if (Array.isArray(payload.data)) payload = payload.data[0] || payload;
+                else if (payload.data && typeof payload.data === 'object') payload = payload.data;
+                else if (Array.isArray(payload.result)) payload = payload.result[0] || payload;
+                else if (payload.result && typeof payload.result === 'object') payload = payload.result;
+            }
+            const user = firstObject(
+                payload && (
+                    payload.astronomer ||
+                    payload.user ||
+                    payload.usuario_data ||
+                    payload.astronomo ||
+                    payload.profile ||
+                    payload.dados
+                )
+            ) || firstObject(payload);
+            return { payload, user };
+        }
+
+        function parseLoginAllowed(payload, user) {
+            const p = payload || {};
+            if (p.success === false || p.ok === false || p.allow === false || p.autorizado === false || p.authenticated === false) return false;
+            if (p.invalid === true || p.denied === true || p.error === true) return false;
+            if (typeof p.status === 'string') {
+                const status = p.status.trim().toLowerCase();
+                if (['erro', 'error', 'denied', 'unauthorized', 'falha', 'failed'].includes(status)) return false;
+                if (['ok', 'success', 'sucesso', 'authorized', 'autorizado'].includes(status)) return true;
+            }
+            if (typeof p.message === 'string') {
+                const lowerMsg = p.message.toLowerCase();
+                if (lowerMsg.includes('senha incorreta') || lowerMsg.includes('unauthorized') || lowerMsg.includes('acesso negado')) return false;
+            }
+            if (p.success === true || p.ok === true || p.allow === true || p.autorizado === true || p.authenticated === true) return true;
+            return !!(user && (user.id_astronomo != null || user.usuario || user.username || user.nome_completo));
+        }
+
+        function numberOrNull(value) {
+            if (value === null || value === undefined || value === '') return null;
+            const num = Number(value);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function parseProfitRate(raw) {
+            if (raw === undefined || raw === null || raw === '') return null;
+            const cleaned = String(raw).replace('%', '').replace(',', '.').trim();
+            const num = Number(cleaned);
+            if (!Number.isFinite(num)) return null;
+            if (num >= 0 && num <= 1) return num;
+            if (num > 1 && num <= 100) return num / 100;
+            return null;
+        }
+
+        function deriveAstronomoId(base) {
+            const candidates = [
+                base.id_astronomo, base.astronomo_id, base.id, base.user_id,
+                base.usuario_id, base.assistant_id, base.row_number, base.row_num
+            ];
+            for (const val of candidates) {
+                if (val === undefined || val === null || val === '') continue;
+                const asNum = Number(val);
+                if (Number.isFinite(asNum)) return asNum;
+                return val;
+            }
+            return null;
+        }
+
+        function saveSession(userData, plainPassword) {
+            const base = (userData && typeof userData === 'object') ? { ...userData } : {};
+            const token = 'astro_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now().toString(36);
+            const idAstronomo = deriveAstronomoId(base);
+            const lucroDecimal = parseProfitRate(
+                base.percentual_lucro ?? base.porcentagem_lucro ?? base.taxa_lucro ?? base.lucro_percentual
+            );
+            const lucroPercent = lucroDecimal != null ? lucroDecimal * 100 : null;
+            const unified = {
+                ...base,
+                loggedIn: true,
+                loginTime: new Date().toISOString(),
+                timestamp: Date.now(),
+                sessionId: token,
+                session_id: token,
+                token,
+                id_astronomo: idAstronomo,
+                usuario: base.usuario || base.username || inputUsuario.value.trim() || null,
+                username: base.username || base.usuario || inputUsuario.value.trim() || null,
+                astronomo: base.astronomo || base.nome_completo || base.nome || base.usuario || inputUsuario.value.trim() || null,
+                nome_completo: base.nome_completo || base.nome || base.astronomo || base.usuario || inputUsuario.value.trim() || null,
+                senha: plainPassword || null,
+                lucro_percentual_decimal: lucroDecimal,
+                lucro_percentual: lucroPercent,
+                percentual_lucro: lucroPercent != null ? lucroPercent : numberOrNull(base.percentual_lucro)
+            };
+            localStorage.setItem('astronomo_session', JSON.stringify(unified));
+            localStorage.setItem('userSession', JSON.stringify({
+                astronomer: base,
+                loginTime: unified.loginTime,
+                token
+            }));
+            localStorage.setItem('astronomersData', JSON.stringify([base]));
+            if (remember.checked && unified.usuario) {
+                localStorage.setItem('savedUser', unified.usuario);
+            } else {
+                localStorage.removeItem('savedUser');
+            }
+        }
+
+        async function callAuthWebhook(usuario, senha) {
+            const body = new URLSearchParams();
+            body.set('action', AUTH_ACTION);
+            body.set('usuario', usuario);
+            body.set('senha', senha);
+
+            const response = await fetch(AUTH_WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                body: body.toString()
+            });
+
+            const rawText = await response.text();
+            let parsed = null;
+            try {
+                parsed = rawText ? JSON.parse(rawText) : null;
+            } catch (_) {
+                parsed = { message: rawText || '' };
+            }
+
+            if (!response.ok) {
+                const details = (parsed && (parsed.message || parsed.error || parsed.erro)) || rawText || ('HTTP ' + response.status);
+                throw new Error(details);
+            }
+
+            return parsed;
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            clearMessage();
+
+            const usuario = inputUsuario.value.trim();
+            const senha = inputSenha.value.trim();
+
+            if (!usuario || !senha) {
+                showMessage('Preencha usuario e senha.', 'error');
+                return;
+            }
+
+            btnLogin.disabled = true;
+            btnLogin.textContent = 'Autenticando...';
+
+            try {
+                const raw = await callAuthWebhook(usuario, senha);
+                const normalized = normalizeResponse(raw);
+                const allowed = parseLoginAllowed(normalized.payload, normalized.user);
+
+                if (!allowed) {
+                    const payload = normalized.payload || {};
+                    const reason = payload.message || payload.error || payload.erro || 'Credenciais invalidas.';
+                    showMessage(reason, 'error');
+                    inputSenha.value = '';
+                    inputSenha.focus();
+                    return;
+                }
+
+                saveSession(normalized.user || normalized.payload || { usuario }, senha);
+                showMessage('Login autorizado. Redirecionando...', 'success');
+                setTimeout(() => { window.location.href = 'index.html'; }, 600);
+            } catch (err) {
+                showMessage('Falha no login: ' + (err && err.message ? err.message : 'erro desconhecido'), 'error');
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.textContent = 'Entrar';
+            }
+        }
+
+        (function init() {
+            const saved = localStorage.getItem('savedUser');
+            if (saved) {
+                inputUsuario.value = saved;
+                remember.checked = true;
+            }
+            localStorage.removeItem('astronomo_session');
+            localStorage.removeItem('userSession');
+            form.addEventListener('submit', handleSubmit);
+            showMessage('Informe usuario e senha para autenticar no n8n.', 'info');
+        })();
+    </script>
+</body>
+</html>

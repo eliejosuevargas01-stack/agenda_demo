@@ -6425,6 +6425,25 @@ header.page-header h1,
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
+/* Força estilo da navegação nas páginas de histórico/debug (evita reset visual). */
+.historico-page .navigation,
+.debug-page .navigation,
+.presentation-page .navigation {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.28);
+}
+.historico-page .nav-button,
+.debug-page .nav-button,
+.presentation-page .nav-button {
+  color: #cbd5e1;
+}
+.historico-page .nav-button.active,
+.debug-page .nav-button.active,
+.presentation-page .nav-button.active {
+  color: #22d3ee;
+}
+
 .nav-button {
   background: transparent;
   color: #94a3b8;

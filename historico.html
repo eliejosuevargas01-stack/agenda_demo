@@ -213,7 +213,6 @@
 
         // Configuração do Webhook (novo endpoint)
         const AGENDA_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos';
-        const AGENDA_CACHE_PREFIX = 'agenda_cache_v1';
 
         // Util: sessão + webhook
         function getLoggedSession(){
@@ -261,10 +260,6 @@
                 reserva: parseId(base?.id_reserva || base?.reserva_id),
                 nao_marcar: parseId(base?.id_n_marcar || base?.id_nao_marcar || base?.nao_marcar_id)
             };
-        }
-        function agendaCacheKey(sess){
-            const ns = (sess && (sess.id_astronomo ?? sess.usuario ?? sess.username)) || 'anon';
-            return `${AGENDA_CACHE_PREFIX}::${String(ns).toLowerCase()}`;
         }
         async function readResponsePayload(resp){
             let text = '';
@@ -403,33 +398,6 @@
             }
             return data;
         }
-        function loadCachedAgenda(sess){
-            try{
-                const preferredKey = agendaCacheKey(sess);
-                let raw = preferredKey ? localStorage.getItem(preferredKey) : null;
-                if (!raw){
-                    for (let i=0;i<localStorage.length;i++){
-                        const k = localStorage.key(i);
-                        if (k && k.startsWith(AGENDA_CACHE_PREFIX)){
-                            raw = localStorage.getItem(k);
-                            if (raw) break;
-                        }
-                    }
-                }
-                if (!raw) return null;
-                const parsed = JSON.parse(raw);
-                if (!parsed || !Array.isArray(parsed.events)) return null;
-                const revived = parsed.events.map(ev => ({
-                    ...ev,
-                    _date: ev && ev._date ? new Date(ev._date) : (ev && ev.data ? new Date(ev.data) : null)
-                }));
-                return { ts: parsed.ts || parsed.timestamp || null, events: revived };
-            }catch(err){
-                console.warn('Não foi possível ler o cache da agenda:', err);
-                return null;
-            }
-        }
-
         // Estado da aplicação
         let eventsData = [];
         let completedEvents = [];
@@ -443,15 +411,14 @@
 
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
-            // Primeiro: tentar herdar eventos do cache do index (e só buscar se não houver)
-            fetchDataFromN8N(true);
+            fetchDataFromN8N();
 
             // Event Listeners
             if (citySelect) citySelect.addEventListener('change', handleCityFilter);
             if (searchInput) searchInput.addEventListener('input', handleSearch);
             if (prevPageButton) prevPageButton.addEventListener('click', goToPrevPage);
             if (nextPageButton) nextPageButton.addEventListener('click', goToNextPage);
-            if (btnFetchData) btnFetchData.addEventListener('click', () => fetchDataFromN8N(false));
+            if (btnFetchData) btnFetchData.addEventListener('click', () => fetchDataFromN8N());
             if (btnExportCsv) btnExportCsv.addEventListener('click', exportToCSV);
             if (btnExportPdf) btnExportPdf.addEventListener('click', exportToPDF);
             
@@ -566,24 +533,7 @@
             showNotification(`${completedEvents.length} eventos carregados com sucesso!`, 'success');
         }
 
-        function hydrateFromCache(){
-            const sess = getLoggedSession();
-            const cache = loadCachedAgenda(sess);
-            if (!cache || !Array.isArray(cache.events) || !cache.events.length) return false;
-            try{
-                applyEventsData(cache.events, 'Cache local');
-                return true;
-            }catch(err){
-                console.warn('Falha ao aplicar cache local:', err);
-                return false;
-            }
-        }
-
-        async function fetchDataFromN8N(preferCache = false) {
-            if (preferCache && hydrateFromCache()) {
-                return;
-            }
-
+        async function fetchDataFromN8N() {
             try {
                 if (btnFetchData) {
                     btnFetchData.disabled = true;
