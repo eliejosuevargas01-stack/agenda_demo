@@ -161,15 +161,25 @@
         </div>
     </div>
 
-    <!-- Lightbox de imagens em tela cheia -->
-    <div class="image-lightbox" id="image-lightbox" aria-hidden="true">
-        <div class="image-lightbox__backdrop" id="image-lightbox-backdrop"></div>
-        <div class="image-lightbox__content">
-            <button class="image-lightbox__close" id="image-lightbox-close" aria-label="Fechar imagens">✕</button>
-            <button class="image-lightbox__nav" id="image-lightbox-prev" aria-label="Imagem anterior">‹</button>
-            <img id="image-lightbox-img" alt="Imagem do evento" loading="lazy" decoding="async">
-            <button class="image-lightbox__nav" id="image-lightbox-next" aria-label="Próxima imagem">›</button>
-            <div class="image-lightbox__counter" id="image-lightbox-counter"></div>
+    <!-- Modal de carrossel de imagens (somente visualização) -->
+    <div class="modal event-image-carousel-modal" id="event-image-carousel-modal" aria-hidden="true">
+        <div class="modal-content carousel-modal">
+            <div class="carousel-modal__header">
+                <h3 id="event-image-carousel-title">Imagens do Evento</h3>
+                <button type="button" class="carousel-close" onclick="closeEventImageCarousel()" aria-label="Fechar imagens">✕</button>
+            </div>
+            <div class="carousel-modal__body">
+                <button type="button" class="carousel-nav" onclick="prevEventCarouselImage()" aria-label="Imagem anterior">‹</button>
+                <div class="carousel-image-wrapper">
+                    <img id="event-image-carousel-img" class="carousel-image" src="" alt="Imagem do evento" loading="lazy" decoding="async">
+                    <div id="event-image-carousel-empty" class="carousel-empty" style="display:none;">Nenhuma imagem encontrada para este evento.</div>
+                </div>
+                <button type="button" class="carousel-nav" onclick="nextEventCarouselImage()" aria-label="Próxima imagem">›</button>
+            </div>
+            <div class="carousel-footer">
+                <span id="event-image-carousel-counter"></span>
+                <a id="event-image-carousel-link" href="#" target="_blank" rel="noopener noreferrer">Abrir imagem original</a>
+            </div>
         </div>
     </div>
 
@@ -312,15 +322,8 @@
         const finalizeConfirmBtn = document.getElementById('finalize-confirm');
         const finalizeCancelBtn  = document.getElementById('finalize-cancel');
         const finalizeDontShowEl = document.getElementById('finalize-dont-show');
+        const eventImageCarouselModal = document.getElementById('event-image-carousel-modal');
         if (btnOpenRotas) btnOpenRotas.disabled = true;
-        // Lightbox refs
-        const lightboxEl         = document.getElementById('image-lightbox');
-        const lightboxImg        = document.getElementById('image-lightbox-img');
-        const lightboxCounter    = document.getElementById('image-lightbox-counter');
-        const lightboxPrev       = document.getElementById('image-lightbox-prev');
-        const lightboxNext       = document.getElementById('image-lightbox-next');
-        const lightboxClose      = document.getElementById('image-lightbox-close');
-        const lightboxBackdrop   = document.getElementById('image-lightbox-backdrop');
 
         // ==== Estado simples ====
         let eventsData = [];          // eventos normalizados (dedupe)
@@ -345,9 +348,8 @@
             const idVal = opt && opt.value && opt.value !== 'all' && opt.value !== type ? opt.value : null;
             return { type, id: idVal };
         };
-        // Lightbox state
-        let lightboxImages = [];
-        let lightboxIndex = 0;
+        let EVENT_CAROUSEL_IMAGES = [];
+        let EVENT_CAROUSEL_INDEX = 0;
         const API_AGENDA = "https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos";
 
         async function readResponsePayload(resp){
@@ -1744,209 +1746,224 @@
             renderWeatherForSelection(dayEvents);
         }
 
-        // ==== Imagens do evento (carrossel) ====
+        // ==== Imagens do evento (carrossel somente visualização) ====
+        function normalizeEventImageEntries(items){
+            if (!Array.isArray(items)) return [];
+            const isImageUrl = (value) => {
+                const url = String(value || '').trim();
+                return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/');
+            };
+            return items
+                .map(item => {
+                    if (!item || typeof item !== 'object') return null;
+                    const rawUrl = item.url || item.img || item.imagem || item.conteudo_base64;
+                    const url = String(rawUrl || '').trim();
+                    if (!isImageUrl(url)) return null;
+                    return {
+                        url,
+                        name: String(item.name || item.nome || '').trim(),
+                        row: item.row ?? item.row_number ?? item.row_num ?? null
+                    };
+                })
+                .filter(Boolean);
+        }
+
         async function fetchEventImages(eventId, extraPayload){
             const formData = new FormData();
             formData.append('action', 'get_img');
             if (eventId) {
-                formData.append('id_evento', eventId);
-                formData.append('id_evento_unico', eventId);
+                formData.append('id_evento', String(eventId));
+                formData.append('id_evento_unico', String(eventId));
             }
             const row = extraPayload && (extraPayload.row_number ?? extraPayload.row ?? extraPayload.row_num);
             if (row != null) formData.append('row_number', String(row));
-            if (extraPayload && extraPayload.school) formData.append('nome_da_escola', extraPayload.school);
+            if (extraPayload && extraPayload.school) formData.append('nome_da_escola', String(extraPayload.school));
 
-            const response = await fetch(API_EVENT_IMAGES, { method:'POST', body: formData });
+            const response = await fetch(API_EVENT_IMAGES, { method: 'POST', body: formData });
             const bodyText = await response.text().catch(() => '');
             if (!response.ok) throw new Error(bodyText || 'Erro ao buscar imagens');
 
             let entries = [];
+            const pushEntry = (url, name, rowVal) => {
+                entries.push({ url, name, row: rowVal });
+            };
+
             try {
                 const data = bodyText ? JSON.parse(bodyText) : null;
-                if (Array.isArray(data) && data.length && typeof data[0] === 'object' && ('img' in data[0])) {
-                    entries = data
-                        .map(item => {
-                            if (!item || typeof item.img !== 'string') return null;
-                            const url = item.img.trim();
-                            if (!url || !url.startsWith('http')) return null;
-                            const name = (item.name || '').toString().trim();
-                            const rowNum = item.row_number != null ? Number(item.row_number) : null;
-                            return { url, name, row: rowNum };
-                        })
-                        .filter(Boolean);
-                } else if (data && Array.isArray(data.links)) {
-                    entries = data.links
-                        .map(link => {
-                            const url = String(link || '').trim();
-                            return url && url.startsWith('http') ? { url, name: '', row: null } : null;
-                        })
-                        .filter(Boolean);
-                } else if (data && Array.isArray(data.data)) {
-                    entries = data.data
-                        .map(link => {
-                            const url = String(link || '').trim();
-                            return url && url.startsWith('http') ? { url, name: '', row: null } : null;
-                        })
-                        .filter(Boolean);
-                } else if (data && typeof data === 'object') {
-                    Object.values(data).forEach(v => {
-                        if (typeof v === 'string' && v.startsWith('http')) {
-                            entries.push({ url: v, name: '', row: null });
-                        } else if (Array.isArray(v)) {
-                            v.forEach(inner => {
-                                if (typeof inner === 'string' && inner.startsWith('http')) {
-                                    entries.push({ url: inner, name: '', row: null });
-                                }
-                            });
+
+                if (Array.isArray(data)) {
+                    data.forEach(item => {
+                        if (typeof item === 'string') {
+                            pushEntry(item, '', null);
+                            return;
                         }
+                        if (!item || typeof item !== 'object') return;
+                        const url = item.conteudo_base64 || item.img || item.imagem || item.url;
+                        pushEntry(url, item.name || item.nome || '', item.row_number ?? item.row ?? item.row_num ?? null);
                     });
+                } else if (data && typeof data === 'object') {
+                    const directUrl = data.conteudo_base64 || data.img || data.imagem || data.url;
+                    if (directUrl) {
+                        pushEntry(directUrl, data.name || data.nome || '', data.row_number ?? data.row ?? data.row_num ?? null);
+                    }
+
+                    if (Array.isArray(data.links)) {
+                        data.links.forEach(url => pushEntry(url, '', null));
+                    }
+                    if (Array.isArray(data.data)) {
+                        data.data.forEach(item => {
+                            if (typeof item === 'string') {
+                                pushEntry(item, '', null);
+                                return;
+                            }
+                            if (!item || typeof item !== 'object') return;
+                            const url = item.conteudo_base64 || item.img || item.imagem || item.url;
+                            pushEntry(url, item.name || item.nome || '', item.row_number ?? item.row ?? item.row_num ?? null);
+                        });
+                    }
+                } else if (typeof data === 'string') {
+                    pushEntry(data, '', null);
                 }
             } catch (_) {
-                const regex = /(https?:\/\/[^\s"']+)/g;
+                const regex = /(https?:\/\/[^\s"']+|data:image\/[^\s"']+)/g;
                 let match;
                 while ((match = regex.exec(bodyText)) !== null) {
-                    const url = match[1];
-                    if (url && url.startsWith('http')) entries.push({ url, name: '', row: null });
+                    pushEntry(match[1], '', null);
                 }
             }
 
+            const normalized = normalizeEventImageEntries(entries);
             const seen = new Set();
-            return entries.filter(entry => {
-                const key = entry && entry.url ? String(entry.url) : '';
+            return normalized.filter(entry => {
+                const key = entry.url;
                 if (!key || seen.has(key)) return false;
                 seen.add(key);
                 return true;
             });
         }
 
-        function renderImageCarousel(container, entries){
-            if (!container) return;
+        function setEventImagesPreviewLayout(previewEl, count){
+            if (!previewEl) return;
+            previewEl.classList.toggle('event-images-preview--single', count === 1);
+        }
+
+        function renderEventImagesPreview(entries, previewEl, title){
+            if (!previewEl) return;
+
             if (!Array.isArray(entries) || !entries.length) {
-                container.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
+                previewEl.className = 'event-images-preview';
+                previewEl.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
+                setEventImagesPreviewLayout(previewEl, 0);
                 return;
             }
 
-            let idx = 0;
-            container.innerHTML = `
-                <div class="img-carousel">
-                    <button class="img-carousel-nav" data-dir="-1" aria-label="Imagem anterior">‹</button>
-                    <div class="img-carousel-frame">
-                        <img data-carousel-img src="" alt="Imagem do evento" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                    </div>
-                    <button class="img-carousel-nav" data-dir="1" aria-label="Próxima imagem">›</button>
-                </div>
-                <div class="img-carousel-meta">
-                    <span data-carousel-counter></span>
-                    <a data-carousel-link href="#" target="_blank" rel="noopener noreferrer">Abrir imagem</a>
-                </div>
-            `;
+            previewEl.innerHTML = '';
+            previewEl.className = 'event-images-preview image-gallery';
+            entries.forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'gallery-item';
 
-            const imgEl = container.querySelector('[data-carousel-img]');
-            const counterEl = container.querySelector('[data-carousel-counter]');
-            const linkEl = container.querySelector('[data-carousel-link]');
-            const navButtons = Array.from(container.querySelectorAll('.img-carousel-nav'));
-            navButtons.forEach(btn => { btn.disabled = entries.length <= 1; });
+                const img = document.createElement('img');
+                img.src = entry.url;
+                img.alt = entry.name || `Imagem ${index + 1}`;
+                img.loading = 'lazy';
+                img.decoding = 'async';
 
-            const update = () => {
-                const item = entries[idx];
-                if (!item) return;
-                imgEl.src = item.url;
-                imgEl.alt = item.name || 'Imagem do evento';
-                counterEl.textContent = `${idx + 1} / ${entries.length}`;
-                linkEl.href = item.url;
-                linkEl.textContent = item.name ? `Abrir ${item.name}` : 'Abrir imagem em nova aba';
-            };
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.textContent = `Imagem ${index + 1}`;
 
-            navButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const dir = Number(btn.dataset.dir) || 1;
-                    idx = (idx + dir + entries.length) % entries.length;
-                    update();
-                });
+                card.appendChild(img);
+                card.appendChild(overlay);
+                card.addEventListener('click', () => openEventImageCarousel(entries, index, title));
+                previewEl.appendChild(card);
             });
 
-            update();
+            setEventImagesPreviewLayout(previewEl, entries.length);
         }
 
-        function setLightboxImages(entries){
-            lightboxImages = Array.isArray(entries) ? entries.filter(e => e && e.url) : [];
-            lightboxIndex = 0;
-            updateImageLightbox();
-        }
+        function updateEventImageCarouselUI(){
+            const modal = eventImageCarouselModal;
+            const imgEl = document.getElementById('event-image-carousel-img');
+            const emptyEl = document.getElementById('event-image-carousel-empty');
+            const counterEl = document.getElementById('event-image-carousel-counter');
+            const linkEl = document.getElementById('event-image-carousel-link');
+            const navButtons = modal ? modal.querySelectorAll('.carousel-nav') : [];
+            if (!modal || !imgEl || !emptyEl || !counterEl || !linkEl) return;
 
-        function updateImageLightbox(){
-            if (!lightboxEl || !lightboxImg || !lightboxCounter) return;
-            if (!lightboxImages.length) {
-                lightboxEl.classList.remove('show');
-                lightboxEl.setAttribute('aria-hidden','true');
+            if (!EVENT_CAROUSEL_IMAGES.length) {
+                imgEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                counterEl.textContent = '';
+                linkEl.style.display = 'none';
+                navButtons.forEach(btn => { btn.disabled = true; });
                 return;
             }
-            const cur = lightboxImages[lightboxIndex];
-            lightboxImg.src = cur.url;
-            lightboxImg.alt = cur.name || 'Imagem do evento';
-            lightboxCounter.textContent = `${lightboxIndex + 1} / ${lightboxImages.length}`;
+
+            if (EVENT_CAROUSEL_INDEX < 0) EVENT_CAROUSEL_INDEX = EVENT_CAROUSEL_IMAGES.length - 1;
+            if (EVENT_CAROUSEL_INDEX >= EVENT_CAROUSEL_IMAGES.length) EVENT_CAROUSEL_INDEX = 0;
+
+            const current = EVENT_CAROUSEL_IMAGES[EVENT_CAROUSEL_INDEX];
+            imgEl.src = current.url;
+            imgEl.alt = current.name || `Imagem ${EVENT_CAROUSEL_INDEX + 1}`;
+            imgEl.style.display = 'block';
+            emptyEl.style.display = 'none';
+            counterEl.textContent = `${EVENT_CAROUSEL_INDEX + 1} / ${EVENT_CAROUSEL_IMAGES.length}`;
+
+            linkEl.href = current.url;
+            linkEl.style.display = 'inline-flex';
+
+            const disableNav = EVENT_CAROUSEL_IMAGES.length <= 1;
+            navButtons.forEach(btn => { btn.disabled = disableNav; });
         }
 
-        function openImageLightbox(idx = 0){
-            if (!lightboxImages.length || !lightboxEl) return;
-            lightboxIndex = Math.max(0, Math.min(idx, lightboxImages.length - 1));
-            updateImageLightbox();
-            lightboxEl.classList.add('show');
-            lightboxEl.setAttribute('aria-hidden','false');
+        function openEventImageCarousel(entries, startIndex = 0, title){
+            if (!eventImageCarouselModal) return;
+            EVENT_CAROUSEL_IMAGES = normalizeEventImageEntries(entries);
+            EVENT_CAROUSEL_INDEX = Number.isFinite(Number(startIndex)) ? Number(startIndex) : 0;
+
+            const titleEl = document.getElementById('event-image-carousel-title');
+            if (titleEl) titleEl.textContent = title || 'Imagens do Evento';
+
+            eventImageCarouselModal.classList.add('open');
+            eventImageCarouselModal.setAttribute('aria-hidden', 'false');
+            updateEventImageCarouselUI();
         }
 
-        function closeImageLightbox(){
-            if (!lightboxEl) return;
-            lightboxEl.classList.remove('show');
-            lightboxEl.setAttribute('aria-hidden','true');
+        function closeEventImageCarousel(){
+            if (!eventImageCarouselModal) return;
+            eventImageCarouselModal.classList.remove('open');
+            eventImageCarouselModal.setAttribute('aria-hidden', 'true');
+            EVENT_CAROUSEL_IMAGES = [];
+            EVENT_CAROUSEL_INDEX = 0;
         }
 
-        function nextLightboxImage(){
-            if (!lightboxImages.length) return;
-            lightboxIndex = (lightboxIndex + 1) % lightboxImages.length;
-            updateImageLightbox();
+        function nextEventCarouselImage(){
+            if (!EVENT_CAROUSEL_IMAGES.length) return;
+            EVENT_CAROUSEL_INDEX = (EVENT_CAROUSEL_INDEX + 1) % EVENT_CAROUSEL_IMAGES.length;
+            updateEventImageCarouselUI();
         }
 
-        function prevLightboxImage(){
-            if (!lightboxImages.length) return;
-            lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
-            updateImageLightbox();
+        function prevEventCarouselImage(){
+            if (!EVENT_CAROUSEL_IMAGES.length) return;
+            EVENT_CAROUSEL_INDEX = (EVENT_CAROUSEL_INDEX - 1 + EVENT_CAROUSEL_IMAGES.length) % EVENT_CAROUSEL_IMAGES.length;
+            updateEventImageCarouselUI();
         }
 
-        async function loadEventImagesIntoContainer(eventId, container, triggerBtn, extraPayload){
-            if (!container || !eventId) return;
-            container.innerHTML = `<div class="event-images-placeholder">Carregando imagens...</div>`;
-            if (triggerBtn) {
-                triggerBtn.disabled = true;
-                triggerBtn.dataset.prevLabel = triggerBtn.innerHTML;
-                triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando';
-            }
+        async function loadEventImagesIntoContainer(eventId, previewEl, extraPayload, title){
+            if (!previewEl || !eventId) return;
+            previewEl.className = 'event-images-preview';
+            previewEl.innerHTML = `<div class="event-images-placeholder">Carregando imagens...</div>`;
+            setEventImagesPreviewLayout(previewEl, 0);
+
             try {
                 const entries = await fetchEventImages(eventId, extraPayload);
-                if (Array.isArray(entries) && entries.length) {
-                    container.innerHTML = `
-                        <div class="event-images-placeholder">
-                            ${entries.length} imagem(ns) encontrada(s). Clique em "Ver imagens" para abrir em tela cheia.
-                        </div>
-                    `;
-                    setLightboxImages(entries);
-                    openImageLightbox(0);
-                    if (triggerBtn) {
-                        triggerBtn.innerHTML = '<i class="fas fa-image"></i> Abrir em tela cheia';
-                        triggerBtn.disabled = false;
-                        triggerBtn.onclick = () => openImageLightbox(0);
-                    }
-                } else {
-                    container.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
-                }
-            } catch (err) {
-                console.error('Erro ao carregar imagens do evento:', err);
-                container.innerHTML = `<div class="event-images-placeholder">Erro ao carregar imagens. Tente novamente.</div>`;
-            } finally {
-                if (triggerBtn) {
-                    triggerBtn.disabled = false;
-                    triggerBtn.innerHTML = triggerBtn.dataset.prevLabel || '<i class="fas fa-image"></i> Ver imagens';
-                }
+                renderEventImagesPreview(entries, previewEl, title);
+            } catch (error) {
+                console.error('Erro ao carregar imagens do evento:', error);
+                previewEl.className = 'event-images-preview';
+                previewEl.innerHTML = `<div class="event-images-placeholder">Erro ao carregar imagens. Tente novamente.</div>`;
+                setEventImagesPreviewLayout(previewEl, 0);
             }
         }
 
@@ -1956,6 +1973,7 @@
                 eventModal.classList.remove('show');
                 eventModal.setAttribute('aria-hidden', 'true');
             }
+            closeEventImageCarousel();
         }
 
         // ==== Modal de detalhes OTIMIZADO ====
@@ -2092,31 +2110,27 @@
                     ${deletarBtn}
                 </div>
 
-                <!-- Seção de Imagens (mantida da original, apenas container limpo) -->
-                <div id="modal-images-container" style="margin-top: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 16px;">
-                     <div class="event-images-header">
-                        <h4 style="font-size: 0.9rem; color: #94a3b8; margin-bottom:10px;">Galeria</h4>
-                        <button class="event-images-btn" data-event-id="${eventId || ''}">
-                            <i class="fas fa-image"></i> Carregar Imagens
-                        </button>
+                <div class="event-images-section">
+                    <div class="event-images-header">
+                        <h4>Galeria</h4>
+                        <span class="event-images-hint">Clique em uma miniatura para ampliar</span>
                     </div>
-                    <div class="event-images-body" id="event-images-body" style="background:transparent; border:none; padding:0;"></div>
+                    <div class="event-images-preview" id="event-images-preview">
+                        <div class="event-images-placeholder">Carregando imagens...</div>
+                    </div>
                 </div>
             `;
 
             eventModal.classList.add('show');
             eventModal.setAttribute('aria-hidden', 'false');
 
-            // Reattach listeners para imagens e ações
-            const imagesBody = eventModalBody.querySelector('#event-images-body');
-            const imagesBtn = eventModalBody.querySelector('.event-images-btn');
-            if (imagesBtn && imagesBody && eventId) {
-                imagesBtn.addEventListener('click', () => {
-                    loadEventImagesIntoContainer(eventId, imagesBody, imagesBtn, {
-                        row_number: ev.row_number,
-                        school: ev.nome_da_escola
-                    });
-                });
+            // Carrega miniaturas da galeria do evento automaticamente
+            const imagesPreview = eventModalBody.querySelector('#event-images-preview');
+            if (imagesPreview && eventId) {
+                loadEventImagesIntoContainer(eventId, imagesPreview, {
+                    row_number: ev.row_number,
+                    school: ev.nome_da_escola
+                }, titleLabel);
             }
 
             eventModalBody.querySelectorAll('[data-ev-action]').forEach(btn => {
@@ -2479,6 +2493,11 @@
 
             if (eventModalClose) eventModalClose.addEventListener('click', closeEventModal);
             if (eventModalBackdrop) eventModalBackdrop.addEventListener('click', closeEventModal);
+            if (eventImageCarouselModal) {
+                eventImageCarouselModal.addEventListener('click', (ev) => {
+                    if (ev.target === eventImageCarouselModal) closeEventImageCarousel();
+                });
+            }
             if (finalizeCancelBtn && finalizeModal) {
                 finalizeCancelBtn.addEventListener('click', () => {
                     finalizeModal.classList.remove('open');
@@ -2508,15 +2527,13 @@
                         finalizeModal.classList.remove('open');
                         finalizeModal.setAttribute('aria-hidden', 'true');
                         pendingFinalizeEvent = null;
+                    } else if (eventImageCarouselModal && eventImageCarouselModal.classList.contains('open')) {
+                        closeEventImageCarousel();
                     } else {
                         closeEventModal();
                     }
                 }
             });
-            if (lightboxClose) lightboxClose.addEventListener('click', closeImageLightbox);
-            if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closeImageLightbox);
-            if (lightboxNext) lightboxNext.addEventListener('click', nextLightboxImage);
-            if (lightboxPrev) lightboxPrev.addEventListener('click', prevLightboxImage);
 
             updateTaskFilterLabels(sess);
             // força estado inicial para VISITA

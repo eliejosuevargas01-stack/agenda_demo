@@ -681,6 +681,599 @@ textarea:focus {
         grid-template-columns: 1fr;
     }
 }
+
+/* ========================================================================== */
+/* CORREÇÃO DA GALERIA DENTRO DO MODAL (Preview)                              */
+/* ========================================================================== */
+
+/* 1. O container da galeria: Define um grid organizado */
+.image-gallery, 
+#eventImagesPreview {
+    display: grid !important;
+    /* Cria colunas automáticas de no mínimo 120px */
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+    gap: 12px;
+    width: 100%;
+    margin-top: 15px;
+    box-sizing: border-box;
+}
+
+/* 2. O cartão de cada imagem (moldura) */
+.gallery-item {
+    position: relative;
+    width: 100%;
+    /* Define uma altura fixa para todas as miniaturas ficarem alinhadas */
+    height: 120px; 
+    border-radius: 8px;
+    overflow: hidden; /* Corta o que passar da borda */
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.gallery-item:hover {
+    transform: translateY(-2px);
+    border-color: #3b82f6;
+}
+
+/* 3. A IMAGEM EM SI: Aqui está a correção do estouro */
+.gallery-item img {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    display: block;
+    /* 'cover' faz a imagem preencher o quadrado sem esticar/deformar, cortando excessos */
+    object-fit: cover; 
+}
+
+/* 4. CASO ESPECIAL: Se houver apenas UMA imagem */
+/* Faz ela ficar maior (tipo destaque), mas SEM estourar o modal */
+.image-gallery:has(.gallery-item:only-child),
+#eventImagesPreview:has(.gallery-item:only-child) {
+    display: flex !important;
+    justify-content: center;
+}
+
+.image-gallery:has(.gallery-item:only-child) .gallery-item,
+#eventImagesPreview:has(.gallery-item:only-child) .gallery-item {
+    width: 100%;
+    max-width: 400px; /* Limita a largura máxima para não ficar gigante */
+    height: 250px; /* Altura maior para destaque */
+    margin: 0 auto;
+}
+
+/* Quando é destaque único, mostramos a imagem inteira (contain) em vez de cortar (cover) */
+.image-gallery:has(.gallery-item:only-child) .gallery-item img {
+    object-fit: contain; 
+    background-color: #0f172a; /* Fundo escuro para destacar a foto */
+}
+
+/* Pequeno ajuste no botão de excluir (lixeira) para ficar visível */
+.gallery-item .btn-danger {
+    z-index: 10;
+    opacity: 0; /* Esconde e só mostra ao passar o mouse */
+    transition: opacity 0.2s;
+}
+
+.gallery-item:hover .btn-danger {
+    opacity: 1;
+}
+
+.gallery-item .gallery-select-toggle {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    z-index: 12;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.78);
+    border: 1px solid rgba(148, 163, 184, 0.6);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.gallery-item .gallery-select-toggle input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    margin: 0;
+    cursor: pointer;
+}
+
+.gallery-item.selected-for-batch {
+    outline: 2px solid #16a34a;
+    outline-offset: -2px;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.18) inset, 0 3px 10px rgba(0, 0, 0, 0.22);
+}
+
+.event-image-batch-panel {
+    margin-top: 14px;
+    padding: 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 14px;
+    background:
+        radial-gradient(circle at 15% 0, rgba(59, 130, 246, 0.07), rgba(59, 130, 246, 0)),
+        #f8fafc;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.event-image-batch-head {
+    margin-bottom: 10px;
+}
+
+.event-image-batch-panel h4 {
+    margin: 0 0 6px;
+    font-size: 0.98rem;
+    color: #0f172a;
+}
+
+.event-image-batch-panel .hint {
+    margin: 0 0 6px;
+    color: #475569;
+    font-size: 0.83rem;
+    line-height: 1.35;
+}
+
+.batch-toolbar,
+.batch-main-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.batch-flow-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.batch-column {
+    border: 1px solid #dbe3ee;
+    border-radius: 12px;
+    background: #ffffff;
+    padding: 10px;
+    min-width: 0;
+}
+
+.batch-column-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #334155;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-bottom: 8px;
+}
+
+.batch-target-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+}
+
+.batch-target-toolbar input {
+    flex: 1 1 260px;
+    min-width: 180px;
+    padding: 9px 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.86rem;
+}
+
+.batch-target-list {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    max-height: 210px;
+    overflow: auto;
+    background: #f8fafc;
+    padding: 0;
+}
+
+.batch-target-option {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    padding: 9px 10px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 0.82rem;
+    color: #0f172a;
+    background: #ffffff;
+    cursor: pointer;
+}
+
+.batch-target-option:hover {
+    background: #f1f5f9;
+}
+
+.batch-target-option.current-event {
+    background: #eff6ff;
+    border-left: 3px solid #2563eb;
+}
+
+.batch-target-option input[type="checkbox"] {
+    margin: 0;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+}
+
+.batch-target-option:last-child {
+    border-bottom: 0;
+}
+
+.batch-target-option .title {
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.25;
+}
+
+.batch-target-option .meta {
+    color: #64748b;
+    font-size: 0.76rem;
+    margin-top: 3px;
+}
+
+.batch-queue-list {
+    border: 1px dashed #cbd5e1;
+    border-radius: 10px;
+    min-height: 210px;
+    max-height: 210px;
+    overflow: auto;
+    background: #f8fafc;
+    padding: 8px;
+}
+
+.batch-queue-empty {
+    font-size: 0.82rem;
+    color: #64748b;
+    padding: 8px;
+}
+
+.batch-queue-item {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    background: #ffffff;
+    border: 1px solid #dbe3ee;
+    border-radius: 9px;
+    padding: 8px;
+    margin-bottom: 7px;
+}
+
+.batch-queue-item:last-child {
+    margin-bottom: 0;
+}
+
+.batch-queue-index {
+    width: 20px;
+    height: 20px;
+    border-radius: 999px;
+    background: #2563eb;
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.batch-queue-item .queue-title {
+    font-size: 0.8rem;
+    color: #0f172a;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.batch-queue-item .queue-meta {
+    font-size: 0.74rem;
+    color: #64748b;
+}
+
+.batch-queue-remove {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.72rem;
+    cursor: pointer;
+}
+
+.batch-queue-remove:hover {
+    background: #fee2e2;
+}
+
+.batch-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.batch-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid #dbe3ee;
+    background: #ffffff;
+    font-size: 0.78rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+.batch-pill-highlight {
+    border-color: #bfdbfe;
+    background: #eff6ff;
+    color: #1d4ed8;
+}
+
+.batch-status {
+    min-height: 22px;
+    font-size: 0.81rem;
+    color: #334155;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+    padding: 7px 10px;
+}
+
+.batch-status.error { color: #b91c1c; }
+.batch-status.success { color: #166534; }
+
+@media (max-width: 768px) {
+    .batch-flow-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .batch-toolbar .btn,
+    .batch-main-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .batch-target-toolbar input {
+        flex-basis: 100%;
+    }
+
+    .batch-queue-list,
+    .batch-target-list {
+        max-height: 180px;
+    }
+}
+
+        /* Carrossel de imagens */
+        #imageCarouselModal {
+            background: rgba(15, 23, 42, 0.72);
+            backdrop-filter: blur(6px);
+            z-index: 2100;
+        }
+
+        #imageCarouselModal .modal-content.carousel-modal {
+            width: min(1120px, 96vw);
+            max-height: 94vh;
+            border-radius: 18px;
+            border: 1px solid #dbe3ee;
+            overflow: hidden;
+            background: #f8fafc;
+            box-shadow: 0 28px 90px rgba(2, 6, 23, 0.36);
+            display: flex;
+            flex-direction: column;
+        }
+
+        #imageCarouselModal .modal-header {
+            margin: 0;
+            padding: 14px 18px;
+            border-bottom: 1px solid #e2e8f0;
+            background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+        }
+
+        #imageCarouselModal .modal-header h2 {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        #imageCarouselModal .modal-body {
+            padding: 14px 18px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            min-height: 0;
+        }
+
+        .carousel-body {
+            display: grid;
+            grid-template-columns: 52px minmax(0, 1fr) 52px;
+            align-items: center;
+            gap: 10px;
+            min-height: 0;
+        }
+
+        .carousel-nav {
+            width: 44px;
+            height: 44px;
+            border-radius: 999px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #0f172a;
+            font-size: 1.45rem;
+            line-height: 1;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.12);
+            transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        }
+
+        .carousel-nav:hover:not(:disabled) {
+            background: #eff6ff;
+            transform: translateY(-1px);
+            box-shadow: 0 10px 26px rgba(15, 23, 42, 0.18);
+        }
+
+        .carousel-nav:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .carousel-image-wrapper {
+            min-height: min(68vh, 720px);
+            border-radius: 14px;
+            border: 1px solid #d5deea;
+            background:
+                radial-gradient(circle at 18% 12%, rgba(15, 23, 42, 0.2) 0, rgba(15, 23, 42, 0) 45%),
+                radial-gradient(circle at 85% 88%, rgba(30, 64, 175, 0.12) 0, rgba(30, 64, 175, 0) 45%),
+                #0b1220;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .carousel-image {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: min(64vh, 700px);
+            object-fit: contain;
+            border-radius: 10px;
+            background: #0f172a;
+            box-shadow: 0 18px 36px rgba(2, 6, 23, 0.35);
+        }
+
+        .carousel-empty {
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 18px;
+            border: 1px dashed rgba(148, 163, 184, 0.45);
+            border-radius: 10px;
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .carousel-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 8px 2px 0;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        #carouselCounter {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 76px;
+            padding: 6px 12px;
+            border-radius: 999px;
+            background: #e2e8f0;
+            color: #0f172a;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+
+        .carousel-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #carouselOpenLink {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #bfdbfe;
+            background: #dbeafe;
+            color: #1e40af;
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
+
+        #carouselOpenLink:hover {
+            background: #bfdbfe;
+            border-color: #93c5fd;
+        }
+
+        #imageCarouselModal .carousel-actions .btn-danger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #fecaca;
+            background: #fee2e2;
+            color: #991b1b;
+            font-size: 0.82rem;
+            font-weight: 600;
+        }
+
+        #imageCarouselModal .carousel-actions .btn-danger:hover {
+            background: #fecaca;
+            border-color: #fca5a5;
+        }
+
+        @media (max-width: 768px) {
+            #imageCarouselModal .modal-content.carousel-modal {
+                width: 98vw;
+                max-height: 96vh;
+                border-radius: 14px;
+            }
+
+            #imageCarouselModal .modal-body {
+                padding: 10px 10px 12px;
+                gap: 8px;
+            }
+
+            .carousel-body {
+                grid-template-columns: 44px minmax(0, 1fr) 44px;
+                gap: 6px;
+            }
+
+            .carousel-nav {
+                width: 38px;
+                height: 38px;
+                font-size: 1.2rem;
+            }
+
+            .carousel-image-wrapper {
+                min-height: min(62vh, 520px);
+                padding: 8px;
+            }
+
+            .carousel-image {
+                max-height: min(58vh, 500px);
+            }
+
+            .carousel-footer {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .carousel-actions {
+                width: 100%;
+                justify-content: flex-end;
+            }
+        }
+
+
+
     </style>
     <!-- <link rel="stylesheet" href="css/docs-app.css"> -->
         <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
@@ -1425,6 +2018,56 @@ textarea:focus {
             width: 100%;
         }
 
+        /* Estilos para a galeria de imagens moderna */
+        .image-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 16px;
+            background-color: var(--neutral-100);
+            border-radius: var(--radius-lg);
+        }
+
+        .gallery-item {
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-md);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .gallery-item .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px;
+            font-size: 0.8rem;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .gallery-item:hover .overlay {
+            opacity: 1;
+        }
+
+
         .event-images-preview > div {
             min-width: 0;
             width: 100%;
@@ -1460,63 +2103,6 @@ textarea:focus {
             overflow-wrap: anywhere;
         }
 
-        /* Carrossel de imagens */
-        .carousel-image-wrapper {
-            background: var(--neutral-50);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-lg);
-            min-height: 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .carousel-image {
-            width: 100%;
-            max-height: 60vh;
-            object-fit: contain;
-            border-radius: var(--radius-md);
-            box-shadow: var(--shadow-md);
-            background: white;
-        }
-
-        .modal-content.carousel-modal {
-            display: flex;
-            flex-direction: column;
-            max-height: 90vh;
-            overflow: hidden;
-        }
-
-        .modal-content.carousel-modal .modal-body {
-            display: flex;
-            flex-direction: column;
-            gap: var(--spacing-lg);
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-
-        .carousel-body {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-md);
-            flex: 1 1 auto;
-            min-height: 0;
-        }
-
-        .modal-content.carousel-modal .carousel-image-wrapper {
-            flex: 1 1 auto;
-            min-height: 0;
-            height: 100%;
-            overflow: hidden;
-        }
-
-        .modal-content.carousel-modal .carousel-image {
-            max-height: 100%;
-            max-width: 100%;
-            width: 100%;
-            height: auto;
-        }
 
         /* Spinner moderno */
         .spinner {
@@ -1791,6 +2377,8 @@ textarea:focus {
         </div>
     </div>
 
+    
+
     <!-- Modal Carrossel de Imagens do Evento -->
     <div class="modal" id="imageCarouselModal">
         <div class="modal-content carousel-modal">
@@ -1809,9 +2397,9 @@ textarea:focus {
                 </div>
                 <div class="carousel-footer">
                     <span id="carouselCounter"></span>
-                    <div style="display:flex; gap:8px; align-items:center;">
+                    <div class="carousel-actions">
                         <button type="button" class="btn btn-danger" onclick="deleteCurrentCarouselImage()">🗑️ Excluir imagem</button>
-                        <a id="carouselOpenLink" href="#" target="_blank" rel="noopener noreferrer">Abrir imagem no Drive</a>
+                        <a id="carouselOpenLink" href="#" target="_blank" rel="noopener noreferrer">Abrir imagem original</a>
                     </div>
                 </div>
             </div>
@@ -1845,6 +2433,11 @@ textarea:focus {
         let CURRENT_ASTRONOMER = null;
         let CURRENT_EVENT = null;
         let CURRENT_EVENT_IMAGES = [];
+        let CURRENT_EVENT_REMOTE_IMAGES = [];
+        let BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+        let BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
+        let BATCH_EVENT_FILTERED_IDS = [];
+        let BATCH_MANAGER_BUSY = false;
         let CAROUSEL_IMAGES = [];
         let CAROUSEL_INDEX = 0;
         let CAROUSEL_EVENT_ID = null;
@@ -3407,14 +4000,6 @@ textarea:focus {
                     </div>
                 `;
                 
-                // Botão "Ver Imagens" abre o carrossel em popup grande
-                const imgBtn = card.querySelector('.btn-imagens');
-                if (imgBtn) {
-                    imgBtn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        openImageCarouselForEvent(ev);
-                    });
-                }
                 const despBtn = card.querySelector('.btn-lancar-despesas');
                 if (despBtn) {
                     despBtn.addEventListener('click', async function(e){
@@ -3630,16 +4215,75 @@ textarea:focus {
                         </p>
                         <input type="file" id="inputImagens" accept="image/*" multiple style="display:none;">
                     </div>
+                    <h4 style="margin: 12px 0 6px; font-size: 0.9rem; color: #334155;">Pré-visualização para upload</h4>
+                    <div id="uploadImagesPreview" class="event-images-preview"></div>
+
+                    <h4 style="margin: 12px 0 6px; font-size: 0.9rem; color: #334155;">Imagens já vinculadas ao evento</h4>
                     <div id="eventImagesPreview" class="event-images-preview"></div>
                     <div style="margin-top: 12px; text-align: right;">
                         <button type="button" class="btn btn-success" id="btn-upload-imagens" onclick="enviarImagens('${CURRENT_EVENT.id_evento || CURRENT_EVENT.id_evento_unico || CURRENT_EVENT.id}')">
                             📤 Enviar Imagens
                         </button>
                     </div>
+
+                    <div class="event-image-batch-panel" id="eventImageBatchPanel">
+                        <div class="event-image-batch-head">
+                            <h4>Gerenciar imagens em lote</h4>
+                            <p class="hint">Selecione as miniaturas do evento para excluir várias de uma vez ou replicar as mesmas imagens para outros eventos.</p>
+                            <p class="hint">Isso facilita o envio quando o mesmo evento aparece separado por diária na agenda: você seleciona uma vez e vincula para todas as diárias correspondentes.</p>
+                            <p class="hint"><strong>Envio em fila:</strong> ao clicar em <strong>Enviar Imagens</strong>, se houver eventos selecionados, as imagens novas serão enviadas em base64 para cada ID da fila usando o payload padrão do add_img.</p>
+                        </div>
+
+                        <div class="batch-toolbar">
+                            <button type="button" class="btn btn-secondary" id="btn-batch-select-all-images" data-batch-control>Selecionar todas as imagens</button>
+                            <button type="button" class="btn btn-secondary" id="btn-batch-clear-images" data-batch-control>Limpar imagens selecionadas</button>
+                        </div>
+
+                        <div class="batch-summary">
+                            <span class="batch-pill" id="batchSelectedImagesCount">0 imagem(ns) selecionada(s)</span>
+                            <span class="batch-pill" id="batchSelectedEventsCount">0 evento(s) selecionado(s)</span>
+                            <span class="batch-pill batch-pill-highlight" id="batchQueueOpsCount">0 vínculo(s) / 0 envio(s)</span>
+                        </div>
+
+                        <div class="batch-flow-grid">
+                            <div class="batch-column">
+                                <div class="batch-column-title">1. Selecione os eventos de destino</div>
+                                <div class="batch-target-toolbar">
+                                    <input type="search" id="batchEventSearch" placeholder="Filtrar por ID, escola, cidade ou data" data-batch-control>
+                                    <button type="button" class="btn btn-secondary" id="btn-batch-select-all-events" data-batch-control>Marcar visíveis</button>
+                                    <button type="button" class="btn btn-secondary" id="btn-batch-clear-events" data-batch-control>Limpar</button>
+                                </div>
+                                <div id="batchTargetEventsList" class="batch-target-list"></div>
+                            </div>
+
+                            <div class="batch-column">
+                                <div class="batch-column-title">2. Fila de envio para o n8n</div>
+                                <div id="batchQueueList" class="batch-queue-list"></div>
+                            </div>
+                        </div>
+
+                        <div class="batch-main-actions">
+                            <button type="button" class="btn btn-danger" id="btn-batch-delete-images" data-batch-control>🗑️ Excluir imagens selecionadas</button>
+                            <button type="button" class="btn btn-primary" id="btn-batch-assign-images" data-batch-control>💾 Salvar fila e enviar ao n8n</button>
+                        </div>
+
+                        <div id="batchImageStatus" class="batch-status"></div>
+                    </div>
                 </div>
             `;
 
+            BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+            BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
+            BATCH_EVENT_FILTERED_IDS = [];
+            BATCH_MANAGER_BUSY = false;
             setupEventImagesArea();
+            setupBatchImageManagerArea();
+            const uploadPreview = document.getElementById('uploadImagesPreview');
+            if (uploadPreview) {
+                uploadPreview.className = 'event-images-preview';
+                uploadPreview.innerHTML = '<p style="color:#64748b; font-size:0.86rem;">Nenhuma imagem selecionada para upload.</p>';
+                setEventImagesPreviewLayout(uploadPreview, 0);
+            }
             // Carrega prévia de imagens existentes para o evento
             const preview = document.getElementById('eventImagesPreview');
             if (preview) {
@@ -3657,7 +4301,7 @@ textarea:focus {
         function setupEventImagesArea() {
             const dropzone = document.getElementById('eventImagesDropzone');
             const input = document.getElementById('inputImagens');
-            const preview = document.getElementById('eventImagesPreview');
+            const preview = document.getElementById('uploadImagesPreview');
             if (!dropzone || !input || !preview) return;
 
             dropzone.addEventListener('click', () => {
@@ -3733,6 +4377,493 @@ textarea:focus {
             });
         }
 
+        function getCurrentEventId() {
+            if (!CURRENT_EVENT) return '';
+            return String(CURRENT_EVENT.id_evento || CURRENT_EVENT.id_evento_unico || CURRENT_EVENT.id || '').trim();
+        }
+
+        function getRemoteImageKey(entry) {
+            if (!entry || typeof entry !== 'object') return '';
+            const row = entry.row ?? entry.row_number ?? entry.row_num ?? '';
+            const url = String(entry.url || entry.img || entry.imagem || entry.conteudo_base64 || '').trim();
+            if (!url) return '';
+            return `${String(row)}::${url}`;
+        }
+
+        function getSelectedRemoteImageEntries() {
+            if (!Array.isArray(CURRENT_EVENT_REMOTE_IMAGES) || !CURRENT_EVENT_REMOTE_IMAGES.length) return [];
+            return CURRENT_EVENT_REMOTE_IMAGES.filter(entry => {
+                const key = getRemoteImageKey(entry);
+                return key && BATCH_SELECTED_REMOTE_IMAGE_KEYS.has(key);
+            });
+        }
+
+        function syncBatchRemoteSelectionWithLoadedImages() {
+            const validKeys = new Set(
+                (CURRENT_EVENT_REMOTE_IMAGES || [])
+                    .map(getRemoteImageKey)
+                    .filter(Boolean)
+            );
+            const next = new Set();
+            BATCH_SELECTED_REMOTE_IMAGE_KEYS.forEach(key => {
+                if (validKeys.has(key)) next.add(key);
+            });
+            BATCH_SELECTED_REMOTE_IMAGE_KEYS = next;
+        }
+
+        function sortBatchEvents(a, b) {
+            const getRawDate = (ev) => ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || '';
+            const da = new Date(getRawDate(a));
+            const db = new Date(getRawDate(b));
+            const ta = Number.isNaN(da.getTime()) ? Number.POSITIVE_INFINITY : da.getTime();
+            const tb = Number.isNaN(db.getTime()) ? Number.POSITIVE_INFINITY : db.getTime();
+            if (ta !== tb) return ta - tb;
+            const ida = (getEventIdCandidates(a)[0] || '').toString();
+            const idb = (getEventIdCandidates(b)[0] || '').toString();
+            return ida.localeCompare(idb, 'pt-BR');
+        }
+
+        function getAssignableEventsForBatch() {
+            const byId = new Map();
+            const base = Array.isArray(EVENTOS) ? EVENTOS : [];
+            base.forEach(ev => {
+                const id = (getEventIdCandidates(ev)[0] || '').toString().trim();
+                if (!id || byId.has(id)) return;
+                byId.set(id, normalizeAgendaEvent(ev));
+            });
+            return Array.from(byId.values()).sort(sortBatchEvents);
+        }
+
+        function setBatchStatus(message, type = '') {
+            const statusEl = document.getElementById('batchImageStatus');
+            if (!statusEl) return;
+            statusEl.textContent = message || '';
+            statusEl.className = `batch-status${type ? ` ${type}` : ''}`;
+        }
+
+        function setBatchManagerBusy(isBusy, message = '', statusType = '') {
+            BATCH_MANAGER_BUSY = !!isBusy;
+            document.querySelectorAll('[data-batch-control]').forEach(el => {
+                if ('disabled' in el) el.disabled = BATCH_MANAGER_BUSY;
+            });
+            document.querySelectorAll('#batchTargetEventsList input[type="checkbox"]').forEach(el => {
+                el.disabled = BATCH_MANAGER_BUSY;
+            });
+            document.querySelectorAll('#eventImagesPreview .gallery-select-toggle input[type="checkbox"]').forEach(el => {
+                el.disabled = BATCH_MANAGER_BUSY;
+            });
+            document.querySelectorAll('.batch-queue-remove').forEach(el => {
+                el.disabled = BATCH_MANAGER_BUSY;
+            });
+            if (message) setBatchStatus(message, statusType);
+        }
+
+        function updateBatchSelectionSummary() {
+            const selectedImages = getSelectedRemoteImageEntries().length;
+            const selectedEvents = BATCH_SELECTED_TARGET_EVENT_IDS.size;
+            const selectedUploadImages = Array.isArray(CURRENT_EVENT_IMAGES) ? CURRENT_EVENT_IMAGES.length : 0;
+            const linkOps = selectedImages * selectedEvents;
+            const sendOps = selectedUploadImages * selectedEvents;
+            const selectedImagesEl = document.getElementById('batchSelectedImagesCount');
+            const selectedEventsEl = document.getElementById('batchSelectedEventsCount');
+            const queueOpsEl = document.getElementById('batchQueueOpsCount');
+            const deleteBtn = document.getElementById('btn-batch-delete-images');
+            const assignBtn = document.getElementById('btn-batch-assign-images');
+
+            if (selectedImagesEl) {
+                selectedImagesEl.textContent = `${selectedImages} imagem(ns) selecionada(s)`;
+            }
+            if (selectedEventsEl) {
+                selectedEventsEl.textContent = `${selectedEvents} evento(s) selecionado(s)`;
+            }
+            if (queueOpsEl) {
+                queueOpsEl.textContent = `${linkOps} vínculo(s) / ${sendOps} envio(s)`;
+            }
+            if (deleteBtn) deleteBtn.disabled = BATCH_MANAGER_BUSY || selectedImages === 0;
+            if (assignBtn) assignBtn.disabled = BATCH_MANAGER_BUSY || selectedImages === 0 || selectedEvents === 0;
+            renderBatchQueueList();
+        }
+
+        function renderBatchTargetEventsList(searchTerm = '') {
+            const listEl = document.getElementById('batchTargetEventsList');
+            if (!listEl) return;
+
+            const term = normalizeSearchText(searchTerm || '');
+            const currentId = getCurrentEventId();
+            const eventos = getAssignableEventsForBatch();
+
+            const filtered = eventos.filter(ev => {
+                if (!term) return true;
+                const id = (getEventIdCandidates(ev)[0] || '').toString();
+                const escola = cleanText(ev.nome_da_escola || ev.escola || ev.nome_lead || '');
+                const cidade = cleanText(ev.cidade || ev.cidade_destino || '');
+                const data = formatarData(ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data);
+                const haystack = normalizeSearchText(`${id} ${escola} ${cidade} ${data}`);
+                return haystack.includes(term);
+            });
+
+            BATCH_EVENT_FILTERED_IDS = filtered
+                .map(ev => (getEventIdCandidates(ev)[0] || '').toString().trim())
+                .filter(Boolean);
+
+            listEl.innerHTML = '';
+            if (!filtered.length) {
+                listEl.innerHTML = '<div class="batch-queue-empty">Nenhum evento encontrado para o filtro atual.</div>';
+                updateBatchSelectionSummary();
+                return;
+            }
+
+            filtered.forEach(ev => {
+                const eventId = (getEventIdCandidates(ev)[0] || '').toString().trim();
+                if (!eventId) return;
+
+                const option = document.createElement('label');
+                option.className = `batch-target-option${eventId === currentId ? ' current-event' : ''}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.dataset.eventId = eventId;
+                checkbox.checked = BATCH_SELECTED_TARGET_EVENT_IDS.has(eventId);
+                checkbox.disabled = BATCH_MANAGER_BUSY;
+
+                const info = document.createElement('div');
+                const escola = cleanText(ev.nome_da_escola || ev.escola || ev.nome_lead || 'Escola não informada');
+                const cidade = cleanText(ev.cidade || ev.cidade_destino || 'Cidade não informada');
+                const data = formatarData(ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data);
+
+                const title = document.createElement('div');
+                title.className = 'title';
+                title.textContent = `ID ${eventId} · ${escola}`;
+
+                const meta = document.createElement('div');
+                meta.className = 'meta';
+                meta.textContent = `${data} · ${cidade}${eventId === currentId ? ' · evento atual' : ''}`;
+
+                info.appendChild(title);
+                info.appendChild(meta);
+                option.appendChild(checkbox);
+                option.appendChild(info);
+                listEl.appendChild(option);
+            });
+
+            updateBatchSelectionSummary();
+        }
+
+        function renderBatchQueueList() {
+            const queueEl = document.getElementById('batchQueueList');
+            if (!queueEl) return;
+
+            const eventMap = new Map();
+            getAssignableEventsForBatch().forEach(ev => {
+                const id = (getEventIdCandidates(ev)[0] || '').toString().trim();
+                if (!id || eventMap.has(id)) return;
+                eventMap.set(id, ev);
+            });
+
+            const queueIds = Array.from(BATCH_SELECTED_TARGET_EVENT_IDS)
+                .map(id => String(id).trim())
+                .filter(Boolean);
+
+            queueEl.innerHTML = '';
+            if (!queueIds.length) {
+                queueEl.innerHTML = '<div class="batch-queue-empty">A fila está vazia. Selecione eventos à esquerda para montar o envio em lote.</div>';
+                return;
+            }
+
+            queueIds.forEach((eventId, index) => {
+                const ev = eventMap.get(eventId);
+                const escola = cleanText((ev && (ev.nome_da_escola || ev.escola || ev.nome_lead)) || 'Evento');
+                const cidade = cleanText((ev && (ev.cidade || ev.cidade_destino)) || 'Cidade não informada');
+                const data = formatarData(ev && (ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data));
+
+                const row = document.createElement('div');
+                row.className = 'batch-queue-item';
+
+                const idx = document.createElement('span');
+                idx.className = 'batch-queue-index';
+                idx.textContent = String(index + 1);
+
+                const info = document.createElement('div');
+                const title = document.createElement('div');
+                title.className = 'queue-title';
+                title.textContent = `ID ${eventId} · ${escola}`;
+                const meta = document.createElement('div');
+                meta.className = 'queue-meta';
+                meta.textContent = `${data} · ${cidade}`;
+                info.appendChild(title);
+                info.appendChild(meta);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = 'button';
+                removeBtn.className = 'batch-queue-remove';
+                removeBtn.dataset.removeEventId = eventId;
+                removeBtn.textContent = 'Remover';
+                removeBtn.disabled = BATCH_MANAGER_BUSY;
+
+                row.appendChild(idx);
+                row.appendChild(info);
+                row.appendChild(removeBtn);
+                queueEl.appendChild(row);
+            });
+        }
+
+        function setupBatchImageManagerArea() {
+            const searchInput = document.getElementById('batchEventSearch');
+            const targetList = document.getElementById('batchTargetEventsList');
+            const queueList = document.getElementById('batchQueueList');
+            const selectAllImagesBtn = document.getElementById('btn-batch-select-all-images');
+            const clearImagesBtn = document.getElementById('btn-batch-clear-images');
+            const selectAllEventsBtn = document.getElementById('btn-batch-select-all-events');
+            const clearEventsBtn = document.getElementById('btn-batch-clear-events');
+            const deleteBtn = document.getElementById('btn-batch-delete-images');
+            const assignBtn = document.getElementById('btn-batch-assign-images');
+
+            if (selectAllImagesBtn) {
+                selectAllImagesBtn.addEventListener('click', () => {
+                    const keys = (CURRENT_EVENT_REMOTE_IMAGES || [])
+                        .map(getRemoteImageKey)
+                        .filter(Boolean);
+                    BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set(keys);
+                    renderMiniaturasEvento(CURRENT_EVENT_REMOTE_IMAGES || []);
+                    updateBatchSelectionSummary();
+                });
+            }
+
+            if (clearImagesBtn) {
+                clearImagesBtn.addEventListener('click', () => {
+                    BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+                    renderMiniaturasEvento(CURRENT_EVENT_REMOTE_IMAGES || []);
+                    updateBatchSelectionSummary();
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('input', () => {
+                    renderBatchTargetEventsList(searchInput.value || '');
+                });
+            }
+
+            if (selectAllEventsBtn) {
+                selectAllEventsBtn.addEventListener('click', () => {
+                    (BATCH_EVENT_FILTERED_IDS || []).forEach(id => {
+                        if (id) BATCH_SELECTED_TARGET_EVENT_IDS.add(String(id));
+                    });
+                    renderBatchTargetEventsList(searchInput ? searchInput.value : '');
+                });
+            }
+
+            if (clearEventsBtn) {
+                clearEventsBtn.addEventListener('click', () => {
+                    BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
+                    renderBatchTargetEventsList(searchInput ? searchInput.value : '');
+                });
+            }
+
+            if (targetList) {
+                targetList.addEventListener('change', (e) => {
+                    const target = e.target;
+                    if (!target || target.tagName !== 'INPUT' || target.type !== 'checkbox') return;
+                    const eventId = String(target.dataset.eventId || '').trim();
+                    if (!eventId) return;
+                    if (target.checked) BATCH_SELECTED_TARGET_EVENT_IDS.add(eventId);
+                    else BATCH_SELECTED_TARGET_EVENT_IDS.delete(eventId);
+                    updateBatchSelectionSummary();
+                });
+            }
+
+            if (queueList) {
+                queueList.addEventListener('click', (e) => {
+                    const btn = e.target && e.target.closest ? e.target.closest('[data-remove-event-id]') : null;
+                    if (!btn) return;
+                    const eventId = String(btn.dataset.removeEventId || '').trim();
+                    if (!eventId) return;
+                    BATCH_SELECTED_TARGET_EVENT_IDS.delete(eventId);
+                    renderBatchTargetEventsList(searchInput ? searchInput.value : '');
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', deleteSelectedEventImagesBatch);
+            }
+            if (assignBtn) {
+                assignBtn.addEventListener('click', assignSelectedImagesToBatchEvents);
+            }
+
+            setBatchStatus('');
+            renderBatchTargetEventsList('');
+            renderBatchQueueList();
+            updateBatchSelectionSummary();
+        }
+
+        async function deleteSelectedEventImagesBatch() {
+            const eventId = getCurrentEventId();
+            const selectedEntries = getSelectedRemoteImageEntries();
+
+            if (!eventId) {
+                toast('ID do evento atual não encontrado.', 'error');
+                return;
+            }
+            if (!selectedEntries.length) {
+                toast('Selecione ao menos uma imagem para excluir.', 'warning');
+                return;
+            }
+
+            const confirmed = window.confirm(`Excluir ${selectedEntries.length} imagem(ns) deste evento?`);
+            if (!confirmed) return;
+
+            setBatchManagerBusy(true, 'Iniciando exclusão em lote...');
+            let okCount = 0;
+            let failCount = 0;
+
+            try {
+                for (let i = 0; i < selectedEntries.length; i++) {
+                    const entry = selectedEntries[i];
+                    const conteudo = String(entry.url || '').trim();
+                    if (!conteudo) {
+                        failCount++;
+                        continue;
+                    }
+
+                    setBatchStatus(`Excluindo ${i + 1}/${selectedEntries.length}...`);
+
+                    const formData = new FormData();
+                    formData.append('action', 'delete_img');
+                    formData.append('id_evento', String(eventId));
+                    formData.append('id_evento_unico', String(eventId));
+                    formData.append('conteudo_base64', conteudo);
+                    formData.append('img', conteudo);
+                    formData.append('url', conteudo);
+
+                    try {
+                        await callAstroApi('delete_img', formData);
+                        okCount++;
+                    } catch (err) {
+                        failCount++;
+                        console.warn(`Falha ao excluir imagem em lote (${i + 1})`, err);
+                    }
+                }
+
+                await carregarImagensEvento(eventId);
+                setBatchStatus(`Exclusão concluída: ${okCount} sucesso(s), ${failCount} falha(s).`, failCount ? 'error' : 'success');
+                toast(`Exclusão em lote finalizada: ${okCount} sucesso(s), ${failCount} falha(s).`, failCount ? 'warning' : 'success');
+            } finally {
+                setBatchManagerBusy(false);
+                updateBatchSelectionSummary();
+            }
+        }
+
+        function blobToDataUrl(blob) {
+            return new Promise((resolve, reject) => {
+                if (!blob) {
+                    reject(new Error('Blob inválido.'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => resolve(typeof reader.result === 'string' ? reader.result : '');
+                reader.onerror = () => reject(new Error('Falha ao converter blob em base64.'));
+                reader.readAsDataURL(blob);
+            });
+        }
+
+        async function ensureImageBase64Content(rawValue) {
+            const value = String(rawValue || '').trim();
+            if (!value) throw new Error('Conteúdo da imagem vazio.');
+            if (value.startsWith('data:image/')) return value;
+
+            if (value.startsWith('http://') || value.startsWith('https://')) {
+                const resp = await fetch(value);
+                if (!resp.ok) throw new Error(`Não foi possível baixar imagem (${resp.status}).`);
+                const blob = await resp.blob();
+                const dataUrl = await blobToDataUrl(blob);
+                if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+                    throw new Error('Imagem convertida em formato inválido.');
+                }
+                return dataUrl;
+            }
+            return value;
+        }
+
+        async function assignSelectedImagesToBatchEvents() {
+            const selectedEntries = getSelectedRemoteImageEntries();
+            const targetEventIds = Array.from(BATCH_SELECTED_TARGET_EVENT_IDS).filter(Boolean);
+
+            if (!selectedEntries.length) {
+                toast('Selecione ao menos uma imagem para vincular.', 'warning');
+                return;
+            }
+            if (!targetEventIds.length) {
+                toast('Selecione ao menos um evento de destino.', 'warning');
+                return;
+            }
+
+            const totalOps = selectedEntries.length * targetEventIds.length;
+            const confirmed = window.confirm(`Vincular ${selectedEntries.length} imagem(ns) em ${targetEventIds.length} evento(s)? Total de ${totalOps} envio(s).`);
+            if (!confirmed) return;
+
+            setBatchManagerBusy(true, 'Preparando imagens para vínculo em lote...');
+            let okCount = 0;
+            let failCount = 0;
+            let opIndex = 0;
+
+            try {
+                const imagePayloads = [];
+                for (let i = 0; i < selectedEntries.length; i++) {
+                    const entry = selectedEntries[i];
+                    const name = String(entry.name || `imagem_${i + 1}.jpg`).trim() || `imagem_${i + 1}.jpg`;
+                    try {
+                        const base64 = await ensureImageBase64Content(entry.url);
+                        imagePayloads.push({ base64, name });
+                    } catch (err) {
+                        failCount += targetEventIds.length;
+                        console.warn('Falha ao preparar imagem para vínculo em lote:', err);
+                    }
+                }
+
+                if (!imagePayloads.length) {
+                    throw new Error('Nenhuma imagem válida foi preparada para vincular.');
+                }
+
+                for (const targetId of targetEventIds) {
+                    for (const payload of imagePayloads) {
+                        opIndex++;
+                        setBatchStatus(`Vinculando ${opIndex}/${totalOps}...`);
+                        const formData = new FormData();
+                        formData.append('action', 'add_img');
+                        formData.append('id_evento', String(targetId));
+                        formData.append('id_evento_unico', String(targetId));
+                        formData.append('conteudo_base64', payload.base64);
+                        formData.append('nome_arquivo', payload.name);
+                        formData.append('img', payload.base64);
+                        formData.append('imagem', payload.base64);
+                        formData.append('url', payload.base64);
+
+                        try {
+                            await callAstroApi('add_img', formData);
+                            okCount++;
+                        } catch (err) {
+                            failCount++;
+                            console.warn(`Falha ao vincular imagem no evento ${targetId}`, err);
+                        }
+                    }
+                }
+
+                const currentId = getCurrentEventId();
+                if (currentId && targetEventIds.includes(currentId)) {
+                    await carregarImagensEvento(currentId);
+                }
+
+                setBatchStatus(`Vínculo concluído: ${okCount} sucesso(s), ${failCount} falha(s).`, failCount ? 'error' : 'success');
+                toast(`Vínculo em lote finalizado: ${okCount} sucesso(s), ${failCount} falha(s).`, failCount ? 'warning' : 'success');
+            } catch (error) {
+                console.error('Erro no vínculo em lote:', error);
+                setBatchStatus(`Erro no vínculo em lote: ${error.message}`, 'error');
+                toast(`Erro no vínculo em lote: ${error.message}`, 'error');
+            } finally {
+                setBatchManagerBusy(false);
+                updateBatchSelectionSummary();
+            }
+        }
+
         function setEventImagesPreviewLayout(previewEl, count) {
             if (!previewEl) return;
             previewEl.classList.toggle('event-images-preview--single', count === 1);
@@ -3774,13 +4905,17 @@ textarea:focus {
             }
 
             previewEl.innerHTML = '';
-            CURRENT_EVENT_IMAGES.forEach(file => {
-                const url = URL.createObjectURL(file);
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = file.name || 'Imagem do evento';
-                img.className = 'event-image-thumb';
-                previewEl.appendChild(img);
+            previewEl.className = 'image-gallery'; // Use the new gallery class
+
+            CURRENT_EVENT_IMAGES.forEach((file) => {
+                const galleryItem = document.createElement('div');
+                galleryItem.className = 'gallery-item';
+
+                const thumb = document.createElement('img');
+                thumb.src = URL.createObjectURL(file);
+                
+                galleryItem.appendChild(thumb);
+                previewEl.appendChild(galleryItem);
             });
             setEventImagesPreviewLayout(previewEl, CURRENT_EVENT_IMAGES.length);
         }
@@ -3789,6 +4924,12 @@ textarea:focus {
             const modal = document.getElementById('eventModal');
             if (modal) modal.style.display = 'none';
             CURRENT_EVENT = null;
+            CURRENT_EVENT_IMAGES = [];
+            CURRENT_EVENT_REMOTE_IMAGES = [];
+            BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+            BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
+            BATCH_EVENT_FILTERED_IDS = [];
+            BATCH_MANAGER_BUSY = false;
         }
 
         function formatarData(dataString) {
@@ -4032,9 +5173,25 @@ textarea:focus {
 
             // Fechar modal clicando fora
             window.onclick = function(event) {
-                const modal = document.getElementById('astronomerModal');
-                if (event.target === modal) {
+                const astronomerModal = document.getElementById('astronomerModal');
+                const bulkModal = document.getElementById('bulkEditModal');
+                const eventModal = document.getElementById('eventModal');
+                const carouselModal = document.getElementById('imageCarouselModal');
+
+                if (event.target === astronomerModal) {
                     closeModal();
+                    return;
+                }
+                if (event.target === bulkModal) {
+                    closeBulkModal();
+                    return;
+                }
+                if (event.target === eventModal) {
+                    closeEventModal();
+                    return;
+                }
+                if (event.target === carouselModal) {
+                    closeCarouselModal();
                 }
             }
 
@@ -4081,11 +5238,13 @@ textarea:focus {
             setStatus('astronomos', 'Pronto. Use "Atualizar Astrônomos" ou "Atualizar Agenda" para buscar dados.', 'info');
         });
 
-        // Busca e normaliza links de imagens de um evento no backend
         async function obterLinksImagensEvento(id_evento) {
+            if (!id_evento) return [];
+
             const formData = new FormData();
             formData.append('action', 'get_img');
-            formData.append('id_evento', id_evento);
+            formData.append('id_evento', String(id_evento));
+            formData.append('id_evento_unico', String(id_evento));
 
             const response = await fetch(API_ASTRO_BASE, {
                 method: 'POST',
@@ -4093,312 +5252,245 @@ textarea:focus {
             });
 
             const bodyText = await response.text().catch(() => '');
-
             if (!response.ok) {
-                console.error('Erro ao buscar imagens:', response.status, bodyText);
-                throw new Error('Erro ao buscar imagens do evento');
+                throw new Error(bodyText || `HTTP ${response.status}`);
             }
 
-            let entries = [];
+            const isImageUrl = (value) => {
+                const url = String(value || '').trim();
+                return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/');
+            };
+
+            const entries = [];
+            const pushEntry = (url, name, row) => {
+                if (!isImageUrl(url)) return;
+                entries.push({
+                    url: String(url).trim(),
+                    name: String(name || '').trim(),
+                    row: row == null ? null : row
+                });
+            };
+
+            const parseObject = (obj) => {
+                if (!obj || typeof obj !== 'object') return;
+
+                const directUrl = obj.url || obj.img || obj.imagem || obj.conteudo_base64;
+                if (isImageUrl(directUrl)) {
+                    pushEntry(
+                        directUrl,
+                        obj.name || obj.nome || '',
+                        obj.row_number ?? obj.row ?? obj.row_num ?? null
+                    );
+                }
+            };
+
             try {
                 const data = bodyText ? JSON.parse(bodyText) : null;
-                // Caso mais comum: array de objetos { row_number, name, img, id_evento }
-                if (Array.isArray(data) && data.length && data[0] && typeof data[0] === 'object' && ('img' in data[0])) {
-                    entries = data
-                        .map(item => {
-                            if (!item || typeof item.img !== 'string') return null;
-                            const url = item.img.trim();
-                            if (!url || !url.startsWith('http')) return null;
-                            const name = (item.name || '').toString().trim();
-                            const row = item.row_number != null ? Number(item.row_number) : null;
-                            return { url, name, row };
-                        })
-                        .filter(x => !!x);
-                } else if (data && Array.isArray(data.links)) {
-                    entries = data.links
-                        .map(u => {
-                            const url = String(u || '').trim();
-                            if (!url || !url.startsWith('http')) return null;
-                            return { url, name: '', row: null };
-                        })
-                        .filter(x => !!x);
-                } else if (data && Array.isArray(data.data)) {
-                    entries = data.data
-                        .map(u => {
-                            const url = String(u || '').trim();
-                            if (!url || !url.startsWith('http')) return null;
-                            return { url, name: '', row: null };
-                        })
-                        .filter(x => !!x);
-                } else if (data && typeof data === 'object') {
-                    Object.values(data).forEach(v => {
-                        if (typeof v === 'string' && v.startsWith('http')) {
-                            entries.push({ url: v, name: '', row: null });
-                        } else if (Array.isArray(v)) {
-                            v.forEach(inner => {
-                                if (typeof inner === 'string' && inner.startsWith('http')) {
-                                    entries.push({ url: inner, name: '', row: null });
-                                }
-                            });
+
+                if (Array.isArray(data)) {
+                    data.forEach(item => {
+                        if (typeof item === 'string') {
+                            pushEntry(item, '', null);
+                            return;
                         }
+                        parseObject(item);
                     });
+                } else if (data && typeof data === 'object') {
+                    parseObject(data);
+                    if (Array.isArray(data.links)) {
+                        data.links.forEach(url => pushEntry(url, '', null));
+                    }
+                    if (Array.isArray(data.data)) {
+                        data.data.forEach(item => {
+                            if (typeof item === 'string') {
+                                pushEntry(item, '', null);
+                                return;
+                            }
+                            parseObject(item);
+                        });
+                    }
+                } else if (typeof data === 'string') {
+                    pushEntry(data, '', null);
                 }
             } catch (_) {
-                // Fallback: extrai qualquer URL do texto bruto
-                const regex = /(https?:\/\/[^\s"']+)/g;
+                const regex = /(https?:\/\/[^\s"']+|data:image\/[^\s"']+)/g;
                 let match;
                 while ((match = regex.exec(bodyText)) !== null) {
-                    const url = match[1];
-                    if (url && url.startsWith('http')) {
-                        entries.push({ url, name: '', row: null });
-                    }
+                    pushEntry(match[1], '', null);
                 }
             }
 
-            // Normaliza e remove duplicados por URL
             const seen = new Set();
-            entries = entries.filter(e => {
-                const key = e && e.url ? String(e.url) : '';
-                if (!key) return false;
-                if (seen.has(key)) return false;
+            return entries.filter(entry => {
+                const key = entry && entry.url ? entry.url : '';
+                if (!key || seen.has(key)) return false;
                 seen.add(key);
                 return true;
             });
-
-            return entries;
         }
 
-        function buildPreviewEntry(entry, id_evento){
-            const url = entry.url;
-            const name = entry.name || '';
-            const row = entry.row;
-            const wrapper = document.createElement('div');
-            wrapper.style.display = 'flex';
-            wrapper.style.flexDirection = 'column';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.gap = '4px';
-            wrapper.dataset.entryName = name;
-            wrapper.dataset.entryUrl = url;
+        function renderMiniaturasEvento(entries) {
+            const preview = document.getElementById('eventImagesPreview');
+            if (!preview) return;
 
-            const img = document.createElement('img');
-            img.src = url;
-            img.alt = name || 'Imagem do evento';
-            img.className = 'event-image-thumb';
-            img.loading = 'lazy';
-            img.decoding = 'async';
-            img.addEventListener('error', () => {
-                console.error('Falha ao carregar imagem do evento:', url);
+            if (!Array.isArray(entries) || !entries.length) {
+                preview.className = 'event-images-preview';
+                preview.innerHTML = '<p style="color:#555; font-size:0.9rem;">Nenhuma imagem encontrada para este evento.</p>';
+                setEventImagesPreviewLayout(preview, 0);
+                BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+                updateBatchSelectionSummary();
+                return;
+            }
+
+            preview.innerHTML = '';
+            preview.className = 'image-gallery';
+
+            entries.forEach((entry, index) => {
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                const imageKey = getRemoteImageKey(entry);
+                const checked = imageKey && BATCH_SELECTED_REMOTE_IMAGE_KEYS.has(imageKey);
+                if (checked) item.classList.add('selected-for-batch');
+
+                const img = document.createElement('img');
+                img.src = entry.url;
+                img.alt = entry.name || `Imagem ${index + 1}`;
+                img.loading = 'lazy';
+                img.decoding = 'async';
+
+                const selectToggle = document.createElement('label');
+                selectToggle.className = 'gallery-select-toggle';
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = !!checked;
+                checkbox.disabled = BATCH_MANAGER_BUSY;
+                checkbox.addEventListener('click', (event) => {
+                    event.stopPropagation();
+                });
+                checkbox.addEventListener('change', (event) => {
+                    event.stopPropagation();
+                    if (!imageKey) return;
+                    if (checkbox.checked) BATCH_SELECTED_REMOTE_IMAGE_KEYS.add(imageKey);
+                    else BATCH_SELECTED_REMOTE_IMAGE_KEYS.delete(imageKey);
+                    item.classList.toggle('selected-for-batch', checkbox.checked);
+                    updateBatchSelectionSummary();
+                });
+                selectToggle.appendChild(checkbox);
+
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.textContent = `Imagem ${index + 1}`;
+
+                item.appendChild(img);
+                item.appendChild(selectToggle);
+                item.appendChild(overlay);
+                item.addEventListener('click', () => {
+                    openCarouselModal(entries, index);
+                });
+                preview.appendChild(item);
             });
 
-            const linkEl = document.createElement('a');
-            linkEl.href = url;
-            linkEl.target = '_blank';
-            linkEl.rel = 'noopener noreferrer';
-            linkEl.textContent = 'Abrir imagem em nova aba';
-            linkEl.style.fontSize = '0.8rem';
-
-            const delBtn = document.createElement('button');
-            delBtn.type = 'button';
-            delBtn.className = 'btn btn-danger';
-            delBtn.textContent = '🗑️ Excluir';
-            delBtn.style.fontSize = '0.8rem';
-            delBtn.addEventListener('click', async () => {
-                await deleteImagemEvento(url || name, id_evento, row, wrapper, delBtn);
-            });
-
-            wrapper.appendChild(img);
-            wrapper.appendChild(linkEl);
-            wrapper.appendChild(delBtn);
-            return wrapper;
+            setEventImagesPreviewLayout(preview, entries.length);
+            updateBatchSelectionSummary();
         }
 
-        // Função para carregar imagens já enviadas (links do Drive) para um evento
         async function carregarImagensEvento(id_evento) {
-            try {
-                const preview = document.getElementById('eventImagesPreview');
-                if (!preview) return;
-
+            const preview = document.getElementById('eventImagesPreview');
+            if (preview) {
+                preview.className = 'event-images-preview';
                 preview.innerHTML = '<p style="color:#555; font-size:0.9rem;">Carregando imagens do evento...</p>';
                 setEventImagesPreviewLayout(preview, 0);
-
-                const entries = await obterLinksImagensEvento(id_evento);
-
-                if (!entries.length) {
-                    preview.innerHTML = '<p style="color:#555; font-size:0.9rem;">Nenhuma imagem encontrada para este evento.</p>';
-                    setEventImagesPreviewLayout(preview, 0);
-                    return;
-                }
-
-                preview.innerHTML = '';
-                entries.forEach(entry => {
-                    const wrapper = buildPreviewEntry(entry, id_evento);
-                    preview.appendChild(wrapper);
-                });
-                setEventImagesPreviewLayout(preview, entries.length);
-
-                try { toast(`${entries.length} imagem(ns) carregadas`, 'success'); } catch (_) {}
-            } catch (error) {
-                console.error('Erro inesperado ao carregar imagens do evento:', error);
-                const preview = document.getElementById('eventImagesPreview');
-                if (preview) {
-                    preview.innerHTML = '<p style="color:#a00; font-size:0.9rem;">Erro inesperado ao carregar imagens do evento.</p>';
-                    setEventImagesPreviewLayout(preview, 0);
-                }
-                try { toast('Erro inesperado ao carregar imagens do evento', 'error'); } catch (_) {}
             }
-        }
 
-        // Função para enviar imagens do evento
-        async function enviarImagens(id_evento) {
             try {
-                const input = document.getElementById('inputImagens');
-                if (!input) {
-                    console.error('Input de imagens "inputImagens" não encontrado.');
-                    return;
-                }
-                const preview = document.getElementById('eventImagesPreview');
-                const uploadBtn = document.getElementById('btn-upload-imagens');
-
-                // Usa primeiro o que está na prévia (drag & drop ou seleção),
-                // e se estiver vazio, cai para o input diretamente.
-                let files = Array.isArray(CURRENT_EVENT_IMAGES) ? CURRENT_EVENT_IMAGES : [];
-                if (!files.length) {
-                    files = Array.from(input.files || []);
-                }
-
-                if (!files.length) {
-                    console.warn('Nenhuma imagem selecionada em "inputImagens" / preview.');
-                    return;
-                }
-
-                console.log('Imagens que serão enviadas:', files.map(f => f.name));
-
-                if (uploadBtn) {
-                    uploadBtn.disabled = true;
-                    uploadBtn.dataset.prevLabel = uploadBtn.innerHTML;
-                    uploadBtn.innerHTML = 'Enviando...';
-                }
+                const entries = await obterLinksImagensEvento(id_evento);
+                CURRENT_EVENT_REMOTE_IMAGES = Array.isArray(entries) ? entries : [];
+                syncBatchRemoteSelectionWithLoadedImages();
+                renderMiniaturasEvento(CURRENT_EVENT_REMOTE_IMAGES);
+                renderBatchTargetEventsList(document.getElementById('batchEventSearch')?.value || '');
+            } catch (error) {
+                console.error('Erro ao carregar imagens do evento:', error);
+                CURRENT_EVENT_REMOTE_IMAGES = [];
+                BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
                 if (preview) {
-                    preview.innerHTML = '<p style="color:#555; font-size:0.9rem;">Enviando imagens, aguarde...</p>';
+                    preview.className = 'event-images-preview';
+                    preview.innerHTML = '<p style="color:#a00; font-size:0.9rem;">Erro ao carregar imagens do evento.</p>';
                     setEventImagesPreviewLayout(preview, 0);
                 }
-
-                const formData = new FormData();
-                formData.append('action', 'add_img');
-                formData.append('id_evento', id_evento);
-
-                const maxFiles = Math.min(files.length, 10);
-                for (let i = 0; i < maxFiles; i++) {
-                    formData.append(`img${i + 1}`, files[i]);
-                }
-
-                const response = await fetch(API_ASTRO_BASE, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                const bodyText = await response.text().catch(() => '');
-                console.log('Resposta do envio de imagens:', {
-                    ok: response.ok,
-                    status: response.status,
-                    body: bodyText
-                });
-
-                try{
-                    const data = bodyText ? JSON.parse(bodyText) : null;
-                    if (data && typeof data === 'object') {
-                        const entries = [];
-                        // Caso do payload único informado
-                        if (data.imagem && typeof data.imagem === 'string' && data.imagem.startsWith('http')) {
-                            entries.push({ url: data.imagem, name: data.name || '', row: data.row_number ?? data.row ?? null });
-                        }
-                        // Caso de objeto com campos "img" e "name"
-                        if (data.img && typeof data.img === 'string' && data.img.startsWith('http')) {
-                            entries.push({ url: data.img, name: data.name || '', row: data.row_number ?? data.row ?? null });
-                        }
-                        // Caso de lista em data.links ou data.data
-                        const addFromArray = (arr) => {
-                            (arr || []).forEach(u => {
-                                const url = String(u || '').trim();
-                                if (url && url.startsWith('http')) entries.push({ url, name: '', row: null });
-                            });
-                        };
-                        if (Array.isArray(data.links)) addFromArray(data.links);
-                        if (Array.isArray(data.data)) addFromArray(data.data);
-
-                        if (preview) {
-                            preview.innerHTML = '';
-                            if (entries.length) {
-                                entries.forEach(entry => {
-                                    const wrapper = buildPreviewEntry(entry, id_evento);
-                                    preview.appendChild(wrapper);
-                                });
-                                setEventImagesPreviewLayout(preview, entries.length);
-                            } else {
-                                await carregarImagensEvento(id_evento);
-                            }
-                        }
-                    }
-                }catch(err){
-                    console.warn('Não foi possível interpretar resposta das imagens:', err);
-                    await carregarImagensEvento(id_evento);
-                }
-            } catch (error) {
-                console.error('Erro ao enviar imagens:', error);
-            } finally {
-                const uploadBtn = document.getElementById('btn-upload-imagens');
-                if (uploadBtn) {
-                    uploadBtn.disabled = false;
-                    uploadBtn.innerHTML = uploadBtn.dataset.prevLabel || '📤 Enviar Imagens';
-                }
+                updateBatchSelectionSummary();
             }
         }
 
-        // ===== Carrossel de imagens em popup grande =====
+        function normalizeCarouselEntries(items) {
+            if (!Array.isArray(items)) return [];
+            return items
+                .map(item => {
+                    if (!item || typeof item !== 'object') return null;
+                    const url = item.url || item.img || item.imagem || item.conteudo_base64;
+                    const normalizedUrl = String(url || '').trim();
+                    if (!normalizedUrl || (!normalizedUrl.startsWith('http') && !normalizedUrl.startsWith('data:image/'))) {
+                        return null;
+                    }
+                    return {
+                        url: normalizedUrl,
+                        name: String(item.name || item.nome || '').trim(),
+                        row: item.row ?? item.row_number ?? item.row_num ?? null
+                    };
+                })
+                .filter(Boolean);
+        }
+
         function updateCarouselUI() {
             const imgEl = document.getElementById('carouselImage');
             const emptyEl = document.getElementById('carouselEmpty');
             const counterEl = document.getElementById('carouselCounter');
             const linkEl = document.getElementById('carouselOpenLink');
             const navButtons = document.querySelectorAll('.carousel-nav');
+            const deleteBtn = document.querySelector('#imageCarouselModal .btn.btn-danger');
 
             if (!imgEl || !emptyEl || !counterEl || !linkEl) return;
 
             if (!CAROUSEL_IMAGES.length) {
                 imgEl.style.display = 'none';
                 emptyEl.style.display = 'block';
-                emptyEl.textContent = 'Nenhuma imagem encontrada para este evento.';
+                emptyEl.textContent = 'Nenhuma imagem carregada para este evento.';
                 counterEl.textContent = '';
                 linkEl.style.display = 'none';
-                navButtons.forEach(b => b.disabled = true);
+                navButtons.forEach(btn => btn.disabled = true);
+                if (deleteBtn) deleteBtn.disabled = true;
                 return;
             }
 
-            const maxIdx = CAROUSEL_IMAGES.length - 1;
-            if (CAROUSEL_INDEX < 0) CAROUSEL_INDEX = maxIdx;
-            if (CAROUSEL_INDEX > maxIdx) CAROUSEL_INDEX = 0;
+            if (CAROUSEL_INDEX < 0) CAROUSEL_INDEX = CAROUSEL_IMAGES.length - 1;
+            if (CAROUSEL_INDEX >= CAROUSEL_IMAGES.length) CAROUSEL_INDEX = 0;
 
             const current = CAROUSEL_IMAGES[CAROUSEL_INDEX];
-            const url = current && current.url ? current.url : '';
-            imgEl.src = url;
+            imgEl.src = current.url;
+            imgEl.alt = current.name || `Imagem ${CAROUSEL_INDEX + 1}`;
             imgEl.style.display = 'block';
-            emptyEl.style.display = 'none';
 
+            emptyEl.style.display = 'none';
             counterEl.textContent = `${CAROUSEL_INDEX + 1} / ${CAROUSEL_IMAGES.length}`;
-            if (url) {
-                linkEl.href = url;
-                linkEl.style.display = 'inline';
-            } else {
-                linkEl.style.display = 'none';
-            }
+
+            linkEl.href = current.url;
+            linkEl.style.display = 'inline';
 
             const disableNav = CAROUSEL_IMAGES.length <= 1;
-            navButtons.forEach(b => b.disabled = disableNav);
+            navButtons.forEach(btn => btn.disabled = disableNav);
+            if (deleteBtn) deleteBtn.disabled = false;
         }
 
-        function openCarouselModal() {
+        function openCarouselModal(items, startIndex) {
             const modal = document.getElementById('imageCarouselModal');
-            if (modal) modal.style.display = 'block';
+            if (!modal) return;
+
+            const incoming = normalizeCarouselEntries(items);
+            CAROUSEL_IMAGES = incoming.length ? incoming : normalizeCarouselEntries(CURRENT_EVENT_REMOTE_IMAGES);
+            CAROUSEL_INDEX = Number.isFinite(Number(startIndex)) ? Number(startIndex) : 0;
+            CAROUSEL_EVENT_ID = CURRENT_EVENT && (CURRENT_EVENT.id_evento || CURRENT_EVENT.id_evento_unico || CURRENT_EVENT.id);
+
+            modal.style.display = 'flex';
+            updateCarouselUI();
         }
 
         function closeCarouselModal() {
@@ -4406,6 +5498,7 @@ textarea:focus {
             if (modal) modal.style.display = 'none';
             CAROUSEL_IMAGES = [];
             CAROUSEL_INDEX = 0;
+            CAROUSEL_EVENT_ID = null;
         }
 
         function nextCarouselImage() {
@@ -4421,101 +5514,190 @@ textarea:focus {
         }
 
         async function deleteCurrentCarouselImage() {
+            if (!CAROUSEL_IMAGES.length) return;
+
+            const eventId = CAROUSEL_EVENT_ID || (CURRENT_EVENT && (CURRENT_EVENT.id_evento || CURRENT_EVENT.id_evento_unico || CURRENT_EVENT.id));
+            if (!eventId) {
+                toast('ID do evento não encontrado para excluir imagem.', 'error');
+                return;
+            }
+
+            const current = CAROUSEL_IMAGES[CAROUSEL_INDEX];
+            const conteudo = current && current.url ? String(current.url).trim() : '';
+            if (!conteudo) {
+                toast('Conteúdo da imagem não encontrado para exclusão.', 'error');
+                return;
+            }
+
+            if (!window.confirm('Deseja excluir esta imagem do evento?')) return;
+
+            const deleteBtn = document.querySelector('#imageCarouselModal .btn.btn-danger');
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.dataset.prevLabel = deleteBtn.innerText;
+                deleteBtn.innerText = 'Excluindo...';
+            }
+
             try {
-                if (!CAROUSEL_IMAGES.length) return;
-                const current = CAROUSEL_IMAGES[CAROUSEL_INDEX];
-                if (!current || !current.url) return;
-
-                const confirmed = window.confirm('Tem certeza que deseja excluir esta imagem?');
-                if (!confirmed) return;
-
                 const formData = new FormData();
                 formData.append('action', 'delete_img');
-                if (CAROUSEL_EVENT_ID) formData.append('id_evento', CAROUSEL_EVENT_ID);
-                formData.append('url', current.url);
+                formData.append('id_evento', String(eventId));
+                formData.append('conteudo_base64', conteudo);
+                // Campos auxiliares para compatibilidade com variações do webhook
+                formData.append('id_evento_unico', String(eventId));
+                formData.append('img', conteudo);
+                formData.append('url', conteudo);
 
-                // Envia também o nome e a linha, quando disponíveis
-                if (current.name) formData.append('name', current.name);
-                if (current.row != null) {
-                    formData.append('row_number', String(current.row));
-                    formData.append('row', String(current.row));
-                }
+                await callAstroApi('delete_img', formData);
 
-                const response = await fetch(API_ASTRO_BASE, {
-                    method: 'POST',
-                    body: formData
-                });
+                toast('Imagem excluída com sucesso.', 'success');
 
-                const bodyText = await response.text().catch(() => '');
-                console.log('Resposta delete_img:', {
-                    ok: response.ok,
-                    status: response.status,
-                    body: bodyText
-                });
-
-                if (!response.ok) {
-                    try { toast('Erro ao excluir imagem', 'error'); } catch (_) {}
-                    return;
-                }
-
-                // Remove do array local e atualiza carrossel
-                CAROUSEL_IMAGES.splice(CAROUSEL_INDEX, 1);
+                await carregarImagensEvento(eventId);
+                CAROUSEL_IMAGES = normalizeCarouselEntries(CURRENT_EVENT_REMOTE_IMAGES);
                 if (CAROUSEL_INDEX >= CAROUSEL_IMAGES.length) {
                     CAROUSEL_INDEX = Math.max(0, CAROUSEL_IMAGES.length - 1);
                 }
                 updateCarouselUI();
-
-                try { toast('Imagem excluída com sucesso', 'success'); } catch (_) {}
             } catch (error) {
-                console.error('Erro ao excluir imagem do evento:', error);
-                try { toast('Erro inesperado ao excluir imagem', 'error'); } catch (_) {}
+                console.error('Erro ao excluir imagem:', error);
+                toast('Erro ao excluir imagem.', 'error');
+            } finally {
+                if (deleteBtn) {
+                    deleteBtn.disabled = false;
+                    deleteBtn.innerText = deleteBtn.dataset.prevLabel || '🗑️ Excluir imagem';
+                }
             }
         }
 
-        async function deleteImagemEvento(url, id_evento, row, wrapperEl, btn){
-            if (!url || !id_evento) {
-                console.warn('URL ou id_evento ausente para exclusão de imagem');
+        function fileToDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) {
+                    reject(new Error('Arquivo de imagem inválido.'));
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = () => {
+                    const result = typeof reader.result === 'string' ? reader.result : '';
+                    if (!result || !result.startsWith('data:image/')) {
+                        reject(new Error('Falha ao converter imagem para base64.'));
+                        return;
+                    }
+                    resolve(result);
+                };
+                reader.onerror = () => reject(new Error('Erro ao ler arquivo da imagem.'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function enviarImagens(id_evento) {
+            const eventId = id_evento || (CURRENT_EVENT && (CURRENT_EVENT.id_evento || CURRENT_EVENT.id_evento_unico || CURRENT_EVENT.id));
+            if (!eventId) {
+                toast('ID do evento não encontrado para upload de imagens.', 'error');
                 return;
             }
-            const confirmed = window.confirm('Tem certeza que deseja excluir esta imagem?');
-            if (!confirmed) return;
 
-            if (btn) {
-                btn.disabled = true;
-                btn.dataset.prevLabel = btn.innerText;
-                btn.innerText = 'Apagando...';
+            const input = document.getElementById('inputImagens');
+            const uploadBtn = document.getElementById('btn-upload-imagens');
+
+            let files = Array.isArray(CURRENT_EVENT_IMAGES) ? CURRENT_EVENT_IMAGES.slice() : [];
+            if (!files.length && input) {
+                files = Array.from(input.files || []);
             }
 
-            const formData = new FormData();
-            formData.append('action', 'delete_img');
-            formData.append('id_evento', id_evento);
-            formData.append('url', url);
-            if (row != null) {
-                formData.append('row_number', String(row));
-                formData.append('row', String(row));
+            if (!files.length) {
+                toast('Selecione ao menos uma imagem para enviar.', 'warning');
+                return;
             }
 
-            try{
-                const resp = await fetch(API_ASTRO_BASE, { method:'POST', body: formData });
-                const bodyText = await resp.text().catch(()=> '');
-                console.log('Resposta delete_img:', resp.status, bodyText);
-                if (!resp.ok) throw new Error(bodyText || `HTTP ${resp.status}`);
-                if (wrapperEl && wrapperEl.parentElement) {
-                    wrapperEl.remove();
+            files = files.slice(0, 10);
+
+            if (uploadBtn) {
+                uploadBtn.disabled = true;
+                uploadBtn.dataset.prevLabel = uploadBtn.innerText;
+                uploadBtn.innerText = 'Enviando...';
+            }
+
+            try {
+                const selectedTargetIds = Array.from(BATCH_SELECTED_TARGET_EVENT_IDS)
+                    .map(id => String(id).trim())
+                    .filter(Boolean);
+                const targetEventIds = selectedTargetIds.length
+                    ? selectedTargetIds
+                    : [String(eventId).trim()];
+
+                const totalOps = files.length * targetEventIds.length;
+                if (selectedTargetIds.length) {
+                    const confirmedBatch = window.confirm(`Enviar ${files.length} imagem(ns) para ${targetEventIds.length} evento(s) selecionado(s)? Total: ${totalOps} envio(s).`);
+                    if (!confirmedBatch) return;
                 }
-                try { toast('Imagem excluída', 'success'); } catch(_){}
-            }catch(err){
-                console.error('Falha ao excluir imagem:', err);
-                try { toast('Erro ao excluir imagem', 'error'); } catch(_){}
-            }finally{
-                if (btn){
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.prevLabel || '🗑️ Excluir';
+
+                const preparedFiles = [];
+                for (let index = 0; index < files.length; index++) {
+                    const file = files[index];
+                    const conteudoBase64 = await fileToDataUrl(file);
+                    const fileName = file && file.name ? file.name : `imagem_${index + 1}.jpg`;
+                    preparedFiles.push({ conteudoBase64, fileName });
+                }
+
+                let enviados = 0;
+                let falhas = 0;
+                let opIndex = 0;
+
+                for (const targetId of targetEventIds) {
+                    for (const payload of preparedFiles) {
+                        opIndex++;
+                        if (uploadBtn) {
+                            uploadBtn.innerText = `Enviando ${opIndex}/${totalOps}...`;
+                        }
+
+                        const formData = new FormData();
+                        formData.append('action', 'add_img');
+                        formData.append('id_evento', String(targetId));
+                        formData.append('id_evento_unico', String(targetId));
+                        formData.append('conteudo_base64', payload.conteudoBase64);
+                        formData.append('nome_arquivo', payload.fileName);
+
+                        // Campos auxiliares para compatibilidade com variações do webhook
+                        formData.append('img', payload.conteudoBase64);
+                        formData.append('imagem', payload.conteudoBase64);
+                        formData.append('url', payload.conteudoBase64);
+
+                        try {
+                            await callAstroApi('add_img', formData);
+                            enviados++;
+                        } catch (err) {
+                            falhas++;
+                            console.warn(`Falha ao enviar imagem para evento ${targetId}`, err);
+                        }
+                    }
+                }
+
+                const toastType = falhas ? 'warning' : 'success';
+                toast(`Fila de envio concluída: ${enviados} sucesso(s), ${falhas} falha(s).`, toastType);
+                setBatchStatus(`Fila processada no n8n: ${enviados} sucesso(s), ${falhas} falha(s).`, falhas ? 'error' : 'success');
+
+                CURRENT_EVENT_IMAGES = [];
+                if (input) input.value = '';
+                const uploadPreview = document.getElementById('uploadImagesPreview');
+                if (uploadPreview) {
+                    uploadPreview.className = 'event-images-preview';
+                    uploadPreview.innerHTML = '<p style="color:#64748b; font-size:0.86rem;">Nenhuma imagem selecionada para upload.</p>';
+                    setEventImagesPreviewLayout(uploadPreview, 0);
+                }
+                if (targetEventIds.includes(String(eventId).trim())) {
+                    await carregarImagensEvento(eventId);
+                }
+            } catch (error) {
+                console.error('Erro ao enviar imagens:', error);
+                toast('Erro ao enviar imagens.', 'error');
+            } finally {
+                if (uploadBtn) {
+                    uploadBtn.disabled = false;
+                    uploadBtn.innerText = uploadBtn.dataset.prevLabel || '📤 Enviar Imagens';
                 }
             }
         }
 
-        // Envia despesas do evento ao webhook
         async function lancarDespesasEvento(evento, btn){
             const id = evento && (evento.id_evento || evento.id_evento_unico || evento.id);
             if (!id) {
@@ -4554,84 +5736,6 @@ textarea:focus {
                     btn.innerText = btn.dataset.prevLabel || '💰 Lançar despesas';
                 }
             }
-        }
-
-        // Finaliza evento no webhook
-        async function finalizarEvento(evento, btn){
-            const id = evento && (evento.id_evento || evento.id_evento_unico || evento.id);
-            if (!id) {
-                toast('ID do evento não encontrado para finalizar', 'error');
-                return;
-            }
-            if (btn){
-                btn.disabled = true;
-                btn.dataset.prevLabel = btn.innerText;
-                btn.innerText = 'Finalizando...';
-            }
-            try{
-                const body = { action:'finalizar_evento', id_evento:id, finalizado:true };
-                const resp = await fetch(API_AGENDA, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify(body)
-                });
-                const txt = await resp.text().catch(()=> '');
-                if (!resp.ok) throw new Error(txt || `HTTP ${resp.status}`);
-                // Remove evento finalizado da lista local
-                EVENTOS = EVENTOS.filter(ev => String(ev.id_evento || ev.id_evento_unico || ev.id) !== String(id));
-                popularFiltroAgendaUnico(EVENTOS);
-                renderAgenda();
-                toast('Evento finalizado e enviado ao webhook', 'success');
-            }catch(err){
-                console.error('Erro ao finalizar evento:', err);
-                toast('Erro ao finalizar evento', 'error');
-            }finally{
-                if (btn){
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.prevLabel || '✅ Finalizar';
-                }
-            }
-        }
-
-        async function openImageCarouselForEvent(evento) {
-            try {
-                const ev = normalizeAgendaEvent(evento);
-                const idEvento = ev.id_evento || ev.id_evento_unico || ev.id;
-                if (!idEvento) {
-                    try { toast('ID do evento não encontrado para carregar imagens', 'error'); } catch (_) {}
-                    return;
-                }
-
-                const titleEl = document.getElementById('carouselTitle');
-                if (titleEl) {
-                    titleEl.textContent = ev.nome_da_escola || ev.escola || 'Imagens do Evento';
-                }
-
-                CAROUSEL_IMAGES = [];
-                CAROUSEL_INDEX = 0;
-                CAROUSEL_EVENT_ID = idEvento;
-                openCarouselModal();
-
-                const emptyEl = document.getElementById('carouselEmpty');
-                const imgEl = document.getElementById('carouselImage');
-                const counterEl = document.getElementById('carouselCounter');
-                if (emptyEl) {
-                    emptyEl.style.display = 'block';
-                    emptyEl.textContent = 'Carregando imagens do evento...';
-                }
-                if (imgEl) imgEl.style.display = 'none';
-                if (counterEl) counterEl.textContent = '';
-
-                const entries = await obterLinksImagensEvento(idEvento);
-                CAROUSEL_IMAGES = Array.isArray(entries) ? entries : [];
-                CAROUSEL_INDEX = 0;
-                updateCarouselUI();
-            } catch (error) {
-                console.error('Erro ao abrir carrossel de imagens:', error);
-                try { toast('Erro ao carregar imagens do evento', 'error'); } catch (_) {}
-                closeCarouselModal();
-            }
-        }
-    </script>
+        }    </script>
 </body>
 </html>
