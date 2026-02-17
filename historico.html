@@ -31,6 +31,8 @@
         .history-detail .value{ display:block; margin-top:4px; font-weight:600; }
         @media (max-width:640px){ .history-modal__content{ padding:16px; } }
     </style> -->
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page historico-page">
     <!-- Fundo galáctico (coeso com a Agenda Inteligente) -->
@@ -478,11 +480,11 @@
             // Incluir eventos finalizados e não finalizados
             completedEvents = eventsData.map(event => {
                 const textoRaw = (typeof event?.texto_tarefa === 'object' && event?.texto_tarefa !== null) ? (event.texto_tarefa.texto ?? '') : (event?.texto_tarefa ?? '');
-                const eventoNome = (event?.conteudo_da_apresentacao ?? textoRaw ?? '').toString() || 'Evento Astronômico';
-                const dataEv = event?.data_e_hora_agendamento ?? event?.data_e_hora_do_agendamento ?? event?.data_agendamento ?? new Date().toISOString();
-                const cidade = (event?.cidade && event.cidade.toString().trim()) ? event.cidade : (event?.cidade_destino || 'Cidade não informada');
+                const eventoNome = (event?.conteudo_da_apresentacao ?? event?.conteudo_apresentacao ?? event?.conteudo ?? event?.apresentacao ?? textoRaw ?? '').toString() || 'Evento Astronômico';
+                const dataEv = event?.data_e_hora_agendamento ?? event?.data_e_hora_do_agendamento ?? event?.data_agendamento ?? event?.data ?? new Date().toISOString();
+                const cidade = event?.cidade_destino || event?.cidade || event?.cidade_evento || event?.cidade_lead || event?.cidade_da_escola || 'Cidade não informada';
                 const local = (event?.local_instalacao && event.local_instalacao.toString().toLowerCase()!=='null') ? event.local_instalacao : (event?.endereco || 'Local não informado');
-                const alunos = event?.numero_alunos_empresa ?? event?.numero_de_alunos ?? '0';
+                const alunos = event?.numero_alunos ?? event?.faixa_de_alunos ?? event?.numero_de_alunos ?? event?.numero_alunos_empresa ?? '0';
                 const id = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? null;
                 const feedback = (event?.avaliacao_astronomo ?? '').toString();
                 const isFinalizado = isFinalizadoEvent(event);
@@ -493,9 +495,9 @@
                     data: dataEv,
                     cidade,
                     local,
-                    astronomo: event?.astronomo ?? event?.astronomo_validacao ?? 'A definir',
+                    astronomo: event?.astronomo ?? event?.astronomo_validacao ?? event?.usuario ?? event?.username ?? 'A definir',
                     numero_alunos: alunos,
-                    valor_total: event?.valor_total ?? '0',
+                    valor_total: event?.valor_total ?? event?.total ?? event?.valor ?? event?.custo_total ?? '0',
                     feedback,
                     finalizado_em: isFinalizado ? (event?.data_finalizacao ?? dataEv) : null,
                     _finalizado: isFinalizado
@@ -653,7 +655,7 @@
                 (typeof event.texto_tarefa === 'object' ? event.texto_tarefa?.texto : event.texto_tarefa) ||
                 '';
             const feedback = event.feedback || event.comentario || event.comentarios || '';
-            const alunos = event.numero_alunos || event.numero_alunos_empresa || '—';
+            const alunos = event.numero_alunos || event.faixa_de_alunos || event.numero_de_alunos || event.numero_alunos_empresa || '—';
             const local = event.local || event.local_instalacao || event.endereco || 'Local não informado';
             const eventIdLabel = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? '';
 
@@ -791,7 +793,7 @@
 
         function getSchoolName(event){
             if (!event) return '';
-            const school = event.nome_da_escola || event.nome_escola || event.escola || event.escola_nome || event.school_name || event.school;
+            const school = event.nome_da_escola || event.nome_escola || event.escola || event.nome_lead || event.escola_nome || event.school_name || event.school;
             if (school) return String(school).trim();
             return '';
         }

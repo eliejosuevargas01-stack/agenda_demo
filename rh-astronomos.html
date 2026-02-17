@@ -2226,6 +2226,8 @@ textarea:focus {
             padding: 0;
         }
     </style> -->
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page rh-page">
     <div class="space-layer stars"></div>
@@ -3698,10 +3700,14 @@ textarea:focus {
             const valores = new Map(); // normalizado -> original
             (eventos || []).forEach(ev => {
                 [
-                    cleanText(ev.cidade),
                     cleanText(ev.cidade_destino),
+                    cleanText(ev.cidade),
+                    cleanText(ev.cidade_evento),
+                    cleanText(ev.cidade_lead),
+                    cleanText(ev.cidade_da_escola),
                     cleanText(ev.cidade_origem),
                     cleanText(ev.nome_da_escola),
+                    cleanText(ev.nome_escola),
                     cleanText(ev.escola),
                     cleanText(ev.nome_lead)
                 ].forEach(v => {
@@ -3817,7 +3823,7 @@ textarea:focus {
                     showNoDataPopup('Sem dados retornados do n8n.');
                 }
 
-                EVENTOS = dedupeEventsBySignature(rawEventos.map(normalizeAgendaEvent));
+                EVENTOS = rawEventos.map(normalizeAgendaEvent);
                 agendaPage = 1;
                 popularFiltroAgendaUnico(EVENTOS);
                 
@@ -3902,13 +3908,24 @@ textarea:focus {
                 eventos = eventos.filter(ev => {
                     const bloco = [
                         normalizeSearchText(ev.nome_da_escola),
+                        normalizeSearchText(ev.nome_escola),
                         normalizeSearchText(ev.escola),
                         normalizeSearchText(ev.nome_lead),
-                        normalizeSearchText(ev.cidade),
                         normalizeSearchText(ev.cidade_destino),
+                        normalizeSearchText(ev.cidade),
+                        normalizeSearchText(ev.cidade_evento),
+                        normalizeSearchText(ev.cidade_lead),
+                        normalizeSearchText(ev.cidade_da_escola),
                         normalizeSearchText(ev.cidade_origem),
                         normalizeSearchText(ev.responsavel_pelo_evento),
-                        normalizeSearchText(ev.conteudo_da_apresentacao)
+                        normalizeSearchText(ev.responsavel),
+                        normalizeSearchText(ev.responsavel_visita),
+                        normalizeSearchText(ev.contato_responsavel),
+                        normalizeSearchText(ev.nome_responsavel),
+                        normalizeSearchText(ev.conteudo_da_apresentacao),
+                        normalizeSearchText(ev.conteudo_apresentacao),
+                        normalizeSearchText(ev.conteudo),
+                        normalizeSearchText(ev.apresentacao)
                     ].filter(Boolean).join(' ');
                     return bloco.includes(filtroLivre);
                 });
@@ -3976,8 +3993,8 @@ textarea:focus {
                             <div class="event-id" style="font-size:0.85rem; opacity:0.85;">
                                 ID: ${textOrFallback(ev.id_evento || ev.id_evento_unico || ev.id, 'N/A')}
                             </div>
-                            <div class="event-school">${textOrFallback(ev.nome_da_escola, 'Escola não informada')}</div>
-                            <div class="event-city">${textOrFallback(ev.cidade, 'Cidade não informada')}</div>
+                            <div class="event-school">${textOrFallback(ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead, 'Escola não informada')}</div>
+                            <div class="event-city">${textOrFallback(ev.cidade_destino || ev.cidade || ev.cidade_evento || ev.cidade_lead || ev.cidade_da_escola, 'Cidade não informada')}</div>
                         </div>
                         <div class="event-chips">
                             <span class="event-chip chip-primary">${textOrFallback(ev.tipo_da_tarefa || ev.tipo || ev.tipo_evento, 'Evento')}</span>
@@ -4029,13 +4046,19 @@ textarea:focus {
             }
             texto_tarefa = cleanText(texto_tarefa);
 
-            const faixa_alunos = cleanText(event.faixa_de_alunos) ||
+            const faixa_alunos = cleanText(event.numero_alunos) ||
+                                 cleanText(event.faixa_de_alunos) ||
                                  cleanText(event.numero_de_alunos) ||
+                                 cleanText(event.numero_alunos_empresa) ||
                                  'Número não informado';
             
-            const cidadePrincipal = cleanText(event.cidade);
-            const cidadeDestino = cleanText(event.cidade_destino);
-            const cidade = cidadePrincipal || cidadeDestino || texto_tarefa || 'Cidade não informada';
+            const cidade = cleanText(event.cidade_destino) ||
+                cleanText(event.cidade) ||
+                cleanText(event.cidade_evento) ||
+                cleanText(event.cidade_lead) ||
+                cleanText(event.cidade_da_escola) ||
+                texto_tarefa ||
+                'Cidade não informada';
             
             const localInstalacaoBruto = cleanText(event.local_instalacao);
             const local_instalacao = localInstalacaoBruto ||
@@ -4043,10 +4066,26 @@ textarea:focus {
                 'Local a definir';
 
             const responsavel = cleanText(event.responsavel_pelo_evento) ||
+                                cleanText(event.responsavel) ||
+                                cleanText(event.responsavel_visita) ||
+                                cleanText(event.contato_responsavel) ||
+                                cleanText(event.nome_responsavel) ||
                                 cleanText(event.nome_lead) ||
                                 'Não informado';
 
-            const telefoneResp = cleanText(event.telefone_responsavel_evento) ||
+            const telefoneResp = cleanText(event.telefone_contato) ||
+                                 cleanText(event.telefone_responsavel_evento) ||
+                                 cleanText(event.telefone_responsavel) ||
+                                 cleanText(event.telefone_do_responsavel) ||
+                                 cleanText(event.responsavel_telefone) ||
+                                 cleanText(event.responsavel_celular) ||
+                                 cleanText(event.whatsapp_responsavel) ||
+                                 cleanText(event.celular_responsavel) ||
+                                 cleanText(event.contato_responsavel) ||
+                                 cleanText(event.fone_responsavel) ||
+                                 cleanText(event.responsavel_whatsapp) ||
+                                 cleanText(event.telefone_evento) ||
+                                 cleanText(event.telefone_escola) ||
                                  cleanText(event.telefone);
 
             const nome_escola_normalizado =
@@ -4057,6 +4096,9 @@ textarea:focus {
                 'Escola não informada';
 
             const conteudo = cleanText(event.conteudo_da_apresentacao) ||
+                             cleanText(event.conteudo_apresentacao) ||
+                             cleanText(event.conteudo) ||
+                             cleanText(event.apresentacao) ||
                              texto_tarefa ||
                              'Evento Astronômico';
 
@@ -4072,7 +4114,7 @@ textarea:focus {
                                    cleanText(event.tipo) ||
                                    'Evento';
 
-            const valor_total = event.valor_total ?? event.valor_evento ?? event.valor ?? null;
+            const valor_total = event.valor_total ?? event.valor_evento ?? event.total ?? event.valor ?? event.custo_total ?? null;
             const id_tipo_tarefa = event.id_tipo_tarefa ??
                 event.id_tipo ??
                 event.id_tipo_evento ??
@@ -4116,7 +4158,7 @@ textarea:focus {
 
             if (!modal || !titleEl || !bodyEl) return;
 
-            titleEl.textContent = textOrFallback(CURRENT_EVENT.nome_da_escola || CURRENT_EVENT.escola, 'Detalhes do Evento');
+            titleEl.textContent = textOrFallback(CURRENT_EVENT.nome_da_escola || CURRENT_EVENT.nome_escola || CURRENT_EVENT.escola || CURRENT_EVENT.nome_lead, 'Detalhes do Evento');
 
             const dataAgendamento = CURRENT_EVENT.data_e_hora_agendamento || CURRENT_EVENT.data_e_hora_do_agendamento || CURRENT_EVENT.data_agendamento || CURRENT_EVENT.data;
 
@@ -5713,11 +5755,20 @@ textarea:focus {
                 const normalizedEvent = (evento && typeof evento === 'object')
                     ? { ...evento, finalizado: true }
                     : { finalizado: true };
+                delete normalizedEvent.ids_eventos;
+                delete normalizedEvent._duplicate_ids;
                 const body = {
                     action: 'lancar_despesas',
+                    id: id,
                     id_evento: id,
                     finalizado: true,
-                    evento: normalizedEvent
+                    evento: {
+                        ...normalizedEvent,
+                        id: id,
+                        id_evento: id,
+                        id_evento_unico: id,
+                        finalizado: true
+                    }
                 };
                 const resp = await fetch(API_AGENDA, {
                     method:'POST',

@@ -12,6 +12,8 @@
     <!-- <link rel="stylesheet" href="css/despesas-modern.css"> -->
   <!-- <link rel="stylesheet" href="css/docs-app.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page despesas-page">
     <div class="space-layer stars"></div>
@@ -50,38 +52,36 @@
                             <p>Visão consolidada dos custos previstos por evento e margem estimada.</p>
                         </div>
                     </div>
-                    <div class="hero-actions period-filter-buttons">
-                        <button class="btn btn-secondary period-filter-button active" data-period="all">Todos</button>
-                        <button class="btn btn-secondary period-filter-button" data-period="day">Dia</button>
-                        <button class="btn btn-secondary period-filter-button" data-period="week">Semana</button>
-                        <button class="btn btn-secondary period-filter-button" data-period="month">Mês</button>
+                    <div class="hero-actions expense-view-buttons">
+                        <button class="btn btn-secondary expense-view-button active" data-expense-view="pendentes">Pendentes</button>
+                        <button class="btn btn-secondary expense-view-button" data-expense-view="lancadas">Lançadas</button>
                     </div>
                     <div class="summary-grid grid-3">
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="combustivel">
                             <span class="label">⛽ Combustível (Evento - ida/volta)</span>
                             <span class="value" id="est-cost-fuel">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="hospedagem">
                             <span class="label">🏨 Hospedagem (Evento)</span>
                             <span class="value" id="est-cost-hotel">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="alimentacao">
                             <span class="label">🍽️ Alimentação (Evento)</span>
                             <span class="value" id="est-cost-food">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="pedagios">
                             <span class="label">🛣️ Pedágios (Evento)</span>
                             <span class="value" id="est-cost-pedagios">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="monitor">
                             <span class="label">🧑‍🏫 Monitor (Evento)</span>
                             <span class="value" id="est-cost-monitor">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="faturamento">
                             <span class="label">💲 Faturamento Total</span>
                             <span class="value" id="event-total-value">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="lucro">
                             <span class="label" id="astronomer-profit-label">💸 Lucro Astrônomo</span>
                             <span class="value" id="astronomer-profit">R$ 0,00</span>
                         </div>
@@ -90,39 +90,39 @@
 
                 <section class="section" id="reais">
                     <div class="section-header">
-                        <h2>Reais (somente finalizados)</h2>
+                        <h2>Reais (somente despesas lançadas)</h2>
                         <p>Valores confirmados após encerramento do evento e apuração final.</p>
                     </div>
                     <div class="summary-grid grid-3">
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="combustivel">
                             <span class="label">⛽ Despesas reais (Combustível)</span>
                             <span class="value" id="real-cost-fuel">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="hospedagem">
                             <span class="label">🏨 Despesas reais (Hospedagem)</span>
                             <span class="value" id="real-cost-hotel">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="alimentacao">
                             <span class="label">🍽️ Despesas reais (Alimentação)</span>
                             <span class="value" id="real-cost-food">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="pedagios">
                             <span class="label">🛣️ Despesas reais (Pedágios)</span>
                             <span class="value" id="real-cost-pedagios">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="monitor">
                             <span class="label">🧑‍🏫 Despesas reais (Monitor)</span>
                             <span class="value" id="real-cost-monitor">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="outros">
                             <span class="label">➕ Despesas reais (Outros)</span>
                             <span class="value" id="real-cost-outros">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="total">
                             <span class="label">💲 Total despesas reais</span>
                             <span class="value" id="real-cost-total">R$ 0,00</span>
                         </div>
-                        <div class="summary-card feature-card">
+                        <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="real" data-summary-key="lucro">
                             <span class="label" id="real-profit-label">💸 Lucro Astrônomo (real)</span>
                             <span class="value" id="real-profit">R$ 0,00</span>
                         </div>
@@ -143,7 +143,7 @@
                         </div>
                     </div>
 
-                    <div id="despesas-events-list" style="margin-top: 1.5rem;">
+                    <div id="despesas-events-list" class="despesas-events-grid" style="margin-top: 1.5rem;">
                         <!-- A lista de eventos será renderizada aqui pelo JavaScript -->
                     </div>
                 </section>
@@ -487,8 +487,180 @@
             return {
                 consumoKmL: pickNum(['consumo_km_l','km_por_litro','km_per_liter']),
                 valorLitro: pickNum(['valor_litro','valor_litro_real','preco_litro']),
+                hospedagem: pickNum(['diaria_hospedagem','valor_diaria_hospedagem','hospedagem_diaria']),
+                alimentacao: pickNum(['alimentacao_diaria','valor_diario_alimentacao']),
                 monitor: pickNum(['monitor','custo_monitor','monitor_media']),
             };
+        }
+
+        // Regra de negócio:
+        // - alimentação em todas as tarefas;
+        // - hospedagem apenas em blocos de tarefas consecutivas (>= 2 dias), fora da cidade base.
+        // - modo "pernoite": cobra hospedagem a partir do 2º dia do bloco.
+        const LODGING_RULES = Object.freeze({
+            minConsecutiveDays: 2,
+            requireDifferentCityFromBase: true,
+            includeFirstDay: false
+        });
+        let lodgingEligibilityByEventId = new Map();
+
+        function normalizeTextFold(v){
+            try{
+                return String(v || '')
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .toLowerCase()
+                    .trim();
+            }catch(_){
+                return String(v || '').toLowerCase().trim();
+            }
+        }
+
+        function normalizeCityToken(v){
+            const raw = normalizeTextFold(v);
+            if (!raw) return '';
+            const base = raw
+                .replace(/\s+/g, ' ')
+                .replace(/\bbrasil\b/g, '')
+                .trim();
+            if (!base) return '';
+            return base
+                .split(' - ')[0]
+                .split('/')[0]
+                .split(',')[0]
+                .trim();
+        }
+
+        function getEventStableId(ev){
+            return (
+                ev?.id ??
+                ev?.id_tarefa ??
+                ev?.id_evento ??
+                ev?.id_evento_unico ??
+                ev?.id_agendamento ??
+                ev?.uuid ??
+                ev?.evento_id ??
+                ev?.tarefa_id ??
+                null
+            );
+        }
+        function hasStableEventId(value){
+            if (value === null || value === undefined) return false;
+            return String(value).trim() !== '';
+        }
+
+        function getEventDateOnly(ev){
+            const raw = ev?.data_agendamento || ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data || ev?.date;
+            if (!raw) return null;
+            const d = new Date(raw);
+            if (Number.isNaN(d.getTime())) return null;
+            return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+
+        function getEventCityForLodging(ev){
+            return normalizeCityToken(ev?.cidade_destino || ev?.cidade || ev?.cidade_evento || ev?.cidade_lead || ev?.cidade_da_escola || '');
+        }
+
+        function getSessionBaseCityForLodging(){
+            const sess = getUserSession();
+            const base = buildSessionPayload(sess || null);
+            return normalizeCityToken(
+                base?.cidade_base ||
+                base?.cidade ||
+                base?.cidade_origem ||
+                base?.origem_cidade ||
+                base?.cidade_base_astronomo ||
+                base?.cidade_astronomo ||
+                base?.astronomo_cidade ||
+                ''
+            );
+        }
+
+        function getLodgingGroupKey(ev){
+            if (!ev || typeof ev !== 'object') return '';
+            const explicit =
+                ev.id_evento_pai ??
+                ev.evento_pai_id ??
+                ev.grupo_evento_id ??
+                null;
+            if (explicit !== null && explicit !== undefined && String(explicit).trim() !== '') {
+                return `gid:${String(explicit).trim()}`;
+            }
+            const escola = normalizeTextFold(ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '');
+            const cidade = getEventCityForLodging(ev);
+            const conteudo = normalizeTextFold(ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '');
+            const tipo = normalizeTextFold(ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '');
+            const local = normalizeTextFold(ev.local_instalacao || ev.endereco || '');
+            const responsavel = normalizeTextFold(ev.responsavel_pelo_evento || ev.responsavel || ev.responsavel_visita || ev.contato_responsavel || ev.nome_responsavel || '');
+            const astro = normalizeTextFold(ev.id_astronomo ?? ev.astronomo_id ?? ev.astronomo ?? ev.astronomo_validacao ?? '');
+            return `cmp:${escola}|${cidade}|${conteudo}|${tipo}|${local}|${responsavel}|${astro}`;
+        }
+
+        function buildLodgingEligibility(events){
+            const map = new Map();
+            if (!Array.isArray(events) || !events.length) return map;
+            const groups = new Map();
+            const baseCity = getSessionBaseCityForLodging();
+
+            events.forEach(ev => {
+                const id = getEventStableId(ev);
+                const day = getEventDateOnly(ev);
+                if (id == null || !day) return;
+                const key = getLodgingGroupKey(ev);
+                if (!key) return;
+                if (!groups.has(key)) groups.set(key, []);
+                groups.get(key).push({
+                    id: String(id),
+                    day,
+                    city: getEventCityForLodging(ev)
+                });
+            });
+
+            groups.forEach(items => {
+                const sorted = items.slice().sort((a,b) => a.day - b.day);
+                let block = [];
+                const flushBlock = () => {
+                    if (!block.length) return;
+                    const hasManyDays = block.length >= LODGING_RULES.minConsecutiveDays;
+                    let outOfBase = true;
+                    if (LODGING_RULES.requireDifferentCityFromBase && baseCity) {
+                        outOfBase = block.some(item => item.city && item.city !== baseCity);
+                    }
+                    block.forEach((item, index) => {
+                        const nightEligible = LODGING_RULES.includeFirstDay ? true : index > 0;
+                        map.set(item.id, Boolean(hasManyDays && outOfBase && nightEligible));
+                    });
+                    block = [];
+                };
+
+                for (const item of sorted){
+                    if (!block.length) {
+                        block.push(item);
+                        continue;
+                    }
+                    const prev = block[block.length - 1];
+                    const diffDays = Math.round((item.day - prev.day) / 86400000);
+                    if (diffDays === 1) {
+                        block.push(item);
+                    } else {
+                        flushBlock();
+                        block.push(item);
+                    }
+                }
+                flushBlock();
+            });
+
+            return map;
+        }
+
+        function refreshLodgingEligibility(events){
+            lodgingEligibilityByEventId = buildLodgingEligibility(events);
+        }
+
+        function isLodgingEligibleEvent(ev){
+            const id = getEventStableId(ev);
+            if (id == null) return false;
+            return lodgingEligibilityByEventId.get(String(id)) === true;
         }
 
         function isVisitaEvent(ev, session){
@@ -499,11 +671,64 @@
             const t = String(ev?.tipo_da_tarefa || ev?.tipo || ev?.tipo_evento || '').toLowerCase();
             return t.includes('visita');
         }
+        function normalizeStatusToken(value){
+            return String(value ?? '')
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+        function hasFinalizadoKeyword(value){
+            const status = normalizeStatusToken(value);
+            if (!status) return false;
+            if (status === '0' || status === 'false' || status === 'nao' || status === 'no') return false;
+            if (
+                (status.includes('nao ') && (status.includes('finaliz') || status.includes('conclu') || status.includes('encerr'))) ||
+                status.includes('nao finalizado') ||
+                status.includes('nao finalizada') ||
+                status.includes('nao concluido') ||
+                status.includes('nao concluida')
+            ) return false;
+            if (status.includes('pendente') || status.includes('em aberto')) return false;
+            if (status === 'done' || status === 'completed') return true;
+            return (
+                status.includes('finalizado') ||
+                status.includes('finalizada') ||
+                status.includes('concluido') ||
+                status.includes('concluida') ||
+                status.includes('encerrado') ||
+                status.includes('encerrada')
+            );
+        }
         function isFinalizadoEvent(ev){
-            const v = ev?.finalizado;
-            if (v === true || v === 'true' || v === 1 || v === '1') return true;
-            const status = String(ev?.status || ev?.status_evento || ev?.resultado || ev?.result || '').toLowerCase();
-            if (status.includes('finalizado') || status === 'done') return true;
+            if (!ev || typeof ev !== 'object') return false;
+            const explicitFlags = [
+                ev?.finalizado,
+                ev?.finalizada,
+                ev?.evento_finalizado,
+                ev?.status_finalizacao,
+                ev?.status_da_finalizacao
+            ];
+            if (explicitFlags.some(v => isTruthyFlag(v) || hasFinalizadoKeyword(v))) return true;
+
+            const statusFields = [
+                ev?.status,
+                ev?.status_evento,
+                ev?.status_da_tarefa,
+                ev?.status_resultado,
+                ev?.resultado,
+                ev?.result,
+                ev?.situacao,
+                ev?.situacao_evento
+            ];
+            if (statusFields.some(hasFinalizadoKeyword)) return true;
+
+            const finalizacaoDates = [ev?.finalizado_em, ev?.data_finalizacao, ev?.finalizado_data, ev?.data_finalizado];
+            for (const raw of finalizacaoDates){
+                if (raw == null || String(raw).trim() === '') continue;
+                const dt = raw instanceof Date ? raw : new Date(raw);
+                if (!Number.isNaN(dt.getTime())) return true;
+            }
             return false;
         }
         function distanceKmFromEvent(ev, routeInfo){
@@ -544,8 +769,6 @@
                     return { combustivel:null, hospedagem:null, alimentacao:null, pedagios:null, monitor:null, total:null };
                 }
 
-                const diarias = parseInt(ev?.numero_de_diarias ?? ev?.numero_diarias ?? ev?.diarias ?? 1, 10);
-                const diariasVal = Number.isFinite(diarias) && diarias > 0 ? diarias : 1;
                 const pick = (...keys) => {
                     for (const k of keys) {
                         const v = readNested(ev, k) ?? ev[k];
@@ -570,19 +793,23 @@
                 }
                 if (combustivelNormal == null) combustivelNormal = pick('custo_total_combustivel', 'gasto_combustivel', 'combustivel');
                 const combustivel = preferMedia(combustivelMedia, combustivelNormal);
-                // Regras fixas: alimentação = diárias * alimentação diária; hospedagem = (diárias - 1) * hospedagem diária
-                const hospDiaMedia = pick('diaria_hospedagem_media');
-                const hospDiaNormal = pick('valor_diaria_hospedagem', 'diaria_hospedagem', 'hospedagem_diaria');
-                const hospDia = preferMedia(hospDiaMedia, hospDiaNormal);
-                const diariasHosp = Math.max(diariasVal - 1, 0);
-                let hospedagem = Number.isFinite(hospDia) ? hospDia * diariasHosp : null;
-                const alimDiaMedia = pick('alimentacao_diaria_media');
-                const alimDiaNormal = pick('valor_diario_alimentacao', 'alimentacao_diaria');
-                const alimDia = preferMedia(alimDiaMedia, alimDiaNormal);
-                let alimentacao = Number.isFinite(alimDia) ? alimDia * Math.max(diariasVal, 1) : null;
+                const hospedagemBase = preferMedia(
+                    pick('hospedagem_media', 'custo_hospedagem_media', 'gasto_hospedagem_media', 'diaria_hospedagem_media'),
+                    (pick('hospedagem', 'custo_hospedagem', 'gasto_hospedagem', 'hospedagem_total', 'valor_diaria_hospedagem', 'diaria_hospedagem', 'hospedagem_diaria') ?? defaults.hospedagem)
+                );
+                const alimentacaoBase = preferMedia(
+                    pick('alimentacao_media', 'custo_alimentacao_media', 'gasto_alimentacao_media', 'alimentacao_diaria_media'),
+                    (pick('alimentacao', 'custo_alimentacao', 'gasto_alimentacao', 'alimentacao_total', 'valor_diario_alimentacao', 'alimentacao_diaria') ?? defaults.alimentacao)
+                );
+                const hospedagem = isLodgingEligibleEvent(ev) ? (Number.isFinite(hospedagemBase) ? hospedagemBase : 0) : 0;
+                const alimentacao = Number.isFinite(alimentacaoBase) ? alimentacaoBase : 0;
                 const pedagios = preferMedia(pick('pedagios_media'), pick('pedagios', 'custo_pedagios'));
-                const monitorDia = preferMedia(pick('monitor_media'), (pick('monitor', 'custo_monitor') ?? defaults.monitor));
-                const monitor = Number.isFinite(monitorDia) ? monitorDia * Math.max(diariasVal, 1) : null;
+                const monitorBase = preferMedia(
+                    pick('monitor_media', 'custo_monitor_medio'),
+                    (pick('monitor', 'custo_monitor', 'gasto_monitor') ?? defaults.monitor)
+                );
+                // Regra de negócio: monitor sempre entra em cada evento (como alimentação).
+                const monitor = Number.isFinite(monitorBase) ? monitorBase : 0;
 
                 const parts = [combustivel, hospedagem, alimentacao, pedagios, monitor].filter(v => Number.isFinite(v));
                 const total = parts.length ? parts.reduce((a, b) => a + b, 0) : null;
@@ -593,11 +820,38 @@
             }
         }
 
+        function isTruthyFlag(v){
+            if (v === true || v === 1 || v === '1') return true;
+            if (typeof v === 'string') {
+                const t = v.trim().toLowerCase();
+                return t === 'true' || t === 'sim' || t === 'yes' || t === 'ok';
+            }
+            return false;
+        }
+        function hasRealExpenseMarker(ev){
+            if (!ev || typeof ev !== 'object') return false;
+            if (ev?.despesas_reais && typeof ev.despesas_reais === 'object') return true;
+            if (ev?.gastos_reais && typeof ev.gastos_reais === 'object') return true;
+            const explicitRealKeys = [
+                'combustivel_real','hospedagem_real','alimentacao_real','pedagios_real','monitor_real',
+                'outros_real','total_real','total_despesas_reais','despesas_reais_total','gasto_total_real'
+            ];
+            if (explicitRealKeys.some(k => ev[k] !== undefined && ev[k] !== null && String(ev[k]).trim() !== '')) return true;
+            const launchFlags = [
+                'despesas_lancadas','despesas_lancada','despesa_lancada','lancamento_despesas',
+                'despesas_realizadas','gastos_lancados'
+            ];
+            return launchFlags.some(k => isTruthyFlag(ev[k]));
+        }
         function extractRealExpenses(ev){
-            const sources = [ev?.despesas_reais, ev?.despesas, ev?.gastos_reais, ev?.gastos, ev];
-            const pickReal = (...keys) => {
+            const rootSource = (ev && typeof ev === 'object') ? ev : null;
+            const rootHasRealMarker = hasRealExpenseMarker(rootSource);
+            const nestedSources = [ev?.despesas_reais, ev?.gastos_reais]
+                .filter(src => src && typeof src === 'object');
+            if (rootHasRealMarker && ev?.despesas && typeof ev.despesas === 'object') nestedSources.push(ev.despesas);
+            if (rootHasRealMarker && ev?.gastos && typeof ev.gastos === 'object') nestedSources.push(ev.gastos);
+            const pickFromSources = (sources, keys) => {
                 for (const src of sources){
-                    if (!src || typeof src !== 'object') continue;
                     for (const k of keys){
                         const v = readNested(src, k) ?? src[k];
                         const n = parseRouteNumber(v);
@@ -606,14 +860,60 @@
                 }
                 return null;
             };
-            const combustivel = pickReal('combustivel_real','combustivel','despesa_combustivel','custo_combustivel','gasto_combustivel');
-            const hospedagem = pickReal('hospedagem_real','hospedagem','custo_hospedagem','gasto_hospedagem','diaria_hospedagem_total');
-            const alimentacao = pickReal('alimentacao_real','alimentacao','custo_alimentacao','gasto_alimentacao');
-            const pedagios = pickReal('pedagios_real','pedagios','custo_pedagios','gasto_pedagios');
-            const monitor = pickReal('monitor_real','monitor','custo_monitor','gasto_monitor');
-            const outros = pickReal('outros','outros_gastos','outros_despesas','gastos_outros');
-            const parts = [combustivel, hospedagem, alimentacao, pedagios, monitor, outros].filter(Number.isFinite);
-            const total = parts.length ? parts.reduce((a,b)=>a+b,0) : null;
+            const pickNested = (...keys) => pickFromSources(nestedSources, keys);
+            const pickRoot = (...keys) => rootSource ? pickFromSources([rootSource], keys) : null;
+            const pickRealValue = (nestedKeys, rootRealKeys, rootFallbackKeys) => {
+                let value = pickNested(...nestedKeys);
+                if (Number.isFinite(value)) return value;
+                value = pickRoot(...rootRealKeys);
+                if (Number.isFinite(value)) return value;
+                if (rootHasRealMarker && Array.isArray(rootFallbackKeys) && rootFallbackKeys.length) {
+                    value = pickRoot(...rootFallbackKeys);
+                    if (Number.isFinite(value)) return value;
+                }
+                return null;
+            };
+
+            const combustivel = pickRealValue(
+                ['combustivel_real','combustivel','despesa_combustivel','custo_combustivel','gasto_combustivel'],
+                ['combustivel_real','real_combustivel','despesa_combustivel_real','gasto_combustivel_real'],
+                ['combustivel','despesa_combustivel','custo_combustivel','gasto_combustivel']
+            );
+            const hospedagem = pickRealValue(
+                ['hospedagem_real','hospedagem','custo_hospedagem','gasto_hospedagem','diaria_hospedagem_total'],
+                ['hospedagem_real','real_hospedagem','custo_hospedagem_real','gasto_hospedagem_real'],
+                ['hospedagem','custo_hospedagem','gasto_hospedagem','diaria_hospedagem_total']
+            );
+            const alimentacao = pickRealValue(
+                ['alimentacao_real','alimentacao','custo_alimentacao','gasto_alimentacao'],
+                ['alimentacao_real','real_alimentacao','custo_alimentacao_real','gasto_alimentacao_real'],
+                ['alimentacao','custo_alimentacao','gasto_alimentacao']
+            );
+            const pedagios = pickRealValue(
+                ['pedagios_real','pedagios','custo_pedagios','gasto_pedagios'],
+                ['pedagios_real','real_pedagios','custo_pedagios_real','gasto_pedagios_real'],
+                ['pedagios','custo_pedagios','gasto_pedagios']
+            );
+            const monitor = pickRealValue(
+                ['monitor_real','monitor','custo_monitor','gasto_monitor'],
+                ['monitor_real','real_monitor','custo_monitor_real','gasto_monitor_real'],
+                ['monitor','custo_monitor','gasto_monitor']
+            );
+            const outros = pickRealValue(
+                ['outros_real','outros','outros_gastos','outros_despesas','gastos_outros'],
+                ['outros_real','real_outros','gastos_outros_real'],
+                ['outros','outros_gastos','outros_despesas','gastos_outros']
+            );
+
+            let total = pickRealValue(
+                ['total_real','total','total_despesas_reais','despesas_reais_total','gasto_total_real'],
+                ['total_real','total_despesas_reais','despesas_reais_total','gasto_total_real'],
+                ['total','custo_total_despesas','gasto_total']
+            );
+            if (!Number.isFinite(total)) {
+                const parts = [combustivel, hospedagem, alimentacao, pedagios, monitor, outros].filter(Number.isFinite);
+                total = parts.length ? parts.reduce((a,b)=>a+b,0) : null;
+            }
             return { combustivel, hospedagem, alimentacao, pedagios, monitor, outros, total };
         }
         function hasRealExpenses(exp){
@@ -624,210 +924,13 @@
         function normalizeEvent(ev){
             const dataRaw = ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?.date;
             const d = dataRaw ? new Date(dataRaw) : null;
-            const id =
-                ev?.id ??
-                ev?.id_evento ??
-                ev?.id_evento_unico ??
-                ev?.id_agendamento ??
-                ev?.uuid ??
-                ev?.evento_id ??
-                null;
+            const id = getEventStableId(ev);
             return {
                 ...(ev||{}),
                 id,
                 data_agendamento: ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data,
                 _date: d instanceof Date && !Number.isNaN(d.getTime()) ? d : null
             };
-        }
-
-        function getEventIdCandidates(ev){
-            if (!ev || typeof ev !== 'object') return [];
-            const ids = [
-                ev.id,
-                ev.id_evento,
-                ev.id_evento_unico,
-                ev.id_agendamento,
-                ev.uuid,
-                ev.evento_id
-            ].filter(v => v !== undefined && v !== null && v !== '');
-            return ids.map(v => String(v));
-        }
-
-        function scoreEventForMerge(ev){
-            if (!ev || typeof ev !== 'object') return 0;
-            let score = 0;
-            if (ev.id_evento != null) score += 6;
-            if (ev.id_evento_unico != null) score += 5;
-            if (ev.id_agendamento != null) score += 4;
-            if (ev.id != null) score += 3;
-            if (ev.uuid) score += 2;
-            if (ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data) score += 2;
-            if (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead) score += 2;
-            if (ev.cidade || ev.cidade_destino) score += 1;
-            if (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao) score += 1;
-            const lat = parseRouteNumber(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
-            const lon = parseRouteNumber(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
-            if (lat !== null && lon !== null) score += 1;
-            if (ev.finalizado === true || ev.finalizado === 'true') score += 1;
-            return score;
-        }
-
-        function mergeDuplicateEvents(base, incoming){
-            if (!base) return incoming;
-            if (!incoming) return base;
-            const incomingWins = scoreEventForMerge(incoming) > scoreEventForMerge(base);
-            const primary = incomingWins ? incoming : base;
-            const secondary = incomingWins ? base : incoming;
-            const merged = { ...primary };
-            Object.entries(secondary).forEach(([k,v]) => {
-                if (merged[k] === undefined || merged[k] === null || merged[k] === '' || merged[k] === 'null') {
-                    merged[k] = v;
-                }
-            });
-            const ids = new Set([...getEventIdCandidates(base), ...getEventIdCandidates(incoming)]);
-            if (ids.size > 1) merged._duplicate_ids = Array.from(ids);
-            return merged;
-        }
-
-        function canonicalEventSignature(ev){
-            if (!ev || typeof ev !== 'object') return '';
-            const baseDate = ev._date || (ev.data_agendamento ? new Date(ev.data_agendamento) : null);
-            const dateStr = baseDate instanceof Date && !Number.isNaN(baseDate.getTime())
-                ? baseDate.toISOString().slice(0,10)
-                : '';
-            const horarioRaw = ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data;
-            const horario = horarioRaw ? new Date(horarioRaw) : null;
-            const horaStr = horario instanceof Date && !Number.isNaN(horario.getTime()) ? horario.toISOString() : '';
-            const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '').toString().trim().toLowerCase();
-            const cidade = (ev.cidade || ev.cidade_destino || ev.cidade_origem || '').toString().trim().toLowerCase();
-            const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
-            const tipo = (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
-            return JSON.stringify({ dateStr, horaStr, escola, cidade, conteudo, tipo });
-        }
-
-        function dedupeEventsBySignature(arr){
-            if (!Array.isArray(arr)) return [];
-            const sigMap = new Map();
-            const result = [];
-            arr.forEach(ev => {
-                const sig = canonicalEventSignature(ev);
-                if (!sig) {
-                    result.push(ev);
-                    return;
-                }
-                if (sigMap.has(sig)) {
-                    const merged = mergeDuplicateEvents(sigMap.get(sig), ev);
-                    const idx = result.indexOf(sigMap.get(sig));
-                    if (idx >= 0) result[idx] = merged;
-                    sigMap.set(sig, merged);
-                } else {
-                    sigMap.set(sig, ev);
-                    result.push(ev);
-                }
-            });
-            return collapseConsecutiveDuplicates(result);
-        }
-
-        function eventGroupKey(ev){
-            if (!ev || typeof ev !== 'object') return '';
-            const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '').toString().trim().toLowerCase();
-            const cidade = (ev.cidade || ev.cidade_destino || ev.cidade_origem || '').toString().trim().toLowerCase();
-            const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
-            const tipo = (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
-            const idTipo = ev.id_tipo_tarefa ?? ev.id_tipo ?? ev.tipo_tarefa_id ?? ev.tipo_id ?? '';
-            const astroId = ev.id_astronomo ?? ev.astronomo_id ?? ev.astronomoId ?? '';
-            return JSON.stringify({ escola, cidade, conteudo, tipo, idTipo: String(idTipo), astroId: String(astroId) });
-        }
-
-        function sameDay(a, b){
-            if (!(a instanceof Date) || !(b instanceof Date)) return false;
-            return a.getFullYear() === b.getFullYear() &&
-                a.getMonth() === b.getMonth() &&
-                a.getDate() === b.getDate();
-        }
-
-        function addDays(date, days){
-            const d = new Date(date);
-            d.setDate(d.getDate() + days);
-            return d;
-        }
-
-        function getEventDateForGroup(ev){
-            if (!ev) return null;
-            if (ev._date instanceof Date && !Number.isNaN(ev._date.getTime())) return ev._date;
-            const raw = ev.data_agendamento || ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data || ev.date;
-            if (!raw) return null;
-            const d = new Date(raw);
-            if (Number.isNaN(d.getTime())) return null;
-            return d;
-        }
-
-        function collapseConsecutiveDuplicates(list){
-            if (!Array.isArray(list) || !list.length) return [];
-            const grouped = new Map();
-            list.forEach(ev => {
-                const key = eventGroupKey(ev);
-                if (!grouped.has(key)) grouped.set(key, []);
-                grouped.get(key).push(ev);
-            });
-
-            const result = [];
-            grouped.forEach(events => {
-                const sorted = events.slice().sort((a, b) => {
-                    const da = getEventDateForGroup(a);
-                    const db = getEventDateForGroup(b);
-                    if (!da && !db) return 0;
-                    if (!da) return 1;
-                    if (!db) return -1;
-                    return da - db;
-                });
-                let current = null;
-                for (const ev of sorted){
-                    if (!current) {
-                        current = { ...ev };
-                        current._groupedCount = 1;
-                        const d = getEventDateForGroup(ev);
-                        current._spanStart = d || null;
-                        current._spanEnd = d || null;
-                        continue;
-                    }
-                    const prevDate = current._spanEnd instanceof Date ? current._spanEnd : getEventDateForGroup(current);
-                    const nextDate = getEventDateForGroup(ev);
-                    const consecutive = prevDate && nextDate && sameDay(addDays(prevDate, 1), nextDate);
-                    if (consecutive){
-                        current = mergeDuplicateEvents(current, ev);
-                        const ids = new Set([...(current._duplicate_ids || []), ...(ev._duplicate_ids || []), ...(getEventIdCandidates(ev) || [])]);
-                        if (ids.size) current._duplicate_ids = Array.from(ids);
-                        current._groupedCount = (current._groupedCount || 1) + 1;
-                        current._spanEnd = nextDate || current._spanEnd;
-                        continue;
-                    }
-                    if (current._spanStart instanceof Date && current._spanEnd instanceof Date && !sameDay(current._spanStart, current._spanEnd)) {
-                        current._dateRange = `${current._spanStart.toLocaleDateString('pt-BR')} → ${current._spanEnd.toLocaleDateString('pt-BR')}`;
-                    }
-                    result.push(current);
-                    current = { ...ev };
-                    current._groupedCount = 1;
-                    const d = getEventDateForGroup(ev);
-                    current._spanStart = d || null;
-                    current._spanEnd = d || null;
-                }
-                if (current){
-                    if (current._spanStart instanceof Date && current._spanEnd instanceof Date && !sameDay(current._spanStart, current._spanEnd)) {
-                        current._dateRange = `${current._spanStart.toLocaleDateString('pt-BR')} → ${current._spanEnd.toLocaleDateString('pt-BR')}`;
-                    }
-                    result.push(current);
-                }
-            });
-
-            return result.sort((a, b) => {
-                const da = getEventDateForGroup(a);
-                const db = getEventDateForGroup(b);
-                if (!da && !db) return 0;
-                if (!da) return 1;
-                if (!db) return -1;
-                return da - db;
-            });
         }
 
         const buildRouteInfoHtml = (event) => {
@@ -867,6 +970,7 @@
             const realCostTotal = document.getElementById('real-cost-total');
             const realProfit = document.getElementById('real-profit');
             const realProfitLabel = document.getElementById('real-profit-label');
+            let currentSummaryTab = 'estimados';
 
             const setTab = (tab) => {
                 const showEstimados = tab === 'estimados';
@@ -874,6 +978,7 @@
                 if (secReais) secReais.classList.toggle('hidden', showEstimados);
                 if (tabEstimados) tabEstimados.classList.toggle('active', showEstimados);
                 if (tabReais) tabReais.classList.toggle('active', !showEstimados);
+                currentSummaryTab = showEstimados ? 'estimados' : 'reais';
             };
 
             if (tabEstimados) tabEstimados.addEventListener('click', () => setTab('estimados'));
@@ -885,6 +990,7 @@
             let realEvents = [];
             let selectedEvent = null;
             let currentPeriodFilter = 'all';
+            let currentExpenseViewFilter = 'pendentes';
             const PENDING_EXPENSE_EVENT_KEY = 'despesas_evento_selecionado';
 
             function applyPendingSelectedEvent(){
@@ -892,24 +998,31 @@
                     const raw = localStorage.getItem(PENDING_EXPENSE_EVENT_KEY);
                     if (!raw) return;
                     const pending = JSON.parse(raw);
-                    const pendingId = pending && (pending.id || pending.id_evento || pending.id_evento_unico || pending.id_agendamento || pending.uuid);
-                    if (!pendingId) {
+                    const pendingId = getEventStableId(pending || {});
+                    if (!hasStableEventId(pendingId)) {
                         localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                         return;
                     }
-                    const match = allEvents.find(ev => String(ev.id) === String(pendingId));
-                    const targetEvent = normalizeEvent(pending);
-                    if (targetEvent && !targetEvent.id) {
-                        targetEvent.id = pendingId || targetEvent.id_evento || targetEvent.id_evento_unico || targetEvent.id_agendamento || targetEvent.uuid || targetEvent.evento_id || null;
+                    const match = allEvents.find(ev => String(getEventStableId(ev)) === String(pendingId));
+                    if (!match) {
+                        localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
+                        return;
                     }
-                    if (!targetEvent) {
+                    const targetEvent = normalizeEvent(match);
+                    const targetId = getEventStableId(targetEvent);
+                    if (!targetEvent || !hasStableEventId(targetId)) {
                         localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                         return;
                     }
                     // Garante que o select mostra o evento e a lista é atualizada
                     currentPeriodFilter = 'all';
+                    currentExpenseViewFilter = isLaunchedExpenseEvent(targetEvent) ? 'lancadas' : 'pendentes';
+                    document.querySelectorAll('.expense-view-button').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.expenseView === currentExpenseViewFilter);
+                    });
+                    populateEventSelect();
                     const selectEl = document.getElementById('event-select-despesas');
-                    if (selectEl && match) selectEl.value = match.id;
+                    if (selectEl) selectEl.value = String(targetId);
                     selectedEvent = targetEvent;
                     renderSelectedEventDetails(targetEvent);
                     updateSummaryCards();
@@ -923,21 +1036,34 @@
                 }
             }
 
-            // Estilo local para cards em lista (alinhado ao visual do index)
+            // Estilo local para cards em grade (2 por linha, como histórico/feedbacks)
             (() => {
                 const style = document.createElement('style');
                 style.textContent = `
+                    .despesas-events-grid{
+                        display:grid;
+                        grid-template-columns: repeat(2, minmax(0, 1fr));
+                        gap: 18px;
+                        align-items: stretch;
+                    }
+                    .despesas-events-grid > .empty-state,
+                    .despesas-events-grid > p{
+                        grid-column: 1 / -1;
+                    }
                     .event-card-despesa{
                         background: linear-gradient(160deg, rgba(12,14,34,0.5), rgba(6,8,22,0.65));
                         border:1px solid var(--glass-border, rgba(255,255,255,0.08));
                         border-radius:12px;
                         padding:12px;
                         box-shadow: 0 12px 28px rgba(0,0,0,0.35);
-                        margin-bottom:12px;
+                        margin-bottom:0;
                         width: 100%;
                         max-width: 100%;
                         box-sizing: border-box;
                         overflow: hidden;
+                        display: flex;
+                        flex-direction: column;
+                        min-height: 100%;
                     }
                     .event-card-despesa .event-header{
                         display:flex;
@@ -953,6 +1079,43 @@
                     .event-card-despesa .event-date{
                         font-size:0.9rem;
                         color: var(--muted, rgba(255,255,255,0.7));
+                    }
+                    .event-history-badges{
+                        display:flex;
+                        flex-wrap:wrap;
+                        gap:8px;
+                        margin: 0 0 10px;
+                    }
+                    .event-status-badge{
+                        display:inline-flex;
+                        align-items:center;
+                        gap:6px;
+                        font-size:0.78rem;
+                        font-weight:700;
+                        border-radius:999px;
+                        padding:4px 10px;
+                        border:1px solid transparent;
+                        letter-spacing: .01em;
+                    }
+                    .event-status-badge.status-finalizado{
+                        color:#bbf7d0;
+                        border-color:rgba(34,197,94,.45);
+                        background:rgba(34,197,94,.16);
+                    }
+                    .event-status-badge.status-pendente{
+                        color:#fde68a;
+                        border-color:rgba(245,158,11,.45);
+                        background:rgba(245,158,11,.16);
+                    }
+                    .event-status-badge.status-lancado{
+                        color:#bfdbfe;
+                        border-color:rgba(59,130,246,.45);
+                        background:rgba(59,130,246,.16);
+                    }
+                    .event-status-badge.status-sem-lancamento{
+                        color:#fecaca;
+                        border-color:rgba(239,68,68,.45);
+                        background:rgba(239,68,68,.16);
                     }
                     .event-card-despesa .event-meta-list{
                         list-style:none;
@@ -977,18 +1140,108 @@
                         color:#e6f0ff;
                         white-space: nowrap;
                     }
-                    .event-card-despesa .group-badge{
-                        background: var(--accent-cyan, #34d1f3);
-                        color:#0b1024;
-                        padding:2px 8px;
+                    .event-card-despesa .controls{
+                        margin-top:auto !important;
+                    }
+                    .summary-card.summary-detail-trigger{
+                        cursor:pointer;
+                        transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+                    }
+                    .summary-card.summary-detail-trigger:hover{
+                        transform: translateY(-2px);
+                        border-color: rgba(255,255,255,0.26);
+                        box-shadow: 0 14px 32px rgba(0,0,0,0.3);
+                    }
+                    .summary-card.summary-detail-trigger:focus-visible{
+                        outline: 2px solid rgba(96,165,250,0.85);
+                        outline-offset: 2px;
+                    }
+                    .event-card-despesa .btn.btn-success{
+                        background: linear-gradient(135deg, rgba(16,185,129,.28), rgba(34,197,94,.22));
+                        border: 1px solid rgba(34,197,94,.55);
+                        color: #dcfce7;
+                        box-shadow: 0 8px 20px rgba(16,185,129,.18);
+                    }
+                    .event-card-despesa .btn.btn-success:hover{
+                        background: linear-gradient(135deg, rgba(16,185,129,.38), rgba(34,197,94,.3));
+                        border-color: rgba(74,222,128,.72);
+                        color: #f0fdf4;
+                        transform: translateY(-1px);
+                    }
+                    .event-card-despesa .btn.btn-success:active{
+                        transform: translateY(0);
+                        box-shadow: 0 4px 12px rgba(16,185,129,.22);
+                    }
+                    .event-card-despesa .btn.btn-success:focus-visible{
+                        outline: 2px solid rgba(74,222,128,.8);
+                        outline-offset: 2px;
+                    }
+                    .event-card-hint{
+                        margin-top: 8px;
+                        font-size: .82rem;
+                        color: var(--muted, rgba(255,255,255,0.72));
+                        display:flex;
+                        align-items:center;
+                        gap:6px;
+                    }
+                    .expense-details-meta{
+                        display:flex;
+                        flex-wrap:wrap;
+                        gap:8px;
+                        margin: 10px 0 14px;
+                    }
+                    .expense-meta-chip{
+                        display:inline-flex;
+                        align-items:center;
+                        gap:6px;
+                        padding:4px 10px;
+                        border-radius:999px;
+                        font-size:.78rem;
+                        border:1px solid rgba(255,255,255,.18);
+                        background: rgba(255,255,255,.05);
+                        color: var(--muted, rgba(255,255,255,.85));
+                    }
+                    .expense-details-grid{
+                        display:grid;
+                        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+                        gap:10px;
+                    }
+                    .expense-detail-card{
+                        border:1px solid rgba(255,255,255,0.12);
                         border-radius:12px;
-                        font-size:0.8rem;
-                        margin-left:8px;
-                        font-weight:800;
-                        box-shadow: 0 8px 20px rgba(0,0,0,0.35);
-                        display: inline-flex;
-                        align-items: center;
-                        gap: 4px;
+                        padding:10px;
+                        background: rgba(255,255,255,0.03);
+                    }
+                    .expense-detail-header{
+                        display:flex;
+                        align-items:center;
+                        gap:7px;
+                        font-weight:700;
+                        color:#e6f0ff;
+                        margin-bottom:8px;
+                    }
+                    .expense-detail-row{
+                        display:flex;
+                        justify-content:space-between;
+                        gap:8px;
+                        font-size:.88rem;
+                        color: var(--muted, rgba(255,255,255,0.85));
+                        margin-bottom:4px;
+                    }
+                    .expense-detail-row .label{
+                        color: var(--muted, rgba(255,255,255,0.72));
+                    }
+                    .expense-detail-row .value{
+                        font-weight:700;
+                        color:#e6f0ff;
+                    }
+                    .expense-detail-row .value.delta-positive{ color:#fecaca; }
+                    .expense-detail-row .value.delta-negative{ color:#bbf7d0; }
+                    .expense-detail-rule{
+                        margin-top:8px;
+                        font-size:.78rem;
+                        color: var(--muted, rgba(255,255,255,0.7));
+                        line-height:1.35;
                     }
                     .estimates-panel{
                         background: rgba(255,255,255,0.03);
@@ -1008,7 +1261,61 @@
                         color: var(--muted, rgba(255,255,255,0.82));
                     }
                     .estimate-item .label{ font-weight:700; color:#e6f0ff; }
+                    .summary-details-overview{
+                        display:flex;
+                        flex-wrap:wrap;
+                        gap:8px;
+                        margin-bottom:12px;
+                    }
+                    .summary-details-list{
+                        display:flex;
+                        flex-direction:column;
+                        gap:8px;
+                        max-height: 58vh;
+                        overflow:auto;
+                        padding-right: 2px;
+                    }
+                    .summary-detail-item{
+                        border:1px solid rgba(255,255,255,.12);
+                        border-radius:10px;
+                        background: rgba(255,255,255,.03);
+                        padding:10px 12px;
+                        display:flex;
+                        justify-content:space-between;
+                        gap:12px;
+                        align-items:flex-start;
+                    }
+                    .summary-detail-left{
+                        min-width:0;
+                    }
+                    .summary-detail-title{
+                        font-size:.95rem;
+                        font-weight:700;
+                        color:#e6f0ff;
+                        margin-bottom:2px;
+                        word-break: break-word;
+                    }
+                    .summary-detail-meta{
+                        font-size:.82rem;
+                        color: var(--muted, rgba(255,255,255,.72));
+                    }
+                    .summary-detail-value{
+                        font-size: .95rem;
+                        font-weight:700;
+                        color:#e6f0ff;
+                        white-space: nowrap;
+                    }
+                    .summary-detail-empty{
+                        border:1px dashed rgba(255,255,255,.2);
+                        border-radius:10px;
+                        padding:12px;
+                        color: var(--muted, rgba(255,255,255,.78));
+                        font-size:.92rem;
+                    }
                     @media (max-width: 560px){
+                        .despesas-events-grid{
+                            grid-template-columns: 1fr;
+                        }
                         .event-card-despesa{ padding:10px; }
                         .event-card-despesa .event-header{
                             align-items:flex-start;
@@ -1020,8 +1327,12 @@
                         .event-card-despesa .event-meta-list li{
                             font-size:0.9rem;
                         }
-                        .event-card-despesa .group-badge{
-                            margin-left:0;
+                        .summary-detail-item{
+                            flex-direction:column;
+                            gap:6px;
+                        }
+                        .summary-detail-value{
+                            align-self:flex-end;
                         }
                     }
                 `;
@@ -1053,33 +1364,174 @@
                 });
             }
 
+            function formatHistoryDate(rawDate){
+                if (!rawDate) return null;
+                const d = rawDate instanceof Date ? rawDate : new Date(rawDate);
+                if (Number.isNaN(d.getTime())) return null;
+                return d.toLocaleDateString('pt-BR');
+            }
+
+            function getEventHistoryContext(event){
+                const finalizado = isFinalizadoEvent(event);
+                const realExp = extractRealExpenses(event);
+                const despesasLancadas = isLaunchedExpenseEvent(event);
+                const finalizadoRaw = event?.finalizado_em ?? event?.data_finalizacao ?? event?.finalizado_data ?? null;
+                const finalizadoEm = finalizado ? formatHistoryDate(finalizadoRaw) : null;
+                return { finalizado, despesasLancadas, realExp, finalizadoEm };
+            }
+
+            function sortEventsByDateDesc(events){
+                return (Array.isArray(events) ? events.slice() : []).sort((a, b) => {
+                    const da = parseDatePreserveUTC(a?.data_agendamento)?.getTime() || 0;
+                    const db = parseDatePreserveUTC(b?.data_agendamento)?.getTime() || 0;
+                    return db - da;
+                });
+            }
+
+            function sortEventsByDateAsc(events){
+                return (Array.isArray(events) ? events.slice() : []).sort((a, b) => {
+                    const da = parseDatePreserveUTC(a?.data_agendamento)?.getTime() || Number.POSITIVE_INFINITY;
+                    const db = parseDatePreserveUTC(b?.data_agendamento)?.getTime() || Number.POSITIVE_INFINITY;
+                    return da - db;
+                });
+            }
+
+            function isLaunchedExpenseEvent(event){
+                // Regra operacional atual:
+                // - Pendentes: eventos não finalizados;
+                // - Lançadas: eventos finalizados.
+                return isFinalizadoEvent(event);
+            }
+
+            function getFilteredEventsByExpenseView(events, view){
+                const mode = String(view || 'pendentes').toLowerCase();
+                const list = Array.isArray(events) ? events : [];
+                if (mode === 'pendentes') return list.filter(ev => !isLaunchedExpenseEvent(ev));
+                if (mode === 'lancadas') return list.filter(ev => isLaunchedExpenseEvent(ev));
+                return list.filter(ev => !isLaunchedExpenseEvent(ev));
+            }
+
+            function getEventsForCurrentView(events){
+                const filtered = getFilteredEventsByExpenseView(events, currentExpenseViewFilter);
+                return sortEventsByDateDesc(filtered);
+            }
+
+            function getEventsScopedByCurrentFilters(events){
+                return getEventsForCurrentView(getFilteredEventsByPeriod(events, currentPeriodFilter));
+            }
+
+            function getEventsForSummary(){
+                return getEventsScopedByCurrentFilters(allEvents);
+            }
+
+            function getFinalizedEventsForSummary(){
+                return getEventsScopedByCurrentFilters(realEvents);
+            }
+
+            function getLaunchedFinalizedEventsForSummary(){
+                return getFinalizedEventsForSummary().filter(ev => hasRealExpenses(extractRealExpenses(ev)));
+            }
+
+            function getEventRevenue(ev){
+                return parseCurrencyBR(ev?.valor_total ?? ev?.total ?? ev?.valor ?? ev?.custo_total ?? 0);
+            }
+
+            function getRealExpenseTotal(realExp){
+                if (Number.isFinite(realExp?.total)) return realExp.total;
+                const parts = [
+                    realExp?.combustivel,
+                    realExp?.hospedagem,
+                    realExp?.alimentacao,
+                    realExp?.pedagios,
+                    realExp?.monitor,
+                    realExp?.outros
+                ].filter(Number.isFinite);
+                return parts.length ? parts.reduce((a,b)=>a+b,0) : 0;
+            }
+
+            function getExpenseViewLabel(view){
+                const mode = String(view || currentExpenseViewFilter || 'pendentes').toLowerCase();
+                if (mode === 'pendentes') return 'Pendentes';
+                if (mode === 'lancadas') return 'Lançadas';
+                return 'Pendentes';
+            }
+
+            function escapeHtml(value){
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            }
+
+            function getEventTitleForDetails(ev){
+                return ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead || ev?.cidade_destino || ev?.cidade || 'Evento sem nome';
+            }
+
+            function getEventMetaForDetails(ev){
+                const city = ev?.cidade_destino || ev?.cidade || ev?.cidade_evento || ev?.cidade_lead || ev?.cidade_da_escola || 'Cidade não informada';
+                const date = parseDatePreserveUTC(ev?.data_agendamento);
+                const dateLabel = date ? date.toLocaleDateString('pt-BR') : 'Data não informada';
+                return `${dateLabel} • ${city}`;
+            }
+
+            function formatExpenseDelta(estimated, real){
+                if (!Number.isFinite(estimated) || !Number.isFinite(real)) return { text: '—', cls: '' };
+                const delta = real - estimated;
+                const prefix = delta > 0 ? '+' : '';
+                const cls = delta > 0 ? 'delta-positive' : (delta < 0 ? 'delta-negative' : '');
+                return { text: `${prefix}${formatCurrencyBr(delta)}`, cls };
+            }
+
+            function buildExpenseDetailCard({ icon, label, estimated, real, rule }){
+                const estLabel = Number.isFinite(estimated) ? formatCurrencyBr(estimated) : '—';
+                const realLabel = Number.isFinite(real) ? formatCurrencyBr(real) : '—';
+                const delta = formatExpenseDelta(estimated, real);
+                return `
+                    <article class="expense-detail-card">
+                        <div class="expense-detail-header">
+                            <i class="fas ${icon}"></i>
+                            <span>${label}</span>
+                        </div>
+                        <div class="expense-detail-row">
+                            <span class="label">Estimado</span>
+                            <span class="value">${estLabel}</span>
+                        </div>
+                        <div class="expense-detail-row">
+                            <span class="label">Real lançado</span>
+                            <span class="value">${realLabel}</span>
+                        </div>
+                        <div class="expense-detail-row">
+                            <span class="label">Diferença</span>
+                            <span class="value ${delta.cls}">${delta.text}</span>
+                        </div>
+                        ${rule ? `<div class="expense-detail-rule">${rule}</div>` : ''}
+                    </article>
+                `;
+            }
+
             async function fetchEvents() {
                 try {
                     eventSelect.innerHTML = '<option value="">Carregando eventos...</option>';
                     const s = getUserSession();
                     let data;
                     if (s?.id_astronomo != null) {
-                        data = await callAgendaWebhook('atualizar_agenda', { id_astronomo: s.id_astronomo });
+                        data = await callAgendaWebhook('historico', { id_astronomo: s.id_astronomo });
                     } else {
-                        data = await callAgendaWebhook('atualizar_agenda', {});
+                        data = await callAgendaWebhook('historico', {});
                     }
                     if (data == null) throw new Error('Sem dados retornados');
                     const rawEventos = normalizeAgendaPayload(data);
                     if ((!rawEventos || !rawEventos.length) && typeof showNoDataPopup === 'function') {
                         showNoDataPopup('Sem dados retornados do n8n.');
                     }
-                    let eventsArray = dedupeEventsBySignature(rawEventos.map(normalizeEvent));
+                    let eventsArray = rawEventos.map(normalizeEvent);
                     // Mantém apenas eventos VISITA
                     eventsArray = eventsArray.filter(ev => isVisitaEvent(ev, s));
                     allEvents = eventsArray;
-                    try{
-                        const rawFinalizados = await callAgendaWebhook('finalizados', s?.id_astronomo != null ? { id_astronomo: s.id_astronomo } : {});
-                        const normalizedFinalizados = normalizeAgendaPayload(rawFinalizados);
-                        realEvents = dedupeEventsBySignature(normalizedFinalizados.map(normalizeEvent));
-                    }catch(err){
-                        console.warn('Falha ao buscar eventos finalizados:', err);
-                        realEvents = [];
-                    }
+                    refreshLodgingEligibility(allEvents);
+                    realEvents = allEvents.filter(isFinalizadoEvent);
                     populateEventSelect();
                     updateSummaryCards();
                     renderEventsForPeriod();
@@ -1106,21 +1558,22 @@
 
             function populateEventSelect() {
                 eventSelect.innerHTML = '<option value="">-- Selecione um Evento --</option>';
-                const eventsToDisplay = getFilteredEventsByPeriod(allEvents, currentPeriodFilter);
+                const eventsToDisplay = getEventsForSummary();
                 eventsToDisplay.forEach(event => {
+                    const eventId = getEventStableId(event);
+                    if (!hasStableEventId(eventId)) return;
                     const option = document.createElement('option');
-                    option.value = event.id;
+                    option.value = String(eventId);
                     const eventDate = parseDatePreserveUTC(event.data_agendamento);
                     const formattedDate = eventDate ? eventDate.toLocaleDateString('pt-BR') : 'Data Indefinida';
-                    const groupIndicator = event._groupedCount > 1 ? ` (${event._groupedCount} dias)` : '';
-                    option.textContent = `${formattedDate} - ${event.nome_da_escola || event.cidade || 'Evento sem nome'}${groupIndicator}`;
+                    option.textContent = `${formattedDate} - ${event.nome_da_escola || event.nome_escola || event.escola || event.nome_lead || event.cidade_destino || event.cidade || 'Evento sem nome'}`;
                     eventSelect.appendChild(option);
                 });
             }
 
             function handleEventSelect(event) {
                 const eventId = event.target.value;
-                selectedEvent = allEvents.find(ev => String(ev.id) === String(eventId));
+                selectedEvent = getEventsForSummary().find(ev => String(getEventStableId(ev)) === String(eventId));
                 renderSelectedEventDetails(selectedEvent);
             }
 
@@ -1128,43 +1581,69 @@
                 const eventDate = parseDatePreserveUTC(event.data_agendamento);
                 const formattedDate = eventDate ? eventDate.toLocaleDateString('pt-BR') : 'Data Indefinida';
                 const formattedTime = eventDate ? eventDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
-                const dateDisplay = event._dateRange ? event._dateRange : `${formattedDate}${formattedTime ? ' ' + formattedTime : ''}`;
-                const totalEventValueNum = parseCurrencyBR(event.valor_total || 0);
+                const dateDisplay = `${formattedDate}${formattedTime ? ' ' + formattedTime : ''}`;
+                const totalEventValueNum = parseCurrencyBR(event.valor_total ?? event.total ?? event.valor ?? event.custo_total ?? 0);
                 const astronomerProfitNum = calculateAstronomerProfit(totalEventValueNum, profitInfo.rate);
                 const profitPercentage = formatProfitPercentage(profitInfo.rate);
-                const diarias = event.numero_diarias || event.numero_de_diarias || event.diarias || 1;
-                const groupBadge = event._groupedCount > 1 ? `<span class="group-badge">${event._groupedCount} eventos agrupados</span>` : '';
                 const distKm = event.routeInfo?.distanceKm;
                 const expenses = extractExpenseEstimates(event, event.routeInfo);
                 const fuelLabel = Number.isFinite(expenses.combustivel) ? formatCurrencyBr(expenses.combustivel) : null;
                 const routeLabel = Number.isFinite(distKm) ? `${distKm.toFixed(1)} km` : null;
-                const alunos = event.faixa_de_alunos || event.numero_alunos_empresa || event.numero_de_alunos || '—';
-                const responsavel = event.responsavel_pelo_evento || event.responsavel_visita || event.contato_responsavel || '—';
+                const alunos = event.numero_alunos || event.faixa_de_alunos || event.numero_de_alunos || event.numero_alunos_empresa || '—';
+                const responsavel = event.responsavel_pelo_evento || event.responsavel || event.responsavel_visita || event.contato_responsavel || event.nome_responsavel || '—';
                 const local = event.local_instalacao || event.endereco || 'Local a definir';
-                const cidade = event.cidade || event.cidade_destino || 'Cidade não informada';
-                const conteudo = event.conteudo_da_apresentacao || event.conteudo_apresentacao || event.conteudo || '';
+                const cidade = event.cidade_destino || event.cidade || event.cidade_evento || event.cidade_lead || event.cidade_da_escola || 'Cidade não informada';
+                const conteudo = event.conteudo_da_apresentacao || event.conteudo_apresentacao || event.conteudo || event.apresentacao || '';
+                const titulo = event.nome_da_escola || event.nome_escola || event.escola || event.nome_lead || event.cidade_destino || event.cidade || 'Evento sem nome';
+                const history = getEventHistoryContext(event);
+                const totalRealLabel = Number.isFinite(history.realExp?.total) ? formatCurrencyBr(history.realExp.total) : null;
+                const statusEventoTexto = history.finalizado
+                    ? (history.finalizadoEm ? `Finalizado em ${history.finalizadoEm}` : 'Finalizado')
+                    : 'Não finalizado';
+                const statusDespesasTexto = history.despesasLancadas
+                    ? `Lançadas${totalRealLabel ? ` (${totalRealLabel})` : ''}`
+                    : 'Pendentes';
+                const actionLabel = history.despesasLancadas ? 'Ver / Editar Despesas' : 'Lançar Despesas';
+                const actionClass = history.despesasLancadas ? 'btn-success' : 'btn-secondary';
+                const eventId = getEventStableId(event);
+                const eventIdAttr = hasStableEventId(eventId) ? String(eventId) : '';
 
                 return `
-                    <div class="event-card-despesa" data-event-id="${event.id}" style="border-left: 4px solid ${event._color || '#4a90e2'}">
+                    <div class="event-card-despesa" data-event-id="${eventIdAttr}" style="border-left: 4px solid ${event._color || '#4a90e2'}">
                         <div class="event-header">
-                            <div class="event-title">${event.nome_da_escola || event.cidade || 'Evento sem nome'} ${groupBadge}</div>
+                            <div class="event-title">${titulo}</div>
                             <div class="event-date">${dateDisplay}</div>
+                        </div>
+                        <div class="event-history-badges">
+                            <span class="event-status-badge ${history.finalizado ? 'status-finalizado' : 'status-pendente'}">
+                                <i class="fas ${history.finalizado ? 'fa-check-circle' : 'fa-clock'}"></i>
+                                ${statusEventoTexto}
+                            </span>
+                            <span class="event-status-badge ${history.despesasLancadas ? 'status-lancado' : 'status-sem-lancamento'}">
+                                <i class="fas ${history.despesasLancadas ? 'fa-file-invoice-dollar' : 'fa-hourglass-half'}"></i>
+                                Despesas ${history.despesasLancadas ? 'lançadas' : 'pendentes'}
+                            </span>
                         </div>
                         <ul class="event-meta-list">
                             <li>📍 <span>${cidade} - ${local}</span></li>
                             ${conteudo ? `<li>🎯 <span>${conteudo}</span></li>` : ''}
                             <li>👥 <span>${alunos}</span></li>
+                            <li>🏁 <span class="label">Status evento:</span> <span>${statusEventoTexto}</span></li>
+                            <li>🧾 <span class="label">Status despesas:</span> <span>${statusDespesasTexto}</span></li>
                             <li>👨‍🏫 <span class="label">Responsável:</span> <span>${responsavel}</span></li>
                             <li>💰 <span class="label">Faturamento:</span> <span>${formatCurrencyBr(totalEventValueNum)}</span></li>
                             <li>💸 <span class="label">Lucro Astrônomo:</span> <span>${profitPercentage}% (${formatCurrencyBr(astronomerProfitNum)})</span></li>
-                            <li>🛏️ <span class="label">Diárias:</span> <span>${diarias}</span></li>
                             ${routeLabel || fuelLabel ? `<li>🚗 <span>${routeLabel || ''}${routeLabel && fuelLabel ? ' • ' : ''}${fuelLabel ? 'Combustível ' + fuelLabel : ''}</span></li>` : ''}
                         </ul>
                         ${buildRouteInfoHtml(event)}
                         <div class="controls" style="margin-top:10px;">
-                            <button class="btn btn-secondary launch-expense-btn" data-event-id="${event.id}">
-                                <i class="fas fa-file-invoice-dollar"></i> Lançar Despesas
+                            <button class="btn ${actionClass} launch-expense-btn" data-event-id="${eventIdAttr}">
+                                <i class="fas fa-file-invoice-dollar"></i> ${actionLabel}
                             </button>
+                        </div>
+                        <div class="event-card-hint">
+                            <i class="fas fa-circle-info"></i>
+                            Use o botão para lançar ou editar as despesas desta tarefa.
                         </div>
                     </div>
                 `;
@@ -1176,57 +1655,71 @@
                 updateProfitLabel(profitInfo);
                 
                 if (!event) {
-                    eventTotalValue.textContent = formatCurrencyBr(0);
-                    astronomerProfit.textContent = formatCurrencyBr(0);
                     return;
                 }
 
-                const totalEventValueNum = parseCurrencyBR(event.valor_total || 0);
-                const astronomerProfitNum = calculateAstronomerProfit(totalEventValueNum, profitInfo.rate);
-                eventTotalValue.textContent = formatCurrencyBr(totalEventValueNum);
-                astronomerProfit.textContent = formatCurrencyBr(astronomerProfitNum);
-
                 despesasEventsList.innerHTML = buildEventCard(event, profitInfo);
                 despesasEventsList.querySelectorAll('.launch-expense-btn').forEach(button => {
-                    button.addEventListener('click', () => openExpensesModal(event));
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        openExpensesModal(event);
+                    });
                 });
             }
 
             function renderEventsForPeriod() {
                 despesasEventsList.innerHTML = '';
-                eventTotalValue.textContent = formatCurrencyBr(0);
-                astronomerProfit.textContent = formatCurrencyBr(0);
                 const profitInfo = getProfitRateInfo();
                 updateProfitLabel(profitInfo);
-                const eventsToRender = getFilteredEventsByPeriod(allEvents, currentPeriodFilter);
-                if (!eventsToRender.length) { despesasEventsList.innerHTML = '<p>Nenhum evento encontrado para o período selecionado.</p>'; return; }
+                const eventsToRender = getEventsForSummary();
+                if (!eventsToRender.length) {
+                    const emptyMessage = currentExpenseViewFilter === 'pendentes'
+                        ? 'Não há despesas pendentes para exibir.'
+                        : 'Não há despesas lançadas para exibir.';
+                    despesasEventsList.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>Nenhum evento encontrado</h3>
+                            <p>${emptyMessage}</p>
+                        </div>
+                    `;
+                    return;
+                }
                 eventsToRender.forEach(event => {
                     const card = buildEventCard(event, profitInfo);
                     despesasEventsList.insertAdjacentHTML('beforeend', card);
                 });
-                despesasEventsList.querySelectorAll('.launch-expense-btn').forEach(button => {
-                    button.replaceWith(button.cloneNode(true));
-                });
-                despesasEventsList.querySelectorAll('.launch-expense-btn').forEach(button => {
+                const launchButtons = Array.from(despesasEventsList.querySelectorAll('.launch-expense-btn'));
+                launchButtons.forEach((button, idx) => {
                     button.addEventListener('click', (e) => {
+                        e.stopPropagation();
                         const btn = e.currentTarget;
                         const eventId = btn.dataset.eventId;
-                        const eventToLaunch = allEvents.find(ev => String(ev.id) === String(eventId));
-                        if (eventToLaunch) openExpensesModal(eventToLaunch);
+                        let eventToLaunch = eventsToRender[idx] || null;
+                        if (hasStableEventId(eventId)) {
+                            const byId = getEventsForSummary().find(ev => String(getEventStableId(ev)) === String(eventId));
+                            if (byId) eventToLaunch = byId;
+                        }
+                        if (eventToLaunch) {
+                            openExpensesModal(eventToLaunch);
+                        } else {
+                            showNotification('Não foi possível localizar os dados do evento selecionado.', 'error');
+                        }
                     });
                 });
             }
 
             function updateSummaryCards() {
-                const eventsForSummary = getFilteredEventsByPeriod(allEvents, currentPeriodFilter);
-                const finalizedEvents = getFilteredEventsByPeriod(realEvents, currentPeriodFilter);
+                const eventsForSummary = getEventsForSummary();
+                const finalizedEvents = getFinalizedEventsForSummary();
+                const launchedFinalizedEvents = getLaunchedFinalizedEventsForSummary();
                 const profitInfo = getProfitRateInfo();
                 updateProfitLabel(profitInfo);
                 
                 let totalFuel = 0, totalHotel = 0, totalFood = 0, totalPedagios = 0, totalMonitor = 0, totalFaturamento = 0;
                 eventsForSummary.forEach(event => {
                     const expenses = extractExpenseEstimates(event, event.routeInfo);
-                    const faturamentoEvento = parseCurrencyBR(event.valor_total || 0);
+                    const faturamentoEvento = getEventRevenue(event);
                     totalFuel += expenses.combustivel || 0;
                     totalHotel += expenses.hospedagem || 0;
                     totalFood += expenses.alimentacao || 0;
@@ -1236,7 +1729,7 @@
                 });
                 
                 // Lucro (estimado) considera apenas finalizados, conforme requisito
-                const faturamentoFinalizados = finalizedEvents.reduce((sum, ev) => sum + parseCurrencyBR(ev.valor_total || 0), 0);
+                const faturamentoFinalizados = finalizedEvents.reduce((sum, ev) => sum + getEventRevenue(ev), 0);
                 const totalLucroAstronomo = calculateAstronomerProfit(faturamentoFinalizados, profitInfo.rate);
                 
                 estCostFuel.textContent = formatCurrencyBr(totalFuel);
@@ -1248,27 +1741,18 @@
                 astronomerProfit.textContent = formatCurrencyBr(totalLucroAstronomo);
 
                 // Despesas reais — apenas eventos finalizados com valores reais
-                let realFuel = 0, realHotel = 0, realFood = 0, realPedagios = 0, realMonitor = 0, realOutros = 0, realTotal = null, realRevenue = 0;
-                finalizedEvents.forEach(ev => {
+                let realFuel = 0, realHotel = 0, realFood = 0, realPedagios = 0, realMonitor = 0, realOutros = 0, realTotal = 0, realRevenue = 0;
+                launchedFinalizedEvents.forEach(ev => {
                     const realExp = extractRealExpenses(ev);
-                    if (!hasRealExpenses(realExp)) return;
                     if (Number.isFinite(realExp.combustivel)) realFuel += realExp.combustivel;
                     if (Number.isFinite(realExp.hospedagem)) realHotel += realExp.hospedagem;
                     if (Number.isFinite(realExp.alimentacao)) realFood += realExp.alimentacao;
                     if (Number.isFinite(realExp.pedagios)) realPedagios += realExp.pedagios;
                     if (Number.isFinite(realExp.monitor)) realMonitor += realExp.monitor;
                     if (Number.isFinite(realExp.outros)) realOutros += realExp.outros;
-                    if (Number.isFinite(realExp.total)) {
-                        if (!Number.isFinite(realTotal)) realTotal = 0;
-                        realTotal += realExp.total;
-                    }
-                    realRevenue += parseCurrencyBR(ev.valor_total || 0);
+                    realTotal += getRealExpenseTotal(realExp);
+                    realRevenue += getEventRevenue(ev);
                 });
-                // Se total não foi calculado mas houve componentes, soma componentes
-                if (!Number.isFinite(realTotal)) {
-                    const parts = [realFuel, realHotel, realFood, realPedagios, realMonitor, realOutros].filter(v => Number.isFinite(v));
-                    realTotal = parts.length ? parts.reduce((a,b)=>a+b,0) : 0;
-                }
                 realCostFuel.textContent = formatCurrencyBr(realFuel);
                 realCostHotel.textContent = formatCurrencyBr(realHotel);
                 realCostFood.textContent = formatCurrencyBr(realFood);
@@ -1279,18 +1763,291 @@
                 realProfit.textContent = formatCurrencyBr(calculateAstronomerProfit(realRevenue, profitInfo.rate));
             }
 
+            // --- Modal de detalhes dos cards de resumo ---
+            const summaryDetailsModal = document.getElementById('summary-details-modal');
+            const summaryDetailsModalClose = document.getElementById('summary-details-modal-close');
+            const summaryDetailsTitle = document.getElementById('summary-details-title');
+            const summaryDetailsSubtitle = document.getElementById('summary-details-subtitle');
+            const summaryDetailsBody = document.getElementById('summary-details-body');
+
+            const SUMMARY_METRIC_META = Object.freeze({
+                estimado: {
+                    combustivel: { label: 'Combustível (Estimado)', icon: 'fa-gas-pump', rule: 'Soma do combustível estimado por tarefa na visão selecionada.' },
+                    hospedagem: { label: 'Hospedagem (Estimado)', icon: 'fa-bed', rule: 'Aplica regra de pernoite por bloco consecutivo elegível.' },
+                    alimentacao: { label: 'Alimentação (Estimado)', icon: 'fa-utensils', rule: 'Aplicada em todas as tarefas de visita.' },
+                    pedagios: { label: 'Pedágios (Estimado)', icon: 'fa-road', rule: 'Estimado por trecho/tarefa conforme configuração.' },
+                    monitor: { label: 'Monitor (Estimado)', icon: 'fa-chalkboard-user', rule: 'Aplicado em todas as tarefas de visita.' },
+                    faturamento: { label: 'Faturamento Total', icon: 'fa-sack-dollar', rule: 'Soma de faturamento dos eventos da visão selecionada.' },
+                    lucro: { label: 'Lucro Astrônomo (Estimado)', icon: 'fa-coins', rule: 'Percentual da sessão aplicado ao faturamento de eventos finalizados.' }
+                },
+                real: {
+                    combustivel: { label: 'Combustível (Real)', icon: 'fa-gas-pump', rule: 'Valores lançados manualmente na despesa real por evento.' },
+                    hospedagem: { label: 'Hospedagem (Real)', icon: 'fa-bed', rule: 'Mostra apenas o que foi efetivamente lançado.' },
+                    alimentacao: { label: 'Alimentação (Real)', icon: 'fa-utensils', rule: 'Mostra apenas o que foi efetivamente lançado.' },
+                    pedagios: { label: 'Pedágios (Real)', icon: 'fa-road', rule: 'Mostra apenas o que foi efetivamente lançado.' },
+                    monitor: { label: 'Monitor (Real)', icon: 'fa-chalkboard-user', rule: 'Mostra apenas o que foi efetivamente lançado.' },
+                    outros: { label: 'Outros (Real)', icon: 'fa-plus-circle', rule: 'Custos extras lançados fora das categorias principais.' },
+                    total: { label: 'Total Despesas Reais', icon: 'fa-calculator', rule: 'Soma do total real do evento (ou soma dos componentes quando total não vier pronto).' },
+                    lucro: { label: 'Lucro Astrônomo (Real)', icon: 'fa-coins', rule: 'Percentual da sessão aplicado ao faturamento dos eventos com despesas reais lançadas.' }
+                }
+            });
+
+            function getSummaryMetricMeta(mode, key){
+                const modeMap = SUMMARY_METRIC_META[String(mode || '').toLowerCase()];
+                return modeMap ? modeMap[String(key || '').toLowerCase()] : null;
+            }
+
+            function buildSummaryMetricRows(mode, key){
+                const m = String(mode || 'estimado').toLowerCase();
+                const k = String(key || '').toLowerCase();
+                const profitInfo = getProfitRateInfo();
+                const finalizedScopeEvents = getFinalizedEventsForSummary();
+                const launchedFinalizedEvents = getLaunchedFinalizedEventsForSummary();
+
+                let source = m === 'real' ? finalizedScopeEvents : getEventsForSummary();
+                if (k === 'lucro' && m === 'estimado') source = finalizedScopeEvents;
+                if (m === 'real') source = launchedFinalizedEvents;
+
+                const rows = [];
+                for (const ev of source){
+                    const est = extractExpenseEstimates(ev, ev.routeInfo);
+                    const real = extractRealExpenses(ev);
+                    let value = null;
+
+                    if (m === 'estimado'){
+                        if (k === 'combustivel') value = est.combustivel;
+                        else if (k === 'hospedagem') value = est.hospedagem;
+                        else if (k === 'alimentacao') value = est.alimentacao;
+                        else if (k === 'pedagios') value = est.pedagios;
+                        else if (k === 'monitor') value = est.monitor;
+                        else if (k === 'faturamento') value = getEventRevenue(ev);
+                        else if (k === 'lucro') value = calculateAstronomerProfit(getEventRevenue(ev), profitInfo.rate);
+                    } else {
+                        if (k === 'combustivel') value = real.combustivel;
+                        else if (k === 'hospedagem') value = real.hospedagem;
+                        else if (k === 'alimentacao') value = real.alimentacao;
+                        else if (k === 'pedagios') value = real.pedagios;
+                        else if (k === 'monitor') value = real.monitor;
+                        else if (k === 'outros') value = real.outros;
+                        else if (k === 'total') value = getRealExpenseTotal(real);
+                        else if (k === 'lucro') value = calculateAstronomerProfit(getEventRevenue(ev), profitInfo.rate);
+                    }
+
+                    const numericValue = Number.isFinite(value) ? value : 0;
+                    rows.push({
+                        eventId: getEventStableId(ev),
+                        title: getEventTitleForDetails(ev),
+                        meta: getEventMetaForDetails(ev),
+                        value: numericValue
+                    });
+                }
+
+                return rows;
+            }
+
+            function closeSummaryDetailsModal(){
+                if (!summaryDetailsModal) return;
+                summaryDetailsModal.classList.remove('open');
+                summaryDetailsModal.setAttribute('aria-hidden', 'true');
+            }
+
+            function openSummaryDetailsModal(mode, key){
+                if (!summaryDetailsModal || !summaryDetailsBody) return;
+                const normalizedMode = String(mode || '').toLowerCase();
+                const activeMode = currentSummaryTab === 'reais' ? 'real' : 'estimado';
+                if (normalizedMode !== activeMode) return;
+                const meta = getSummaryMetricMeta(normalizedMode, key);
+                if (!meta) return;
+                const rows = buildSummaryMetricRows(normalizedMode, key);
+                const total = rows.reduce((sum, row) => sum + row.value, 0);
+                const viewLabel = getExpenseViewLabel(currentExpenseViewFilter);
+
+                if (summaryDetailsTitle) {
+                    summaryDetailsTitle.innerHTML = `<i class="fas ${meta.icon}"></i> ${escapeHtml(meta.label)}`;
+                }
+                if (summaryDetailsSubtitle) {
+                    summaryDetailsSubtitle.textContent = `Visão atual: ${viewLabel} • Eventos analisados: ${rows.length}`;
+                }
+
+                if (!rows.length){
+                    summaryDetailsBody.innerHTML = `
+                        <div class="summary-details-overview">
+                            <span class="expense-meta-chip"><i class="fas fa-filter"></i>${escapeHtml(viewLabel)}</span>
+                            <span class="expense-meta-chip"><i class="fas fa-coins"></i>Total: ${formatCurrencyBr(0)}</span>
+                        </div>
+                        <div class="summary-detail-empty">
+                            Não há eventos disponíveis para esta categoria na visão atual.
+                        </div>
+                        <div class="expense-detail-rule">${escapeHtml(meta.rule)}</div>
+                    `;
+                } else {
+                    summaryDetailsBody.innerHTML = `
+                        <div class="summary-details-overview">
+                            <span class="expense-meta-chip"><i class="fas fa-filter"></i>${escapeHtml(viewLabel)}</span>
+                            <span class="expense-meta-chip"><i class="fas fa-layer-group"></i>Eventos: ${rows.length}</span>
+                            <span class="expense-meta-chip"><i class="fas fa-coins"></i>Total: ${formatCurrencyBr(total)}</span>
+                        </div>
+                        <div class="summary-details-list">
+                            ${rows.map(row => `
+                                <div class="summary-detail-item">
+                                    <div class="summary-detail-left">
+                                        <div class="summary-detail-title">${escapeHtml(row.title)}</div>
+                                        <div class="summary-detail-meta">${escapeHtml(row.meta)}${row.eventId ? ` • ID ${escapeHtml(row.eventId)}` : ''}</div>
+                                    </div>
+                                    <div class="summary-detail-value">${formatCurrencyBr(row.value)}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="expense-detail-rule" style="margin-top:10px;">${escapeHtml(meta.rule)}</div>
+                    `;
+                }
+
+                summaryDetailsModal.classList.add('open');
+                summaryDetailsModal.setAttribute('aria-hidden', 'false');
+            }
+
+            function bindSummaryDetailTriggers(){
+                document.querySelectorAll('.summary-detail-trigger').forEach(card => {
+                    if (card.dataset.summaryBound === '1') return;
+                    card.dataset.summaryBound = '1';
+                    card.setAttribute('role', 'button');
+                    card.setAttribute('tabindex', '0');
+                    const mode = card.dataset.summaryMode || '';
+                    const key = card.dataset.summaryKey || '';
+                    const meta = getSummaryMetricMeta(mode, key);
+                    if (meta?.label) card.setAttribute('aria-label', `Abrir detalhes de ${meta.label}`);
+                    card.addEventListener('click', () => openSummaryDetailsModal(mode, key));
+                    card.addEventListener('keydown', (e) => {
+                        if (e.key !== 'Enter' && e.key !== ' ') return;
+                        e.preventDefault();
+                        openSummaryDetailsModal(mode, key);
+                    });
+                });
+            }
+
+            // --- Modal de detalhes de despesas (histórico visível) ---
+            const expenseDetailsModal = document.getElementById('expense-details-modal');
+            const expenseDetailsModalClose = document.getElementById('expense-details-modal-close');
+            const expenseDetailsBody = document.getElementById('expense-details-body');
+            const expenseDetailsLaunchBtn = document.getElementById('expense-details-launch');
+            let expenseDetailsCurrentEvent = null;
+
+            function closeExpenseDetailsModal() {
+                if (!expenseDetailsModal) return;
+                expenseDetailsModal.classList.remove('open');
+                expenseDetailsModal.setAttribute('aria-hidden', 'true');
+            }
+
+            function openExpenseDetailsModal(ev){
+                if (!ev || !expenseDetailsModal || !expenseDetailsBody) return;
+                expenseDetailsCurrentEvent = ev;
+                const history = getEventHistoryContext(ev);
+                const estimates = extractExpenseEstimates(ev, ev.routeInfo);
+                const real = history.realExp || {};
+                const titulo = ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead || ev?.cidade || 'Evento sem nome';
+                const cidade = ev?.cidade_destino || ev?.cidade || ev?.cidade_evento || ev?.cidade_lead || ev?.cidade_da_escola || 'Cidade não informada';
+                const local = ev?.local_instalacao || ev?.endereco || 'Local a definir';
+                const rawDate = parseDatePreserveUTC(ev?.data_agendamento);
+                const dataLabel = rawDate ? rawDate.toLocaleDateString('pt-BR') : 'Data não informada';
+                const statusEventoTexto = history.finalizado
+                    ? (history.finalizadoEm ? `Finalizado em ${history.finalizadoEm}` : 'Finalizado')
+                    : 'Não finalizado';
+                const statusDespesasTexto = history.despesasLancadas ? 'Despesas lançadas' : 'Despesas pendentes';
+                const hospedagemRule = isLodgingEligibleEvent(ev)
+                    ? 'Hospedagem aplicável: bloco consecutivo com pernoite.'
+                    : 'Hospedagem não aplicável: dia único/sem pernoite.';
+
+                const cards = [
+                    {
+                        icon: 'fa-gas-pump',
+                        label: 'Combustível',
+                        estimated: estimates.combustivel,
+                        real: real.combustivel,
+                        rule: 'Baseado na distância da rota (com ajuste de ida/volta quando aplicável).'
+                    },
+                    {
+                        icon: 'fa-bed',
+                        label: 'Hospedagem',
+                        estimated: estimates.hospedagem,
+                        real: real.hospedagem,
+                        rule: hospedagemRule
+                    },
+                    {
+                        icon: 'fa-utensils',
+                        label: 'Alimentação',
+                        estimated: estimates.alimentacao,
+                        real: real.alimentacao,
+                        rule: 'Aplicável em todas as tarefas de visita (consumo diário do astrônomo).'
+                    },
+                    {
+                        icon: 'fa-road',
+                        label: 'Pedágios',
+                        estimated: estimates.pedagios,
+                        real: real.pedagios,
+                        rule: 'Valor por trecho/tarefa conforme cadastro e lançamento real.'
+                    },
+                    {
+                        icon: 'fa-chalkboard-user',
+                        label: 'Monitor',
+                        estimated: estimates.monitor,
+                        real: real.monitor,
+                        rule: 'Custo de monitor por tarefa, comparando estimado e lançado.'
+                    },
+                    {
+                        icon: 'fa-plus-circle',
+                        label: 'Outros',
+                        estimated: null,
+                        real: real.outros,
+                        rule: 'Campo manual para custos extras não previstos.'
+                    },
+                    {
+                        icon: 'fa-calculator',
+                        label: 'Total',
+                        estimated: estimates.total,
+                        real: real.total,
+                        rule: 'Soma das despesas para análise de diferença entre previsto e realizado.'
+                    }
+                ];
+
+                expenseDetailsBody.innerHTML = `
+                    <div class="event-header" style="margin-bottom:8px;">
+                        <div class="event-title">${titulo}</div>
+                        <div class="event-date">${dataLabel}</div>
+                    </div>
+                    <ul class="event-meta-list" style="margin-bottom: 10px;">
+                        <li>📍 <span>${cidade} - ${local}</span></li>
+                    </ul>
+                    <div class="expense-details-meta">
+                        <span class="expense-meta-chip"><i class="fas fa-flag-checkered"></i>${statusEventoTexto}</span>
+                        <span class="expense-meta-chip"><i class="fas fa-file-invoice-dollar"></i>${statusDespesasTexto}</span>
+                    </div>
+                    <div class="expense-details-grid">
+                        ${cards.map(buildExpenseDetailCard).join('')}
+                    </div>
+                `;
+
+                if (expenseDetailsLaunchBtn) {
+                    expenseDetailsLaunchBtn.innerHTML = history.despesasLancadas
+                        ? '<i class="fas fa-pen-to-square"></i> Editar despesas'
+                        : '<i class="fas fa-file-invoice-dollar"></i> Lançar despesas';
+                }
+
+                expenseDetailsModal.classList.add('open');
+                expenseDetailsModal.setAttribute('aria-hidden', 'false');
+            }
+
             // --- Modal de despesas ---
             const expensesModal = document.getElementById('expenses-modal');
             const expensesModalClose = document.getElementById('expenses-modal-close');
             const expensesForm = document.getElementById('expenses-form');
             const expCancelBtn = document.getElementById('exp-cancel');
             function openExpensesModal(ev) {
-                const eventId = ev?.id || ev?.id_evento || ev?.id_evento_unico || ev?.id_agendamento || ev?.uuid || ev?.evento_id || '';
-                if (!eventId) {
+                const eventId = getEventStableId(ev || {});
+                if (!hasStableEventId(eventId)) {
                     showNotification('Evento sem ID. Não é possível lançar despesas.', 'error');
                     return;
                 }
-                document.getElementById('exp-id-evento').value = eventId;
+                document.getElementById('exp-id-evento').value = String(eventId);
                 const idLabel = document.getElementById('exp-id-label');
                 if (idLabel) {
                     const nome = ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead || ev?.cidade || '';
@@ -1313,11 +2070,13 @@
                 const panel = document.getElementById('exp-estimates-panel');
                 if (panel){
                     const fmt = (v) => Number.isFinite(v) ? formatCurrencyBr(v) : 'R$ 0,00';
-                    const diariasLabel = Number(ev?.numero_de_diarias || ev?.numero_diarias || ev?.diarias || 1);
                     const tipo = (ev?.tipo_da_tarefa || ev?.tipo || ev?.tipo_evento || '').toString().toUpperCase() || '—';
+                    const hospedagemRegra = isLodgingEligibleEvent(ev)
+                        ? 'Aplicável (bloco consecutivo com pernoite)'
+                        : 'Não aplicável (dia único / sem pernoite)';
                     panel.innerHTML = `
                         <div class="estimate-item"><span class="label">Tipo</span><span>${tipo}</span></div>
-                        <div class="estimate-item"><span class="label">Diárias</span><span>${diariasLabel}</span></div>
+                        <div class="estimate-item"><span class="label">Regra hospedagem</span><span>${hospedagemRegra}</span></div>
                         <div class="estimate-item"><span class="label">Combustível (estimado)</span><span>${fmt(estimates.combustivel)}</span></div>
                         <div class="estimate-item"><span class="label">Hospedagem</span><span>${fmt(estimates.hospedagem)}</span></div>
                         <div class="estimate-item"><span class="label">Alimentação</span><span>${fmt(estimates.alimentacao)}</span></div>
@@ -1359,26 +2118,22 @@
                 const outros = normalizeInput(inOut);
                 if (!id_evento) { showNotification('Evento inválido.', 'error'); return; }
                 try {
-                    const ev = allEvents.find(item => String(item.id) === String(id_evento)) || selectedEvent || {};
-                    const duplicateIds = Array.isArray(ev?._duplicate_ids) && ev._duplicate_ids.length
-                        ? ev._duplicate_ids.map(String)
-                        : [id_evento];
-                    const result = await callAgendaWebhook('lancar_despesas', {
+                    const ev = allEvents.find(item => String(getEventStableId(item)) === String(id_evento)) || selectedEvent || {};
+                    const payload = {
                         id: id_evento,
-                        ids_eventos: duplicateIds.join(','),
-                        data_agendamento: ev.data_agendamento || ev.data_e_hora_agendamento || ev.data || null,
+                        id_evento: id_evento,
+                        data_agendamento: ev.data_agendamento || ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data || null,
                         nome_da_escola: ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || null,
-                        cidade: ev.cidade || ev.cidade_destino || null,
-                        numero_de_diarias: ev.numero_de_diarias || ev.numero_diarias || ev.diarias || null,
-                        numero_alunos: ev.numero_alunos || ev.numero_de_alunos || ev.numero_alunos_empresa || null,
+                        cidade: ev.cidade_destino || ev.cidade || ev.cidade_evento || ev.cidade_lead || ev.cidade_da_escola || null,
+                        numero_alunos: ev.numero_alunos || ev.faixa_de_alunos || ev.numero_de_alunos || ev.numero_alunos_empresa || null,
                         tipo_da_tarefa: ev.tipo_da_tarefa || ev.tipo || ev.tipo_evento || null,
-                        id_tipo_tarefa: ev.id_tipo_tarefa || ev.id_tipo || ev.tipo_tarefa_id || ev.tipo_id || null,
+                        id_tipo_tarefa: ev.id_tipo_tarefa || ev.id_tipo || ev.id_tipo_evento || ev.id_tipo_da_tarefa || ev.tipo_tarefa_id || ev.tipo_id || null,
                         astronomo: ev.astronomo || ev.astronomo_validacao || null,
-                        responsavel_pelo_evento: ev.responsavel_pelo_evento || ev.responsavel_visita || ev.contato_responsavel || null,
-                        telefone_contato: ev.telefone_contato || ev.telefone_responsavel_evento || null,
+                        responsavel_pelo_evento: ev.responsavel_pelo_evento || ev.responsavel || ev.responsavel_visita || ev.contato_responsavel || ev.nome_responsavel || null,
+                        telefone_contato: ev.telefone_contato || ev.telefone_responsavel_evento || ev.telefone_responsavel || ev.telefone_do_responsavel || ev.responsavel_telefone || ev.responsavel_celular || ev.whatsapp_responsavel || ev.celular_responsavel || ev.contato_responsavel || ev.fone_responsavel || ev.responsavel_whatsapp || ev.telefone_evento || ev.telefone_escola || null,
                         endereco: ev.endereco || null,
-                        local_instalacao: ev.local_instalacao || null,
-                        valor_total: ev.valor_total || ev.valor || ev.total || null,
+                        local_instalacao: ev.local_instalacao || ev.endereco || null,
+                        valor_total: ev.valor_total || ev.total || ev.valor || ev.custo_total || null,
                         produtos: ev.produtos || null,
                         cupula: ev.cupula || null,
                         turno: ev.turno || null,
@@ -1391,7 +2146,8 @@
                         pedagios,
                         monitor,
                         outros
-                    });
+                    };
+                    const result = await callAgendaWebhook('lancar_despesas', payload);
                     console.log('Resposta do webhook:', result);
                     showNotification('Despesas lançadas com sucesso.', 'success');
                     closeExpensesModal();
@@ -1401,18 +2157,49 @@
                     showNotification('Falha ao lançar despesas: ' + err.message, 'error');
                 }
             }
+            if (summaryDetailsModalClose) summaryDetailsModalClose.addEventListener('click', closeSummaryDetailsModal);
+            if (summaryDetailsModal) {
+                summaryDetailsModal.addEventListener('click', (e) => {
+                    if (e.target === summaryDetailsModal) closeSummaryDetailsModal();
+                });
+            }
+            if (expenseDetailsModalClose) expenseDetailsModalClose.addEventListener('click', closeExpenseDetailsModal);
+            if (expenseDetailsLaunchBtn) {
+                expenseDetailsLaunchBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (!expenseDetailsCurrentEvent) return;
+                    closeExpenseDetailsModal();
+                    openExpensesModal(expenseDetailsCurrentEvent);
+                });
+            }
+            if (expenseDetailsModal) {
+                expenseDetailsModal.addEventListener('click', (e) => {
+                    if (e.target === expenseDetailsModal) closeExpenseDetailsModal();
+                });
+            }
             expensesModalClose.addEventListener('click', closeExpensesModal);
             expCancelBtn.addEventListener('click', closeExpensesModal);
             expensesForm.addEventListener('submit', submitExpensesForm);
             expensesModal.addEventListener('click', (e) => { if (e.target === expensesModal) closeExpensesModal(); });
-            document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && expensesModal.classList.contains('open')) closeExpensesModal(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key !== 'Escape') return;
+                if (summaryDetailsModal && summaryDetailsModal.classList.contains('open')) {
+                    closeSummaryDetailsModal();
+                    return;
+                }
+                if (expenseDetailsModal && expenseDetailsModal.classList.contains('open')) {
+                    closeExpenseDetailsModal();
+                    return;
+                }
+                if (expensesModal.classList.contains('open')) closeExpensesModal();
+            });
 
-            // Period filter buttons
-            document.querySelectorAll('.period-filter-button').forEach(button => {
+            // View filter buttons (Pendentes, Lançadas)
+            document.querySelectorAll('.expense-view-button').forEach(button => {
                 button.addEventListener('click', () => {
-                    document.querySelectorAll('.period-filter-button').forEach(btn => btn.classList.remove('active'));
+                    document.querySelectorAll('.expense-view-button').forEach(btn => btn.classList.remove('active'));
                     button.classList.add('active');
-                    currentPeriodFilter = button.dataset.period;
+                    currentExpenseViewFilter = button.dataset.expenseView || 'pendentes';
                     selectedEvent = null;
                     eventSelect.value = "";
                     populateEventSelect();
@@ -1422,11 +2209,36 @@
             });
 
             // Initial fetch
+            bindSummaryDetailTriggers();
             fetchEvents();
             eventSelect.addEventListener('change', handleEventSelect);
         });
     })();
     </script>
+
+    <!-- Modal: Detalhes dos cards de resumo -->
+    <div class="modal" id="summary-details-modal" aria-hidden="true" role="dialog">
+        <div class="modal-content" role="document" style="max-width: 920px;">
+            <button class="close-btn" id="summary-details-modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-title" id="summary-details-title"><i class="fas fa-chart-pie"></i> Detalhes do resumo</div>
+            <p id="summary-details-subtitle" style="margin: 2px 0 12px; color: var(--muted, rgba(255,255,255,0.74)); font-size: 0.9rem;"></p>
+            <div id="summary-details-body"></div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalhes de Despesas -->
+    <div class="modal" id="expense-details-modal" aria-hidden="true" role="dialog">
+        <div class="modal-content" role="document" style="max-width: 920px;">
+            <button class="close-btn" id="expense-details-modal-close" aria-label="Fechar">&times;</button>
+            <div class="modal-title"><i class="fas fa-receipt"></i> Detalhes de despesas do evento</div>
+            <div id="expense-details-body"></div>
+            <div class="controls" style="margin-top: 12px; gap:8px; display:flex; flex-wrap: wrap; justify-content:flex-end;">
+                <button type="button" class="btn btn-secondary" id="expense-details-launch">
+                    <i class="fas fa-file-invoice-dollar"></i> Lançar despesas
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Lançar Despesas -->
     <div class="modal" id="expenses-modal" aria-hidden="true" role="dialog">
