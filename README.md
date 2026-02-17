@@ -55,7 +55,7 @@ Observacao:
 
 ### Endpoint de astrônomos (`/webhook/novo-astronomo-1`)
 1. `list`: lista astrônomos.
-2. `login`: autenticacao no login alternativo.
+2. `login`: autenticacao oficial da aplicacao.
 3. `add`, `edit`, `delete`: CRUD de astrônomos no painel RH.
 4. `import_csv`: importacao em lote de cadastro.
 5. `get_img`, `add_img`, `delete_img`: gestao de imagens de evento.
@@ -83,32 +83,19 @@ As paginas normalizam nomes diferentes de payload para um mesmo significado de n
 
 ## Pagina por pagina (logica de negocio)
 
-### `login.html` (login padrao)
-Objetivo:
-1. Carregar lista de astrônomos.
-2. Permitir selecao de usuario.
-3. Validar senha e abrir sessao.
-
-Funcoes de negocio principais:
-1. `fetchAstronomersData`: busca cadastro de astrônomos no endpoint.
-2. `populateAstronomerSelect`: organiza opcoes para escolha.
-3. `handleAstronomerSelect`: preenche resumo do profissional.
-4. `authenticateUser`: valida senha informada.
-5. `loginSuccess`: salva sessao unificada usada pelas outras paginas.
-6. `extractProfitRate`: prepara percentual de lucro para telas financeiras.
-
-### `login-n8n.html` (login alternativo)
+### `login.html` (autenticacao oficial)
 Objetivo:
 1. Autenticar diretamente via webhook com `action=login`.
-2. Normalizar resposta de formatos diferentes.
-3. Salvar sessao no mesmo padrao do login principal.
+2. Normalizar resposta de formatos diferentes (incluindo array de usuario).
+3. Abrir sessao unica usada por todas as paginas.
 
 Funcoes de negocio principais:
 1. `callAuthWebhook`: envia usuario/senha para autenticacao.
-2. `normalizeResponse`: adapta formatos de retorno.
+2. `normalizeResponse`: adapta formatos de retorno (objeto unico, objeto com `data/result` ou array de usuarios).
 3. `parseLoginAllowed`: decide se acesso foi autorizado.
-4. `saveSession`: grava sessao e dados minimos para operacao.
+4. `saveSession`: grava `astronomo_session`/`userSession` com os campos retornados pelo login (ex.: `id_astronomo`, `cidade_base`, `id_visita`, `porcentagem_lucro` etc.), iniciando a sessao operacional para as demais paginas.
 5. `handleSubmit`: orquestra fluxo completo de autenticacao.
+6. Ao autorizar acesso, a tela exibe mensagem dinamica de boas-vindas com o usuario retornado (`Seja Bem vindo <usuario>`).
 
 ### `index.html` (agenda operacional)
 Objetivo:
