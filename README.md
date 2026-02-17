@@ -196,7 +196,7 @@ Funcoes de negocio principais:
 1. `fetchDataFromN8N`: carrega historico via `action=historico`.
 2. `applyEventsData`: normaliza e filtra por sessao logada.
 3. `applyFilters`: aplica filtros de cidade, periodo e busca.
-4. `openEventModal`: detalha evento e oferece lancamento de despesas.
+4. `openEventModal`: detalha evento e oferece lancamento de despesas apenas para eventos nao finalizados (com deteccao robusta de status/finalizacao por aliases do payload).
 5. `exportToCSV`: exporta visao filtrada.
 6. `updateStats`: KPIs de volume, finalizacao e valor.
 
@@ -308,8 +308,9 @@ Chaves de contexto usadas no fluxo de negocio:
 6. `rotas_cache_v1`: base compartilhada para tela de rotas.
 7. `rotas_override_v1::...`: ajustes de distancia de rota continua.
 8. `despesas_evento_selecionado`: navegacao contextual para abrir despesas no evento certo.
-9. `index_ui_state_v1` e `rhAstronomosUI`: persistencia de estado de filtros.
-10. `user_theme::...`: tema personalizado por usuario.
+9. No atalho `historico -> despesas`, o payload salvo inclui `id` estavel + `_open_expenses=true`; em `despesas.html`, `applyPendingSelectedEvent` le essa chave, localiza o evento no payload de `historico`, seleciona a aba correta (`pendentes` para nao finalizados) e abre o formulario.
+10. `index_ui_state_v1` e `rhAstronomosUI`: persistencia de estado de filtros.
+11. `user_theme::...`: tema personalizado por usuario.
 
 ## Exemplo simples de jornada real
 1. Astrônomo entra no `login.html`.

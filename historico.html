@@ -362,9 +362,67 @@
             });
             return result;
         }
+        function normalizeStatusToken(value){
+            return String(value ?? '')
+                .trim()
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+        }
+        function isTruthyFlag(v){
+            if (v === true || v === 1 || v === '1') return true;
+            const status = normalizeStatusToken(v);
+            return status === 'true' || status === 'sim' || status === 'yes' || status === 'ok';
+        }
+        function hasFinalizadoKeyword(value){
+            const status = normalizeStatusToken(value);
+            if (!status) return false;
+            if (status === '0' || status === 'false' || status === 'nao' || status === 'no') return false;
+            if (
+                (status.includes('nao ') && (status.includes('finaliz') || status.includes('conclu') || status.includes('encerr'))) ||
+                status.includes('pendente') ||
+                status.includes('em aberto')
+            ) return false;
+            if (status === 'done' || status === 'completed') return true;
+            return (
+                status.includes('finalizado') ||
+                status.includes('finalizada') ||
+                status.includes('concluido') ||
+                status.includes('concluida') ||
+                status.includes('encerrado') ||
+                status.includes('encerrada')
+            );
+        }
         function isFinalizadoEvent(ev){
-            const v = ev?.finalizado;
-            return v === true || v === 'true' || v === 1 || v === '1';
+            if (!ev || typeof ev !== 'object') return false;
+            const explicitFlags = [
+                ev?.finalizado,
+                ev?.finalizada,
+                ev?.evento_finalizado,
+                ev?.status_finalizacao,
+                ev?.status_da_finalizacao
+            ];
+            if (explicitFlags.some(v => isTruthyFlag(v) || hasFinalizadoKeyword(v))) return true;
+
+            const statusFields = [
+                ev?.status,
+                ev?.status_evento,
+                ev?.status_da_tarefa,
+                ev?.status_resultado,
+                ev?.resultado,
+                ev?.result,
+                ev?.situacao,
+                ev?.situacao_evento
+            ];
+            if (statusFields.some(hasFinalizadoKeyword)) return true;
+
+            const finalizacaoDates = [ev?.finalizado_em, ev?.data_finalizacao, ev?.finalizado_data, ev?.data_finalizado];
+            for (const raw of finalizacaoDates){
+                if (raw == null || String(raw).trim() === '') continue;
+                const dt = raw instanceof Date ? raw : new Date(raw);
+                if (!Number.isNaN(dt.getTime())) return true;
+            }
+            return false;
         }
         async function callAgendaWebhook(action, params){
             const payload = { action, ...(params||{}) };
@@ -658,6 +716,7 @@
             const alunos = event.numero_alunos || event.faixa_de_alunos || event.numero_de_alunos || event.numero_alunos_empresa || '—';
             const local = event.local || event.local_instalacao || event.endereco || 'Local não informado';
             const eventIdLabel = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? '';
+            const canLaunchExpenses = !event._finalizado;
 
             eventModalBody.innerHTML = `
                 <div class="history-modal__header">
@@ -715,12 +774,14 @@
                         <span class="label">Feedback</span>
                         <span class="value">${feedback}</span>
                     </div>` : ''}
-                <div class="history-modal__actions" style="margin-top:16px; display:flex; justify-content:flex-end; gap:12px;">
-                    <button class="btn btn-primary" id="btn-lancar-despesas-historico">
-                        <i class="fas fa-file-invoice-dollar"></i>
-                        Lançar despesas deste evento
-                    </button>
-                </div>
+                ${canLaunchExpenses ? `
+                    <div class="history-modal__actions" style="margin-top:16px; display:flex; justify-content:flex-end; gap:12px;">
+                        <button class="btn btn-primary" id="btn-lancar-despesas-historico">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                            Lançar despesas deste evento
+                        </button>
+                    </div>
+                ` : ''}
             `;
 
             eventModal.classList.add('show');
