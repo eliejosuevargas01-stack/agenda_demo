@@ -693,6 +693,102 @@
             if (eventModalBody) eventModalBody.innerHTML = '';
         }
 
+        function parseMoneyValue(value){
+            if (value === null || value === undefined) return null;
+            if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+            if (typeof value === 'boolean') return null;
+            const raw = String(value).trim();
+            if (!raw) return null;
+            const cleaned = raw.replace(/[^0-9.,-]/g, '');
+            if (!cleaned || cleaned === '-' || cleaned === ',' || cleaned === '.') return null;
+            let normalized = cleaned;
+            const hasComma = normalized.includes(',');
+            const hasDot = normalized.includes('.');
+            if (hasComma && hasDot) {
+                if (normalized.lastIndexOf(',') > normalized.lastIndexOf('.')) {
+                    normalized = normalized.replace(/\./g, '').replace(',', '.');
+                } else {
+                    normalized = normalized.replace(/,/g, '');
+                }
+            } else if (hasComma && !hasDot) {
+                normalized = normalized.replace(/,/g, '.');
+            }
+            const n = Number(normalized);
+            return Number.isFinite(n) ? n : null;
+        }
+
+        function formatCurrencyBr(value){
+            const n = typeof value === 'number' ? value : parseMoneyValue(value);
+            if (!Number.isFinite(n)) return '—';
+            return `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        }
+
+        function extractRealExpensesFromEvent(ev){
+            const root = (ev && typeof ev === 'object') ? ev : null;
+            if (!root) return { combustivel:null, hospedagem:null, alimentacao:null, pedagios:null, monitor:null, outros:null, total:null };
+
+            const nestedSources = [
+                root?.despesas_reais,
+                root?.gastos_reais,
+                root?.despesas,
+                root?.gastos
+            ].filter(src => src && typeof src === 'object');
+
+            const pickFrom = (sources, keys) => {
+                for (const src of sources){
+                    for (const k of keys){
+                        if (!src || typeof src !== 'object') continue;
+                        if (!(k in src)) continue;
+                        const n = parseMoneyValue(src[k]);
+                        if (Number.isFinite(n)) return n;
+                    }
+                }
+                return null;
+            };
+            const pick = (nestedKeys, rootKeys) => {
+                const nested = pickFrom(nestedSources, nestedKeys);
+                if (Number.isFinite(nested)) return nested;
+                const rootVal = pickFrom([root], rootKeys);
+                if (Number.isFinite(rootVal)) return rootVal;
+                return null;
+            };
+
+            const combustivel = pick(
+                ['combustivel_real','combustivel','despesa_combustivel','custo_combustivel','gasto_combustivel'],
+                ['combustivel_real','real_combustivel','despesa_combustivel_real','gasto_combustivel_real','combustivel','despesa_combustivel','custo_combustivel','gasto_combustivel']
+            );
+            const hospedagem = pick(
+                ['hospedagem_real','hospedagem','custo_hospedagem','gasto_hospedagem','diaria_hospedagem_total'],
+                ['hospedagem_real','real_hospedagem','custo_hospedagem_real','gasto_hospedagem_real','hospedagem','custo_hospedagem','gasto_hospedagem','diaria_hospedagem_total']
+            );
+            const alimentacao = pick(
+                ['alimentacao_real','alimentacao','custo_alimentacao','gasto_alimentacao'],
+                ['alimentacao_real','real_alimentacao','custo_alimentacao_real','gasto_alimentacao_real','alimentacao','custo_alimentacao','gasto_alimentacao']
+            );
+            const pedagios = pick(
+                ['pedagios_real','pedagios','custo_pedagios','gasto_pedagios'],
+                ['pedagios_real','real_pedagios','custo_pedagios_real','gasto_pedagios_real','pedagios','custo_pedagios','gasto_pedagios']
+            );
+            const monitor = pick(
+                ['monitor_real','monitor','custo_monitor','gasto_monitor'],
+                ['monitor_real','real_monitor','custo_monitor_real','gasto_monitor_real','monitor','custo_monitor','gasto_monitor']
+            );
+            const outros = pick(
+                ['outros_real','outros','outros_gastos','outros_despesas','gastos_outros'],
+                ['outros_real','real_outros','gastos_outros_real','outros','outros_gastos','outros_despesas','gastos_outros']
+            );
+
+            let total = pick(
+                ['total_real','total','total_despesas_reais','despesas_reais_total','gasto_total_real','custo_total_despesas','gasto_total'],
+                ['total_real','total_despesas_reais','despesas_reais_total','gasto_total_real','total','custo_total_despesas','gasto_total']
+            );
+            if (!Number.isFinite(total)) {
+                const parts = [combustivel, hospedagem, alimentacao, pedagios, monitor, outros].filter(Number.isFinite);
+                total = parts.length ? parts.reduce((a,b)=>a+b,0) : null;
+            }
+            return { combustivel, hospedagem, alimentacao, pedagios, monitor, outros, total };
+        }
+
         function openEventModal(event){
             if (!eventModal || !eventModalBody) return;
             const schoolName = getSchoolName(event) || 'Não informado';
@@ -717,6 +813,51 @@
             const local = event.local || event.local_instalacao || event.endereco || 'Local não informado';
             const eventIdLabel = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? '';
             const canLaunchExpenses = !event._finalizado;
+            const realExpenses = extractRealExpensesFromEvent(event);
+            const hasRealExpenseData = event._finalizado && ['combustivel','hospedagem','alimentacao','pedagios','monitor','outros','total']
+                .some(k => Number.isFinite(realExpenses?.[k]));
+            const expenseCardsHtml = (() => {
+                if (!event._finalizado) return '';
+                if (!hasRealExpenseData) {
+                    return `
+                        <div class="history-detail" style="grid-column:1/-1;">
+                            <span class="label">Despesas reais</span>
+                            <span class="value">Não encontradas no payload deste evento.</span>
+                        </div>
+                    `;
+                }
+                const fmt = (v) => formatCurrencyBr(v);
+                return `
+                    <div class="history-detail">
+                        <span class="label">Combustível (real)</span>
+                        <span class="value">${fmt(realExpenses.combustivel)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Hospedagem (real)</span>
+                        <span class="value">${fmt(realExpenses.hospedagem)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Alimentação (real)</span>
+                        <span class="value">${fmt(realExpenses.alimentacao)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Pedágios (real)</span>
+                        <span class="value">${fmt(realExpenses.pedagios)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Monitor (real)</span>
+                        <span class="value">${fmt(realExpenses.monitor)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Outros (real)</span>
+                        <span class="value">${fmt(realExpenses.outros)}</span>
+                    </div>
+                    <div class="history-detail">
+                        <span class="label">Total despesas (real)</span>
+                        <span class="value">${fmt(realExpenses.total)}</span>
+                    </div>
+                `;
+            })();
 
             eventModalBody.innerHTML = `
                 <div class="history-modal__header">
@@ -763,6 +904,7 @@
                         <span class="label">Status</span>
                         <span class="value">${event._finalizado ? `Finalizado em ${finalizadoFormatted}` : 'Não finalizado'}</span>
                     </div>
+                    ${expenseCardsHtml}
                 </div>
 
                 <div class="history-detail" style="grid-column:1/-1; margin-top:12px;">

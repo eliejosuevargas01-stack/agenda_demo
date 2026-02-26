@@ -998,13 +998,54 @@
                     const raw = localStorage.getItem(PENDING_EXPENSE_EVENT_KEY);
                     if (!raw) return;
                     const pending = JSON.parse(raw);
-                    const pendingId = getEventStableId(pending || {});
-                    if (!hasStableEventId(pendingId)) {
+                    const buildIdCandidates = (obj) => {
+                        if (!obj || typeof obj !== 'object') return [];
+                        const values = [
+                            obj.id,
+                            obj._id,
+                            obj.id_tarefa,
+                            obj.tarefa_id,
+                            obj.id_evento,
+                            obj.id_evento_unico,
+                            obj.id_agendamento,
+                            obj.uuid,
+                            obj.evento_id
+                        ];
+                        const ids = values
+                            .filter(v => v !== null && v !== undefined)
+                            .map(v => String(v).trim())
+                            .filter(Boolean);
+                        return Array.from(new Set(ids));
+                    };
+
+                    const pendingIds = buildIdCandidates(pending);
+                    if (!pendingIds.length) {
                         localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                         return;
                     }
-                    const match = allEvents.find(ev => String(getEventStableId(ev)) === String(pendingId));
+
+                    const pendingId = getEventStableId(pending || {});
+                    let match = null;
+                    if (hasStableEventId(pendingId)) {
+                        match = allEvents.find(ev => String(getEventStableId(ev)) === String(pendingId)) || null;
+                    }
                     if (!match) {
+                        const idIndex = new Map();
+                        (Array.isArray(allEvents) ? allEvents : []).forEach(ev => {
+                            buildIdCandidates(ev).forEach(id => {
+                                if (!idIndex.has(id)) idIndex.set(id, ev);
+                            });
+                        });
+                        for (const id of pendingIds) {
+                            if (idIndex.has(id)) {
+                                match = idIndex.get(id);
+                                break;
+                            }
+                        }
+                    }
+                    if (!match) {
+                        console.warn('Evento pendente de despesas não encontrado no payload de histórico.', { pendingId, pendingIds });
+                        showNotification('Não foi possível localizar o evento para abrir despesas automaticamente.', 'error');
                         localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                         return;
                     }

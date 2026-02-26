@@ -1453,11 +1453,21 @@
         }
 
         async function lancarDespesas(ev, btn){
-            const id = getEventId(ev);
-            if (!id) return;
-            // Salva o evento selecionado para ser usado no formulário real em despesas.html
+            const id =
+                ev?.id ??
+                ev?.id_tarefa ??
+                ev?.id_evento ??
+                ev?.id_evento_unico ??
+                ev?.id_agendamento ??
+                ev?.uuid ??
+                ev?.evento_id ??
+                null;
+            if (id === null || id === undefined || String(id).trim() === '') {
+                alert('Evento sem ID. Não é possível lançar despesas.');
+                return;
+            }
             try{
-                localStorage.setItem('despesas_evento_selecionado', JSON.stringify(ev));
+                localStorage.setItem('despesas_evento_selecionado', JSON.stringify({ ...(ev || {}), id, _open_expenses: true }));
             }catch(_){}
             window.location.href = 'despesas.html';
         }
@@ -1470,21 +1480,7 @@
         }
 
         async function finalizarEvento(ev, btn){
-            const id = getEventId(ev);
-            if (!id) return;
-            pendingFinalizeEvent = { ev, id };
-            const skipFinalizeModal = (() => {
-                try{ return localStorage.getItem(FINALIZE_PREF_KEY) === '1'; }catch(_){ return false; }
-            })();
-            if (!skipFinalizeModal && finalizeModal) {
-                finalizeModal.classList.add('open');
-                finalizeModal.setAttribute('aria-hidden', 'false');
-            } else if (window.confirm('Para finalizar é necessário lançar as despesas reais. Deseja lançar as despesas deste evento agora?')) {
-                try{
-                    localStorage.setItem('despesas_evento_selecionado', JSON.stringify({ ...(ev || {}), id, _open_expenses: true }));
-                }catch(_){}
-                window.location.href = 'despesas.html';
-            }
+            await lancarDespesas(ev, btn);
         }
 
         async function deletarEvento(ev, btn){
@@ -1995,9 +1991,11 @@
             const routeLink = buildRouteLink(ev);
             const searchLinks = buildSearchLinks(ev);
 
-            // Botões de ação principais
-            const despesasBtn = `<button class="btn btn-secondary btn-compact" data-ev-action="despesas" data-ev-id="${eventId}">💰 Despesas</button>`;
-            const finalizarBtn = `<button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-id="${eventId}">✅ Finalizar</button>`;
+            // Botões de ação principais (somente VISITA pode lançar despesas)
+            const canFinalize = isVisitaEvent(ev);
+            const finalizarBtn = canFinalize
+                ? `<button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-id="${eventId}">✅ Finalizar</button>`
+                : '';
             const deletarBtn = `<button class="btn btn-danger btn-compact" data-ev-action="deletar" data-ev-id="${eventId}">🗑️ Deletar</button>`;
 
             // 2. Construção dos "Quick Chips" (Apenas info relevante)
@@ -2107,7 +2105,6 @@
                 </div>
 
                 <div class="event-modal-actions" style="border:none; padding-top:0; margin-top:10px; justify-content: flex-end;">
-                    ${despesasBtn}
                     ${finalizarBtn}
                     ${deletarBtn}
                 </div>
@@ -2139,8 +2136,7 @@
                 const action = btn.dataset.evAction;
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (action === 'despesas') lancarDespesas(ev, btn);
-                    else if (action === 'finalizar') finalizarEvento(ev, btn);
+                    if (action === 'finalizar') finalizarEvento(ev, btn);
                     else if (action === 'deletar') deletarEvento(ev, btn);
                 });
             });
@@ -2231,6 +2227,12 @@
                     const destLonVal = formatCoord(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
                     const origLatVal = formatCoord(ev.origem_lat ?? ev.lat_origem ?? ev.latitude_origem);
                     const origLonVal = formatCoord(ev.origem_lon ?? ev.lon_origem ?? ev.longitude_origem);
+                    const canFinalize = isVisitaEvent(ev);
+                    const actionsHtml = canFinalize
+                        ? `<div class="event-card__actions">
+                            <button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-idx="${idx}">✅ Finalizar</button>
+                        </div>`
+                        : '';
 
                     parts.push(`
                         <div class="event-card ${ev.rota_continua && ev.blocoIndex != null ? ('rota-continua-bloco-' + (ev.blocoIndex % 3)) : ''}" data-ev-idx="${idx}">
@@ -2255,10 +2257,7 @@
                             <span class="chip"><i class="fas fa-meteor"></i>${conteudo}</span>
                             ${duracao ? `<span class="chip"><i class="fas fa-hourglass-half"></i>${duracao}</span>` : ''}
                         </div>
-                        <div class="event-card__actions">
-                            <button class="btn btn-secondary btn-compact" data-ev-action="despesas" data-ev-idx="${idx}">💰 Lançar despesas</button>
-                            <button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-idx="${idx}">✅ Finalizar</button>
-                        </div>
+                        ${actionsHtml}
                     </div>
                 `);
             });
@@ -2304,9 +2303,7 @@
                     const action = btn.dataset.evAction;
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (action === 'despesas') {
-                            lancarDespesas(ev, btn);
-                        } else if (action === 'finalizar') {
+                        if (action === 'finalizar') {
                             finalizarEvento(ev, btn);
                         }
                     });
