@@ -664,6 +664,9 @@
         }
 
         function isVisitaEvent(ev, session){
+            if (ev && typeof ev === 'object' && ev._taskType) {
+                return String(ev._taskType).toLowerCase() === 'visita';
+            }
             const ids = getSessionTaskIds(session || null);
             const visitaId = ids && ids.visita ? String(ids.visita) : null;
             const eventTipoId = ev?.id_tipo_tarefa ?? ev?.id_tipo ?? ev?.tipo_tarefa_id ?? ev?.tipo_id ?? null;
@@ -1045,9 +1048,32 @@
                     }
                     if (!match) {
                         console.warn('Evento pendente de despesas não encontrado no payload de histórico.', { pendingId, pendingIds });
-                        showNotification('Não foi possível localizar o evento para abrir despesas automaticamente.', 'error');
-                        localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
-                        return;
+                        // Fallback: se o evento não vier no webhook, abrimos com os dados do localStorage
+                        const sess = getUserSession();
+                        const fallback = normalizeEvent(pending || {});
+                        const fallbackId = getEventStableId(fallback);
+                        if (!hasStableEventId(fallbackId)) {
+                            showNotification('Evento pendente sem ID válido. Não é possível abrir despesas.', 'error');
+                            localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
+                            return;
+                        }
+                        if (!isVisitaEvent(fallback, sess)) {
+                            showNotification('Este evento não é VISITA; despesas só podem ser lançadas para VISITA.', 'error');
+                            localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
+                            return;
+                        }
+                        const alreadyInList = (Array.isArray(allEvents) ? allEvents : []).some(ev =>
+                            buildIdCandidates(ev).some(id => pendingIds.includes(id))
+                        );
+                        if (!alreadyInList) {
+                            allEvents = [...(Array.isArray(allEvents) ? allEvents : []), fallback];
+                            refreshLodgingEligibility(allEvents);
+                            if (isFinalizadoEvent(fallback)) {
+                                realEvents = [...(Array.isArray(realEvents) ? realEvents : []), fallback];
+                            }
+                        }
+                        match = fallback;
+                        showNotification('Evento não encontrado no histórico; abrindo pelo cache local.', 'warning');
                     }
                     const targetEvent = normalizeEvent(match);
                     const targetId = getEventStableId(targetEvent);

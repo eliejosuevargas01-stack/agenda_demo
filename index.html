@@ -1448,7 +1448,10 @@
         }
 
         function isVisitaEvent(ev){
-            const t = (ev && (ev._taskType || ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '')).toString().toLowerCase();
+            if (ev && typeof ev === 'object' && ev._taskType) {
+                return String(ev._taskType).toLowerCase() === 'visita';
+            }
+            const t = (ev && (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '')).toString().toLowerCase();
             return t.includes('visita');
         }
 

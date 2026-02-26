@@ -693,6 +693,22 @@
             if (eventModalBody) eventModalBody.innerHTML = '';
         }
 
+        function isVisitaEvent(ev){
+            const sess = getLoggedSession();
+            const ids = getSessionTaskIds(sess || null);
+            const visitaId = ids && ids.visita ? String(ids.visita) : null;
+            const eventTipoId =
+                ev?.id_tipo_tarefa ??
+                ev?.id_tipo ??
+                ev?.id_tipo_evento ??
+                ev?.tipo_tarefa_id ??
+                ev?.tipo_id ??
+                null;
+            if (visitaId && eventTipoId != null && String(eventTipoId) === visitaId) return true;
+            const t = String(ev?.tipo_da_tarefa || ev?.tipo || ev?.tipo_evento || '').toLowerCase();
+            return t.includes('visita');
+        }
+
         function parseMoneyValue(value){
             if (value === null || value === undefined) return null;
             if (typeof value === 'number') return Number.isFinite(value) ? value : null;
@@ -812,7 +828,7 @@
             const alunos = event.numero_alunos || event.faixa_de_alunos || event.numero_de_alunos || event.numero_alunos_empresa || '—';
             const local = event.local || event.local_instalacao || event.endereco || 'Local não informado';
             const eventIdLabel = event?.id ?? event?.id_tarefa ?? event?.id_evento ?? event?.id_evento_unico ?? event?.id_agendamento ?? event?.uuid ?? event?.evento_id ?? '';
-            const canLaunchExpenses = !event._finalizado;
+            const canLaunchExpenses = isVisitaEvent(event) && !event._finalizado;
             const realExpenses = extractRealExpensesFromEvent(event);
             const hasRealExpenseData = event._finalizado && ['combustivel','hospedagem','alimentacao','pedagios','monitor','outros','total']
                 .some(k => Number.isFinite(realExpenses?.[k]));
