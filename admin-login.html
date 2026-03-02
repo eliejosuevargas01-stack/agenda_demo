@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Admin - Painel RH</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .login-header p {
+            color: var(--muted-2);
+            margin-top: 8px;
+            font-size: 0.96rem;
+            line-height: 1.5;
+        }
+        .webhook-status {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: var(--radius-md);
+            border-left: 3px solid var(--accent-cyan);
+            margin-bottom: 20px;
+        }
+        .status-error { border-left-color: var(--accent-magenta); }
+        .status-connected { border-left-color: var(--accent-cyan); }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        .info-label {
+            color: var(--muted);
+            font-size: 0.9em;
+        }
+        .info-value {
+            color: var(--accent-cyan);
+            font-weight: 700;
+            font-size: 0.9em;
+            text-align: right;
+        }
+        .password-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-container input {
+            width: 100%;
+            padding-right: 45px;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--muted-2);
+            cursor: pointer;
+            padding: 5px;
+            z-index: 2;
+        }
+        .toggle-password:hover {
+            color: var(--accent-cyan);
+        }
+        .login-message.info {
+            display: block;
+            background: rgba(99,102,241,0.18);
+            border: 1px solid rgba(99,102,241,0.35);
+            color: #c7d2fe;
+        }
+        .login-footer {
+            margin-top: 16px;
+            text-align: center;
+            color: var(--muted-2);
+        }
+        .login-footer a {
+            color: var(--accent-cyan);
+            text-decoration: none;
+            font-size: .9rem;
+        }
+        .login-footer a:hover { text-decoration: underline; }
+    </style>
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
+</head>
+<body class="presentation-page">
+    <div class="space-layer stars"></div>
+    <div class="space-layer twinkle"></div>
+    <div class="space-layer nebula"></div>
+    <div class="space-layer galaxies"></div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo">
+                    <i class="fas fa-user-shield"></i>
+                    <h1>Admin RH</h1>
+                </div>
+                <p>Acesso administrativo. Autenticação via webhook.</p>
+            </div>
+
+            <div class="webhook-status status-connected" id="webhook-status">
+                <div class="info-item">
+                    <span class="info-label">Status:</span>
+                    <span class="info-value" id="connection-status">Pronto para autenticar</span>
+                </div>
+            </div>
+
+            <form id="login-form" class="login-form">
+                <div class="form-group">
+                    <label for="usuario">
+                        <i class="fas fa-user"></i> Usuário
+                    </label>
+                    <input id="usuario" name="usuario" type="text" placeholder="Digite seu usuário admin" autocomplete="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="senha">
+                        <i class="fas fa-lock"></i> Senha
+                    </label>
+                    <div class="password-container">
+                        <input id="senha" name="senha" type="password" placeholder="Digite sua senha" autocomplete="current-password" required>
+                        <button type="button" class="toggle-password" id="toggle-password" aria-label="Mostrar ou ocultar senha">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-options">
+                    <label class="remember-me">
+                        <input id="remember" type="checkbox">
+                        <span class="checkmark"></span>
+                        Lembrar usuário
+                    </label>
+                    <span class="forgot-password" style="opacity:.78;cursor:default;">Validação em tempo real</span>
+                </div>
+
+                <button id="btn-login" class="login-btn" type="submit">
+                    <i class="fas fa-sign-in-alt"></i> Entrar no Painel RH
+                </button>
+            </form>
+
+            <div id="login-message" class="login-message"></div>
+            <div class="login-footer">
+                Se autorizado, você será redirecionado para o painel RH.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Admin login usa o mesmo endpoint do login padrão,
+        // mudando apenas a action.
+        const ADMIN_AUTH_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/novo-astronomo-1';
+        const ADMIN_AUTH_ACTION = 'admin';
+
+        const ADMIN_SESSION_KEY = 'admin_session';
+        const SAVED_USER_KEY = 'savedAdminUser';
+
+        const form = document.getElementById('login-form');
+        const inputUsuario = document.getElementById('usuario');
+        const inputSenha = document.getElementById('senha');
+        const remember = document.getElementById('remember');
+        const btnLogin = document.getElementById('btn-login');
+        const togglePasswordButton = document.getElementById('toggle-password');
+        const webhookStatus = document.getElementById('webhook-status');
+        const connectionStatus = document.getElementById('connection-status');
+        const msg = document.getElementById('login-message');
+
+        const params = new URLSearchParams(window.location.search || '');
+        const redirectTarget = (() => {
+            const value = (params.get('redirect') || '').trim();
+            if (!value) return 'rh-astronomos.html';
+            if (value.toLowerCase().includes('admin-login')) return 'rh-astronomos.html';
+            return value;
+        })();
+
+        function showMessage(text, type) {
+            msg.textContent = text;
+            msg.className = 'login-message ' + (type || 'info');
+            msg.style.display = 'block';
+        }
+
+        function clearMessage() {
+            msg.textContent = '';
+            msg.className = 'login-message';
+            msg.style.display = 'none';
+        }
+
+        function setConnectionState(text, statusClass) {
+            if (connectionStatus) connectionStatus.textContent = text || '';
+            if (webhookStatus) {
+                webhookStatus.classList.remove('status-error', 'status-connected');
+                if (statusClass) webhookStatus.classList.add(statusClass);
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const type = inputSenha.getAttribute('type') === 'password' ? 'text' : 'password';
+            inputSenha.setAttribute('type', type);
+            if (togglePasswordButton) {
+                togglePasswordButton.innerHTML = type === 'password'
+                    ? '<i class="fas fa-eye"></i>'
+                    : '<i class="fas fa-eye-slash"></i>';
+            }
+        }
+
+        function firstObject(value) {
+            if (!value) return null;
+            if (Array.isArray(value)) return value.length ? firstObject(value[0]) : null;
+            if (typeof value === 'object') return value;
+            return null;
+        }
+
+        function normalizeResponse(data) {
+            if (!data) return { payload: null, user: null };
+            let payload = data;
+            if (Array.isArray(payload)) payload = payload[0] || null;
+            if (payload && typeof payload === 'object') {
+                if (Array.isArray(payload.data)) payload = payload.data[0] || payload;
+                else if (payload.data && typeof payload.data === 'object') payload = payload.data;
+                else if (Array.isArray(payload.result)) payload = payload.result[0] || payload;
+                else if (payload.result && typeof payload.result === 'object') payload = payload.result;
+            }
+            const user = firstObject(
+                payload && (
+                    payload.admin ||
+                    payload.user ||
+                    payload.usuario_data ||
+                    payload.profile ||
+                    payload.dados
+                )
+            ) || firstObject(payload);
+            return { payload, user };
+        }
+
+        function parseLoginAllowed(payload, user) {
+            const p = payload || {};
+            if (p.success === false || p.ok === false || p.allow === false || p.autorizado === false || p.authenticated === false) return false;
+            if (p.invalid === true || p.denied === true || p.error === true) return false;
+            if (typeof p.status === 'string') {
+                const status = p.status.trim().toLowerCase();
+                if (['erro', 'error', 'denied', 'unauthorized', 'falha', 'failed'].includes(status)) return false;
+                if (['ok', 'success', 'sucesso', 'authorized', 'autorizado'].includes(status)) return true;
+            }
+            if (typeof p.message === 'string') {
+                const lowerMsg = p.message.toLowerCase();
+                if (lowerMsg.includes('senha incorreta') || lowerMsg.includes('unauthorized') || lowerMsg.includes('acesso negado')) return false;
+            }
+            if (p.success === true || p.ok === true || p.allow === true || p.autorizado === true || p.authenticated === true) return true;
+            return !!(user && (user.usuario || user.username || user.nome_completo || user.nome || user.email || user.role || user.admin));
+        }
+
+        function saveAdminSession(userData, plainPassword) {
+            const base = (userData && typeof userData === 'object') ? { ...userData } : {};
+            const token = 'admin_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now().toString(36);
+            const unified = {
+                ...base,
+                loggedIn: true,
+                loginTime: new Date().toISOString(),
+                timestamp: Date.now(),
+                sessionId: token,
+                session_id: token,
+                token,
+                role: base.role || 'admin',
+                usuario: base.usuario || base.username || inputUsuario.value.trim() || null,
+                username: base.username || base.usuario || inputUsuario.value.trim() || null,
+                nome_completo: base.nome_completo || base.nome || base.usuario || inputUsuario.value.trim() || null,
+                senha: plainPassword || null
+            };
+            localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(unified));
+            if (remember.checked && unified.usuario) {
+                localStorage.setItem(SAVED_USER_KEY, unified.usuario);
+            } else {
+                localStorage.removeItem(SAVED_USER_KEY);
+            }
+        }
+
+        async function callAuthWebhook(usuario, senha) {
+            const body = new URLSearchParams();
+            body.set('action', ADMIN_AUTH_ACTION);
+            body.set('usuario', usuario);
+            body.set('senha', senha);
+
+            const response = await fetch(ADMIN_AUTH_WEBHOOK_URL, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+                },
+                body: body.toString()
+            });
+
+            const rawText = await response.text();
+            let parsed = null;
+            try {
+                parsed = rawText ? JSON.parse(rawText) : null;
+            } catch (_) {
+                parsed = { message: rawText || '' };
+            }
+
+            if (!response.ok) {
+                const details = (parsed && (parsed.message || parsed.error || parsed.erro)) || rawText || ('HTTP ' + response.status);
+                throw new Error(details);
+            }
+
+            return parsed;
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            clearMessage();
+
+            const usuario = inputUsuario.value.trim();
+            const senha = inputSenha.value.trim();
+
+            if (!usuario || !senha) {
+                showMessage('Preencha usuario e senha.', 'error');
+                return;
+            }
+
+            btnLogin.disabled = true;
+            btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
+            setConnectionState('Validando com webhook...', 'status-connected');
+
+            try {
+                const raw = await callAuthWebhook(usuario, senha);
+                const normalized = normalizeResponse(raw);
+                const allowed = parseLoginAllowed(normalized.payload, normalized.user);
+
+                if (!allowed) {
+                    const payload = normalized.payload || {};
+                    const reason = payload.message || payload.error || payload.erro || 'Credenciais invalidas.';
+                    showMessage(reason, 'error');
+                    setConnectionState('Acesso negado', 'status-error');
+                    inputSenha.value = '';
+                    inputSenha.focus();
+                    return;
+                }
+
+                const authUser = normalized.user || normalized.payload || { usuario };
+                saveAdminSession(authUser, senha);
+                const welcomeUser = authUser?.usuario || authUser?.username || authUser?.nome_completo || usuario;
+                showMessage(`Seja bem-vindo(a), ${welcomeUser}`, 'success');
+                setConnectionState('Autenticado', 'status-connected');
+                setTimeout(() => { window.location.href = redirectTarget; }, 600);
+            } catch (err) {
+                showMessage('Falha no login: ' + (err && err.message ? err.message : 'erro desconhecido'), 'error');
+                setConnectionState('Erro de autenticação', 'status-error');
+            } finally {
+                btnLogin.disabled = false;
+                btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar no Painel RH';
+            }
+        }
+
+        (function init() {
+            const saved = localStorage.getItem(SAVED_USER_KEY);
+            if (saved) {
+                inputUsuario.value = saved;
+                remember.checked = true;
+            }
+            // Garante que o login sempre cria uma nova sessão admin
+            localStorage.removeItem(ADMIN_SESSION_KEY);
+            form.addEventListener('submit', handleSubmit);
+            if (togglePasswordButton) togglePasswordButton.addEventListener('click', togglePasswordVisibility);
+            showMessage('Informe usuario e senha de administrador.', 'info');
+        })();
+    </script>
+</body>
+</html>
