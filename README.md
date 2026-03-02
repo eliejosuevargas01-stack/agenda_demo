@@ -11,7 +11,7 @@ A proposta de negocio e reduzir retrabalho, melhorar previsibilidade operacional
 4. As despesas sao estimadas e depois registradas como reais.
 5. O historico consolida o que foi concluido e o que ficou pendente.
 6. Os feedbacks mostram percepcao de qualidade por evento.
-7. O painel RH gerencia cadastro de astrônomos, agenda e imagens dos eventos.
+7. O painel RH (protegido por login admin) gerencia cadastro de astrônomos, agenda e imagens dos eventos.
 
 ## Regra central de dados (muito importante)
 1. A unidade operacional agora e a tarefa do dia.
@@ -56,9 +56,10 @@ Observacao:
 ### Endpoint de astrônomos (`/webhook/novo-astronomo-1`)
 1. `list`: lista astrônomos.
 2. `login`: autenticacao oficial da aplicacao.
-3. `add`, `edit`, `delete`: CRUD de astrônomos no painel RH.
-4. `import_csv`: importacao em lote de cadastro.
-5. `get_img`, `add_img`, `delete_img`: gestao de imagens de evento.
+3. `admin`: autenticacao admin do painel RH (usa o mesmo endpoint; `action=admin`).
+4. `add`, `edit`, `delete`: CRUD de astrônomos no painel RH.
+5. `import_csv`: importacao em lote de cadastro.
+6. `get_img`, `add_img`, `delete_img`: gestao de imagens de evento.
 
 ### Endpoint de sugestoes do app
 1. `feedback_app`: recebe sugestoes e anexos enviados pela tela `feedback.html`.
@@ -97,11 +98,23 @@ Funcoes de negocio principais:
 5. `handleSubmit`: orquestra fluxo completo de autenticacao.
 6. Ao autorizar acesso, a tela exibe mensagem dinamica de boas-vindas com o usuario retornado (`Seja Bem vindo <usuario>`).
 
+### `admin-login.html` (autenticacao admin - painel RH)
+Objetivo:
+1. Autenticar admin via webhook com `action=admin` (mesmo endpoint do login padrao).
+2. Criar sessao `admin_session` separada da sessao do astrônomo.
+3. Redirecionar para `rh-astronomos.html` (ou `?redirect=...`).
+
+Funcoes de negocio principais:
+1. `callAuthWebhook`: envia `usuario`, `senha` e `action=admin`.
+2. `normalizeResponse` e `parseLoginAllowed`: toleram formatos diferentes de retorno (mesma filosofia do login padrao).
+3. `saveAdminSession`: grava `admin_session` no `localStorage`.
+4. `savedAdminUser`: opcional para "Lembrar usuario" no login admin.
+
 ### `index.html` (agenda operacional)
 Objetivo:
 1. Mostrar agenda do astrônomo em calendario e lista.
 2. Centralizar acao operacional do dia.
-3. Encaminhar para despesas/finalizacao/delecao.
+3. Encaminhar para despesas/finalizacao (acao unica) e delecao.
 4. Preparar base para rotas.
 
 Funcoes de negocio principais:
@@ -109,8 +122,8 @@ Funcoes de negocio principais:
 2. `normalizeEvent`: padroniza dados de evento para uso em toda a interface.
 3. `renderCalendar`, `renderEventsList`, `renderDayEventsDetails`: exibem agenda por mes/lista/dia.
 4. `openEventModal`: mostra detalhes do evento e acoes de negocio.
-5. `lancarDespesas`: navegacao contextual para `despesas.html`.
-6. `finalizarEvento`: exige fluxo de despesas antes da finalizacao.
+5. `lancarDespesas`: salva contexto em `despesas_evento_selecionado` e navega para `despesas.html` abrindo o formulario do evento.
+6. `finalizarEvento`: acao unica (finalizar/despesas) que reaproveita `lancarDespesas` e aparece apenas para eventos tipo VISITA.
 7. `deletarEvento`: chama `delete_evento`.
 8. `applyRotaContinuaBlocks`: marca blocos de eventos consecutivos de longa distancia.
 9. `computeContinuousRoutes`: calcula rotas continuas com OSRM.
@@ -183,7 +196,7 @@ Funcoes de negocio principais:
 1. `fetchDataFromN8N`: carrega historico via `action=historico`.
 2. `applyEventsData`: normaliza e filtra por sessao logada.
 3. `applyFilters`: aplica filtros de cidade, periodo e busca.
-4. `openEventModal`: detalha evento e oferece lancamento de despesas apenas para eventos nao finalizados (com deteccao robusta de status/finalizacao por aliases do payload).
+4. `openEventModal`: detalha evento, renderiza despesas reais quando presentes no payload e oferece lancamento de despesas apenas para eventos VISITA nao finalizados.
 5. `exportToCSV`: exporta visao filtrada.
 6. `updateStats`: KPIs de volume, finalizacao e valor.
 
@@ -207,6 +220,7 @@ Objetivo:
 2. Gerenciar agenda por profissional.
 3. Fazer operacao de imagens de eventos.
 4. Apoiar acao financeira por evento.
+5. Exigir login admin (guard `admin-auth.js`) e permitir encerrar sessao (botao `Sair`).
 
 Funcoes de negocio principais no cadastro:
 1. `carregarAstronomos`: lista base de astrônomos.
@@ -289,15 +303,17 @@ Objetivo:
 Chaves de contexto usadas no fluxo de negocio:
 1. `astronomo_session`: sessao principal usada em todas as paginas.
 2. `userSession`: compatibilidade legado.
-3. `astronomersData`: cache de cadastro.
-4. `agenda_cache_v1::...`: cache de eventos por usuario.
-5. `agenda_payload_v1::...`: payload bruto para rastreabilidade.
-6. `rotas_cache_v1`: base compartilhada para tela de rotas.
-7. `rotas_override_v1::...`: ajustes de distancia de rota continua.
-8. `despesas_evento_selecionado`: navegacao contextual para abrir despesas no evento certo.
-9. No atalho `historico -> despesas`, o payload salvo inclui `id` estavel + `_open_expenses=true`; em `despesas.html`, `applyPendingSelectedEvent` le essa chave, localiza o evento no payload de `historico`, seleciona a aba correta (`pendentes` para nao finalizados) e abre o formulario.
-10. `index_ui_state_v1` e `rhAstronomosUI`: persistencia de estado de filtros.
-11. `user_theme::...`: tema personalizado por usuario.
+3. `admin_session`: sessao do admin para o painel `rh-astronomos.html`.
+4. `savedAdminUser`: lembrar usuario no `admin-login.html`.
+5. `astronomersData`: cache de cadastro.
+6. `agenda_cache_v1::...`: cache de eventos por usuario.
+7. `agenda_payload_v1::...`: payload bruto para rastreabilidade.
+8. `rotas_cache_v1`: base compartilhada para tela de rotas.
+9. `rotas_override_v1::...`: ajustes de distancia de rota continua.
+10. `despesas_evento_selecionado`: navegacao contextual para abrir despesas no evento certo.
+11. No atalho `historico/index -> despesas`, o payload salvo inclui `id` estavel + `_open_expenses=true`; em `despesas.html`, `applyPendingSelectedEvent` le essa chave, tenta localizar o evento no payload de `historico` e, se nao encontrar, usa o proprio evento salvo no `localStorage` como fallback para abrir o formulario.
+12. `index_ui_state_v1` e `rhAstronomosUI`: persistencia de estado de filtros.
+13. `user_theme::...`: tema personalizado por usuario.
 
 ## Exemplo simples de jornada real
 1. Astrônomo entra no `login.html`.

@@ -87,6 +87,38 @@ body.presentation-page.rh-page {
     margin-bottom: 24px;
 }
 
+.header-with-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.header-with-actions .header-main {
+    flex: 1;
+    min-width: 0;
+}
+
+.header-with-actions #btn-admin-logout {
+    margin-top: 2px;
+}
+
+.header-with-actions #btn-admin-logout:focus {
+    outline: 2px solid rgba(37, 99, 235, 0.25);
+    outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+    .header-with-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .header-with-actions #btn-admin-logout {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
 .header-title h1,
 .header h1 {
     font-size: 1.25rem;
@@ -2235,9 +2267,12 @@ textarea:focus {
     <div class="space-layer nebula"></div>
     <div class="space-layer galaxies"></div>
     <div class="container">
-        <div class="header">
-            <h1>👨‍🚀 Painel RH - Astrônomos & Agenda</h1>
-            <p>Gestão completa de astrônomos e agenda de eventos</p>
+        <div class="header header-with-actions">
+            <div class="header-main">
+                <h1>👨‍🚀 Painel RH - Astrônomos & Agenda</h1>
+                <p>Gestão completa de astrônomos e agenda de eventos</p>
+            </div>
+            <button type="button" class="btn btn-secondary" id="btn-admin-logout">🚪 Sair</button>
         </div>
 
         <div class="tabs">
@@ -5094,6 +5129,17 @@ textarea:focus {
             });
             
             // Configurar botões
+            const btnAdminLogout = document.getElementById('btn-admin-logout');
+            if (btnAdminLogout) {
+                btnAdminLogout.addEventListener('click', () => {
+                    if (window.AdminAuth && typeof window.AdminAuth.logout === 'function') {
+                        window.AdminAuth.logout();
+                        return;
+                    }
+                    try { localStorage.removeItem('admin_session'); } catch (_) {}
+                    window.location.href = 'admin-login.html?redirect=rh-astronomos.html';
+                });
+            }
             document.getElementById('btn-novo-astronomo').addEventListener('click', criarNovoAstronomo);
             // Botões de fetch manual
             document.getElementById('btn-atualizar-astronomos').addEventListener('click', carregarAstronomos);
