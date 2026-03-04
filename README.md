@@ -57,9 +57,11 @@ Observacao:
 1. `list`: lista astrônomos.
 2. `login`: autenticacao oficial da aplicacao.
 3. `admin`: autenticacao admin do painel RH (usa o mesmo endpoint; `action=admin`).
-4. `add`, `edit`, `delete`: CRUD de astrônomos no painel RH.
-5. `import_csv`: importacao em lote de cadastro.
-6. `get_img`, `add_img`, `delete_img`: gestao de imagens de evento.
+4. `get_admin`: lista admins do painel RH.
+5. `add_admin`, `edit_admin`, `delete_admin`: gestao de usuarios admin (painel RH; envia apenas `id` + `email` + `senha`).
+6. `add`, `edit`, `delete`: CRUD de astrônomos no painel RH.
+7. `import_csv`: importacao em lote de cadastro.
+8. `get_img`, `add_img`, `delete_img`: gestao de imagens de evento.
 
 ### Endpoint de sugestoes do app
 1. `feedback_app`: recebe sugestoes e anexos enviados pela tela `feedback.html`.
@@ -221,6 +223,7 @@ Objetivo:
 3. Fazer operacao de imagens de eventos.
 4. Apoiar acao financeira por evento.
 5. Exigir login admin (guard `admin-auth.js`) e permitir encerrar sessao (botao `Sair`).
+6. Listar e gerenciar usuarios admin (acoes `get_admin`, `add_admin`, `edit_admin`, `delete_admin`).
 
 Funcoes de negocio principais no cadastro:
 1. `carregarAstronomos`: lista base de astrônomos.

@@ -383,6 +383,58 @@ textarea:focus {
     word-break: break-word;
 }
 
+.admin-pass-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-password-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.admin-password-container input {
+    padding-right: 96px;
+}
+
+.admin-pass-input-toggle {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.admin-pass-value {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    letter-spacing: 0.2px;
+}
+
+.admin-pass-toggle {
+    appearance: none;
+    border: 1px solid var(--border-color);
+    background: #fff;
+    color: var(--text-secondary);
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.admin-pass-toggle:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+    color: var(--text-main);
+}
+
+.admin-pass-toggle:disabled {
+    opacity: 0.55;
+    cursor: default;
+}
+
 /* Toast */
 .toast {
     position: fixed;
@@ -2278,6 +2330,7 @@ textarea:focus {
         <div class="tabs">
             <button class="tab-btn active" data-tab="astronomos">📋 Astrônomos</button>
             <button class="tab-btn" data-tab="agenda">📅 Agenda do Astrônomo</button>
+            <button class="tab-btn" data-tab="admins">🛡 Admins</button>
         </div>
 
         <!-- Aba Astrônomos -->
@@ -2360,6 +2413,47 @@ textarea:focus {
 
             <div class="last-update" id="last-update-agenda">
                 Última atualização: <span id="update-time-agenda">--:--:--</span>
+            </div>
+        </div>
+
+        <!-- Aba Admins -->
+        <div id="aba-admins" class="tab-content">
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" id="search-admin" placeholder="Buscar admins por e-mail..." autocomplete="off">
+                </div>
+                <button type="button" class="btn btn-success" id="btn-atualizar-admins">🔄 Atualizar</button>
+                <div class="search-box">
+                    <input type="text" id="admin-id" placeholder="ID do admin" autocomplete="off">
+                </div>
+                <div class="search-box">
+                    <input type="email" id="admin-email" placeholder="E-mail do admin" autocomplete="email">
+                </div>
+                <div class="search-box">
+                    <div class="admin-password-container">
+                        <input type="password" id="admin-senha" placeholder="Senha do admin" autocomplete="new-password">
+                        <button type="button" class="admin-pass-toggle admin-pass-input-toggle" id="btn-toggle-admin-senha" aria-label="Mostrar ou ocultar senha">Mostrar</button>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-success" id="btn-add-admin">➕ Adicionar admin</button>
+                <button type="button" class="btn" id="btn-edit-admin">✏️ Editar admin</button>
+                <button type="button" class="btn btn-danger" id="btn-delete-admin">🗑 Excluir admin</button>
+                <div class="status" id="status-admins">
+                    Pronto para gerenciar admins
+                </div>
+            </div>
+
+            <div class="astronomers-grid" id="adminsGrid">
+                <!-- Cards dos admins serão inseridos aqui -->
+            </div>
+
+            <div class="empty-state" id="emptyStateAdmins">
+                <h3>🛡 Nenhum admin carregado</h3>
+                <p>Clique em "Atualizar" para carregar a lista de admins</p>
+            </div>
+
+            <div class="last-update" id="last-update-admins">
+                Última atualização: <span id="update-time-admins">--:--:--</span>
             </div>
         </div>
     </div>
@@ -2456,6 +2550,7 @@ textarea:focus {
         const API_IMPORT_ACTION = "add"; // envia cada item do CSV como action=add
         
         let ASTRONOMOS = [];
+        let ADMINS = [];
         let EVENTOS = [];
         let SELECTED = { 
             id_astronomo: null, 
@@ -2512,6 +2607,269 @@ textarea:focus {
                 document.getElementById('astronomersGrid').innerHTML = '';
             } finally {
                 hideSpinner('btn-atualizar-astronomos');
+            }
+        }
+
+        function getAdminEmail(admin){
+            return cleanText(
+                admin && (
+                    admin.email ||
+                    admin.admin_email ||
+                    admin.usuario ||
+                    admin.username ||
+                    admin.user ||
+                    admin.login ||
+                    admin.nome_completo ||
+                    admin.nome
+                )
+            );
+        }
+
+        function getAdminId(admin){
+            return cleanText(
+                admin && (
+                    admin.id_admin ||
+                    admin.admin_id ||
+                    admin.id ||
+                    admin.user_id ||
+                    admin.uuid
+                )
+            );
+        }
+
+        function getAdminSenha(admin){
+            return cleanText(
+                admin && (
+                    admin.senha ||
+                    admin.password ||
+                    admin.pass ||
+                    admin.senha_admin ||
+                    admin.admin_senha ||
+                    admin.senha_usuario ||
+                    admin.pwd
+                )
+            );
+        }
+
+        function normalizeAdminsPayload(data){
+            const asRecord = (item) => {
+                if (!item) return null;
+                if (typeof item === 'string') {
+                    const email = cleanText(item);
+                    return email ? { email } : null;
+                }
+                if (typeof item === 'object') return item;
+                return null;
+            };
+
+            const pickArray = (value) => {
+                if (!Array.isArray(value)) return null;
+                return value.map(asRecord).filter(Boolean);
+            };
+
+            if (!data) return [];
+            const direct = pickArray(data);
+            if (direct) return direct;
+            if (typeof data !== 'object') return [];
+
+            const candidates = [
+                data.admins,
+                data.administradores,
+                data.admin,
+                data.data,
+                data.result,
+                data.results,
+                data.items,
+                data.users,
+                data.usuarios
+            ];
+
+            for (const c of candidates){
+                const arr = pickArray(c);
+                if (arr) return arr;
+                if (c && typeof c === 'object') {
+                    const nestedArr = pickArray(
+                        c.admins || c.administradores || c.admin || c.administrador || c.data || c.result || c.results || c.items || c.users || c.usuarios
+                    );
+                    if (nestedArr) return nestedArr;
+                }
+                const maybeRecord = asRecord(c);
+                if (maybeRecord && (getAdminEmail(maybeRecord) || getAdminId(maybeRecord))) return [maybeRecord];
+                if (c && typeof c === 'object') {
+                    const nestedSingles = [c.admin, c.administrador, c.usuario_data, c.profile, c.user];
+                    for (const nested of nestedSingles) {
+                        const nestedRecord = asRecord(nested);
+                        if (nestedRecord && (getAdminEmail(nestedRecord) || getAdminId(nestedRecord))) return [nestedRecord];
+                    }
+                }
+            }
+
+            const record = asRecord(data);
+            if (record && (getAdminEmail(record) || getAdminId(record))) return [record];
+            return [];
+        }
+
+        function sortAdminsByEmail(list){
+            if (!Array.isArray(list)) return [];
+            return list
+                .map((admin, index) => ({
+                    admin,
+                    index,
+                    email: normalizeSearchText(getAdminEmail(admin))
+                }))
+                .sort((a, b) => {
+                    const aHas = !!a.email;
+                    const bHas = !!b.email;
+                    if (aHas && bHas) {
+                        const cmp = a.email.localeCompare(b.email, 'pt-BR');
+                        return cmp !== 0 ? cmp : a.index - b.index;
+                    }
+                    if (aHas) return -1;
+                    if (bHas) return 1;
+                    return a.index - b.index;
+                })
+                .map(item => item.admin);
+        }
+
+        function selectAdmin(admin){
+            const email = getAdminEmail(admin);
+            const senha = getAdminSenha(admin);
+            const id = getAdminId(admin);
+            const idInput = document.getElementById('admin-id');
+            const emailInput = document.getElementById('admin-email');
+            const senhaInput = document.getElementById('admin-senha');
+            if (idInput) idInput.value = id || '';
+            if (emailInput && email) emailInput.value = email;
+            if (senhaInput) {
+                senhaInput.value = senha || '';
+                senhaInput.type = 'password';
+                senhaInput.focus();
+                const toggleBtn = document.getElementById('btn-toggle-admin-senha');
+                if (toggleBtn) toggleBtn.textContent = 'Mostrar';
+                try {
+                    if (typeof senhaInput.setSelectionRange === 'function') {
+                        const len = senhaInput.value.length;
+                        senhaInput.setSelectionRange(len, len);
+                    }
+                } catch (_) {}
+            }
+            if (email) setStatus('admins', `Selecionado: ${email}`, 'info');
+        }
+
+        function createAdminCard(admin){
+            const card = document.createElement('div');
+            card.className = 'astronomer-card';
+            card.onclick = () => selectAdmin(admin);
+
+            const email = textOrFallback(getAdminEmail(admin), 'E-mail não informado');
+            const idLabel = textOrFallback(getAdminId(admin), '—');
+            const senha = getAdminSenha(admin);
+            const senhaMasked = senha ? '•'.repeat(Math.min(Math.max(senha.length, 4), 14)) : 'Não informada';
+            const role = cleanText(admin && (admin.role || admin.perfil || admin.tipo || admin.tipo_usuario || admin.nivel || admin.access || admin.cargo));
+            const status = cleanText(admin && (admin.status || admin.ativo || admin.active || admin.situacao));
+            const created = cleanText(admin && (admin.created_at || admin.createdAt || admin.criado_em || admin.data_criacao));
+
+            const infoItems = [
+                `<div class="info-item"><span class="info-label">E-mail</span><span class="info-value">${email}</span></div>`,
+                `<div class="info-item">
+                    <span class="info-label">Senha</span>
+                    <div class="admin-pass-row">
+                        <span class="info-value admin-pass-value"></span>
+                        <button type="button" class="admin-pass-toggle" aria-label="Mostrar ou ocultar senha">Mostrar</button>
+                    </div>
+                </div>`,
+                role ? `<div class="info-item"><span class="info-label">Perfil</span><span class="info-value">${role}</span></div>` : '',
+                status ? `<div class="info-item"><span class="info-label">Status</span><span class="info-value">${status}</span></div>` : '',
+                created ? `<div class="info-item"><span class="info-label">Criado em</span><span class="info-value">${created}</span></div>` : ''
+            ].filter(Boolean).join('');
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${email}</h3>
+                    <div class="card-id">ID: ${idLabel}</div>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">${infoItems}</div>
+                </div>
+            `;
+
+            const passValue = card.querySelector('.admin-pass-value');
+            const toggleBtn = card.querySelector('.admin-pass-toggle');
+            if (passValue) passValue.textContent = senhaMasked;
+            if (toggleBtn) {
+                if (!senha) {
+                    toggleBtn.disabled = true;
+                    toggleBtn.textContent = 'Mostrar';
+                } else {
+                    let visible = false;
+                    toggleBtn.textContent = 'Mostrar';
+                    toggleBtn.addEventListener('click', (ev) => {
+                        ev.stopPropagation();
+                        visible = !visible;
+                        passValue.textContent = visible ? senha : senhaMasked;
+                        toggleBtn.textContent = visible ? 'Ocultar' : 'Mostrar';
+                    });
+                }
+            }
+
+            return card;
+        }
+
+        function displayAdminsList(admins){
+            const grid = document.getElementById('adminsGrid');
+            const emptyState = document.getElementById('emptyStateAdmins');
+            if (!grid || !emptyState) return;
+
+            if (!admins || admins.length === 0) {
+                emptyState.style.display = 'block';
+                grid.innerHTML = '';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            grid.innerHTML = '';
+
+            const sorted = sortAdminsByEmail(admins);
+            sorted.forEach(admin => {
+                grid.appendChild(createAdminCard(admin));
+            });
+        }
+
+        function applyAdminFilters(){
+            const searchInput = document.getElementById('search-admin');
+            const term = normalizeSearchText(searchInput ? searchInput.value : '');
+            const filtered = (Array.isArray(ADMINS) ? ADMINS : []).filter(admin => {
+                if (!term) return true;
+                const email = normalizeSearchText(getAdminEmail(admin));
+                const id = normalizeSearchText(getAdminId(admin));
+                const role = normalizeSearchText(admin && (admin.role || admin.perfil || admin.tipo || admin.tipo_usuario || admin.nivel || admin.access || admin.cargo));
+                return (email && email.includes(term)) || (id && id.includes(term)) || (role && role.includes(term));
+            });
+            displayAdminsList(filtered);
+        }
+
+        async function carregarAdmins(){
+            setStatus('admins', 'Conectando com o servidor...', 'loading');
+            showSpinner('btn-atualizar-admins');
+
+            try {
+                const data = await callAstroApi('get_admin', {});
+                ADMINS = normalizeAdminsPayload(data);
+                displayAdminsList(ADMINS);
+                atualizarTimestamp('admins');
+                setStatus('admins', `${ADMINS.length} admin(s) carregado(s) com sucesso!`, 'success');
+                toast('Admins carregados com sucesso', 'success');
+            } catch (error) {
+                console.error('Erro ao carregar admins:', error);
+                setStatus('admins', `Erro: ${error.message}`, 'error');
+                toast('Erro ao carregar admins', 'error');
+
+                const emptyState = document.getElementById('emptyStateAdmins');
+                const grid = document.getElementById('adminsGrid');
+                if (emptyState) emptyState.style.display = 'block';
+                if (grid) grid.innerHTML = '';
+            } finally {
+                hideSpinner('btn-atualizar-admins');
             }
         }
 
@@ -5079,7 +5437,7 @@ textarea:focus {
             if (!state) return;
 
             // Restaura aba ativa
-            if (state.activeTab === 'agenda' || state.activeTab === 'astronomos') {
+            if (state.activeTab === 'agenda' || state.activeTab === 'astronomos' || state.activeTab === 'admins') {
                 const tab = state.activeTab;
                 document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -5138,6 +5496,124 @@ textarea:focus {
                     }
                     try { localStorage.removeItem('admin_session'); } catch (_) {}
                     window.location.href = 'admin-login.html?redirect=rh-astronomos.html';
+                });
+            }
+
+            const adminEmailInput = document.getElementById('admin-email');
+            const adminSenhaInput = document.getElementById('admin-senha');
+            const btnToggleAdminSenha = document.getElementById('btn-toggle-admin-senha');
+            const searchAdminInput = document.getElementById('search-admin');
+            const btnAtualizarAdmins = document.getElementById('btn-atualizar-admins');
+            const adminIdInput = document.getElementById('admin-id');
+            const btnAddAdmin = document.getElementById('btn-add-admin');
+            const btnEditAdmin = document.getElementById('btn-edit-admin');
+            const btnDeleteAdmin = document.getElementById('btn-delete-admin');
+
+            const setAdminCrudBusy = (busy) => {
+                [btnAddAdmin, btnEditAdmin, btnDeleteAdmin, btnAtualizarAdmins].forEach(btn => {
+                    if (!btn) return;
+                    btn.disabled = !!busy;
+                    btn.style.opacity = busy ? '0.7' : '';
+                });
+            };
+
+            const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim());
+
+            const parseAdminActionOk = (data) => {
+                if (data == null) return true;
+                if (typeof data !== 'object') return true;
+                if (data.success === false || data.ok === false || data.allow === false || data.autorizado === false) return false;
+                if (data.invalid === true || data.denied === true || data.error === true) return false;
+                if (typeof data.status === 'string') {
+                    const status = data.status.trim().toLowerCase();
+                    if (['erro', 'error', 'denied', 'unauthorized', 'falha', 'failed'].includes(status)) return false;
+                }
+                if (data.error || data.erro) return false;
+                return true;
+            };
+
+            const runAdminCrud = async (action) => {
+                const email = adminEmailInput ? String(adminEmailInput.value || '').trim() : '';
+                const senha = adminSenhaInput ? String(adminSenhaInput.value || '').trim() : '';
+                let id = adminIdInput ? String(adminIdInput.value || '').trim() : '';
+
+                if (!id && email && Array.isArray(ADMINS) && ADMINS.length) {
+                    const normalizedEmail = normalizeSearchText(email);
+                    const match = ADMINS.find(a => normalizeSearchText(getAdminEmail(a)) === normalizedEmail);
+                    const matchId = match ? getAdminId(match) : '';
+                    if (matchId) {
+                        id = matchId;
+                        if (adminIdInput) adminIdInput.value = matchId;
+                    }
+                }
+
+                if (!email || !isValidEmail(email)) {
+                    toast('Informe um e-mail válido.', 'error');
+                    if (adminEmailInput) adminEmailInput.focus();
+                    return;
+                }
+                if (!senha) {
+                    toast('Informe a senha.', 'error');
+                    if (adminSenhaInput) adminSenhaInput.focus();
+                    return;
+                }
+                if ((action === 'edit_admin' || action === 'delete_admin') && !id) {
+                    toast('Informe o ID do admin (ou selecione na lista).', 'error');
+                    if (adminIdInput) adminIdInput.focus();
+                    return;
+                }
+                if (action === 'delete_admin') {
+                    if (!confirm(`Confirma excluir o admin ${email}?`)) return;
+                }
+
+                const loadingLabel = {
+                    add_admin: 'Adicionando admin…',
+                    edit_admin: 'Editando admin…',
+                    delete_admin: 'Excluindo admin…'
+                }[action] || 'Enviando…';
+
+                const successLabel = {
+                    add_admin: 'Admin adicionado com sucesso.',
+                    edit_admin: 'Admin editado com sucesso.',
+                    delete_admin: 'Admin excluído com sucesso.'
+                }[action] || 'Operação concluída.';
+
+                setAdminCrudBusy(true);
+                setStatus('admins', loadingLabel, 'loading');
+                try {
+                    const payload = { email, senha };
+                    if (id) {
+                        payload.id = id;
+                    }
+                    const resp = await callAstroApi(action, payload);
+                    if (!parseAdminActionOk(resp)) {
+                        const reason = resp?.message || resp?.error || resp?.erro || 'Ação não autorizada.';
+                        throw new Error(reason);
+                    }
+                    toast(successLabel, 'success');
+                    setStatus('admins', successLabel, 'success');
+                    carregarAdmins().catch(err => console.error('Falha ao recarregar admins:', err));
+                } catch (err) {
+                    console.error(`Erro ao executar ${action}:`, err);
+                    const msg = err && err.message ? err.message : 'erro desconhecido';
+                    toast(`Falha ao executar ${action}: ${msg}`, 'error');
+                    setStatus('admins', `Erro: ${msg}`, 'error');
+                } finally {
+                    setAdminCrudBusy(false);
+                }
+            };
+
+            if (btnAddAdmin) btnAddAdmin.addEventListener('click', () => runAdminCrud('add_admin'));
+            if (btnEditAdmin) btnEditAdmin.addEventListener('click', () => runAdminCrud('edit_admin'));
+            if (btnDeleteAdmin) btnDeleteAdmin.addEventListener('click', () => runAdminCrud('delete_admin'));
+            if (btnAtualizarAdmins) btnAtualizarAdmins.addEventListener('click', carregarAdmins);
+            if (searchAdminInput) searchAdminInput.addEventListener('input', applyAdminFilters);
+            if (btnToggleAdminSenha && adminSenhaInput) {
+                btnToggleAdminSenha.addEventListener('click', () => {
+                    const isPassword = adminSenhaInput.type === 'password';
+                    adminSenhaInput.type = isPassword ? 'text' : 'password';
+                    btnToggleAdminSenha.textContent = isPassword ? 'Ocultar' : 'Mostrar';
+                    try { adminSenhaInput.focus(); } catch (_) {}
                 });
             }
             document.getElementById('btn-novo-astronomo').addEventListener('click', criarNovoAstronomo);
@@ -5243,6 +5719,7 @@ textarea:focus {
 
             // Carregar lista de astrônomos automaticamente ao abrir
             carregarAstronomos().catch(err => console.error('Falha ao carregar astrônomos automaticamente:', err));
+            carregarAdmins().catch(err => console.error('Falha ao carregar admins automaticamente:', err));
 
             // Importar CSV: envia o arquivo bruto (FormData) para o backend
             (function(){
