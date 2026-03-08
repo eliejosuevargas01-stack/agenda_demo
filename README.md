@@ -4,6 +4,15 @@
 Este sistema organiza a operacao de astrônomos em campo: agenda de tarefas, deslocamentos, despesas, historico e qualidade (feedback).  
 A proposta de negocio e reduzir retrabalho, melhorar previsibilidade operacional e dar visibilidade financeira para Operacoes, RH e Financeiro.
 
+## Manuais de uso
+- `MANUAL_ASTRONOMO.md`: manual do usuario final (campo)
+- `MANUAL_TECNICO.md`: manual de manutencao/suporte (n8n + integracoes)
+- `MANUAL_TECNICO_ENRIQUECIMENTO_FLUXO01.md`: manual tecnico do sistema de enriquecimento (fluxo 01)
+- `MANUAL_TECNICO_WORKER_ROTAS_DISTANCIAS.md`: manual tecnico do worker de rotas/distancias (n8n)
+- `MANUAL_TECNICO_FLUXO_AGENDA_ASTRONOMOS.md`: manual tecnico do workflow agenda-astronomos (servico do frontend)
+- `MANUAL_TECNICO_FLUXO_PAINEL_RH_ASTRONOMOS.md`: manual tecnico do workflow novo-astronomo-1 (painel RH + login)
+- `MANUAL_ADMINISTRADOR.md`: manual do painel RH (gestao e auditoria)
+
 ## Fluxo de negocio ponta a ponta
 1. O usuario faz login como astrônomo.
 2. A agenda diaria e carregada com eventos/tarefas.
