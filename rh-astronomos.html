@@ -2564,16 +2564,452 @@ textarea:focus {
         let LAST_AGENDA_SUGGESTION = '';
         let CURRENT_ASTRONOMER = null;
         let CURRENT_EVENT = null;
-        let CURRENT_EVENT_IMAGES = [];
-        let CURRENT_EVENT_REMOTE_IMAGES = [];
-        let BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
-        let BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
-        let BATCH_EVENT_FILTERED_IDS = [];
-        let BATCH_MANAGER_BUSY = false;
-        let CAROUSEL_IMAGES = [];
-        let CAROUSEL_INDEX = 0;
-        let CAROUSEL_EVENT_ID = null;
-        const GEO_COORD_CACHE = {};
+	        let CURRENT_EVENT_IMAGES = [];
+	        let CURRENT_EVENT_REMOTE_IMAGES = [];
+	        let BATCH_SELECTED_REMOTE_IMAGE_KEYS = new Set();
+	        let BATCH_SELECTED_TARGET_EVENT_IDS = new Set();
+	        let BATCH_EVENT_FILTERED_IDS = [];
+	        let BATCH_MANAGER_BUSY = false;
+	        let AGENDA_DATE_FILTER_TOUCHED = false;
+	        let CAROUSEL_IMAGES = [];
+	        let CAROUSEL_INDEX = 0;
+	        let CAROUSEL_EVENT_ID = null;
+	        const GEO_COORD_CACHE = {};
+        const CITY_SUGGESTION_CACHE = new Map();
+        const CITY_SUGGESTION_CACHE_MAX = 60;
+        function getCitySuggestionCache(key){
+            if (!key || !CITY_SUGGESTION_CACHE.has(key)) return null;
+            const value = CITY_SUGGESTION_CACHE.get(key);
+            // LRU: move key to the end
+            CITY_SUGGESTION_CACHE.delete(key);
+            CITY_SUGGESTION_CACHE.set(key, value);
+            return value;
+        }
+        function setCitySuggestionCache(key, value){
+            if (!key) return;
+            CITY_SUGGESTION_CACHE.set(key, value);
+            while (CITY_SUGGESTION_CACHE.size > CITY_SUGGESTION_CACHE_MAX) {
+                const oldestKey = CITY_SUGGESTION_CACHE.keys().next().value;
+                if (oldestKey === undefined) break;
+                CITY_SUGGESTION_CACHE.delete(oldestKey);
+            }
+        }
+        const BR_STATE_UF_BY_NAME = {
+            'acre': 'AC',
+            'alagoas': 'AL',
+            'amapa': 'AP',
+            'amazonas': 'AM',
+            'bahia': 'BA',
+            'ceara': 'CE',
+            'distrito federal': 'DF',
+            'espirito santo': 'ES',
+            'goias': 'GO',
+            'maranhao': 'MA',
+            'mato grosso': 'MT',
+            'mato grosso do sul': 'MS',
+            'minas gerais': 'MG',
+            'para': 'PA',
+            'paraiba': 'PB',
+            'parana': 'PR',
+            'pernambuco': 'PE',
+            'piaui': 'PI',
+            'rio de janeiro': 'RJ',
+            'rio grande do norte': 'RN',
+            'rio grande do sul': 'RS',
+            'rondonia': 'RO',
+            'roraima': 'RR',
+            'santa catarina': 'SC',
+            'sao paulo': 'SP',
+            'sergipe': 'SE',
+            'tocantins': 'TO'
+        };
+
+        function getBrazilUfFromStateName(stateName){
+            const key = normalizeSearchText(stateName);
+            return key && Object.prototype.hasOwnProperty.call(BR_STATE_UF_BY_NAME, key) ? BR_STATE_UF_BY_NAME[key] : '';
+        }
+
+        function normalizeBrazilUf(value){
+            const raw = cleanText(value).toUpperCase();
+            if (/^[A-Z]{2}$/.test(raw)) return raw;
+            return getBrazilUfFromStateName(value) || '';
+        }
+
+        const MUNICIPALITIES_CACHE = new Map(); // UF -> { items: [{ name, norm }], ts }
+        const MUNICIPALITIES_CACHE_MAX = 6;
+        function getMunicipalitiesCache(uf){
+            if (!uf || !MUNICIPALITIES_CACHE.has(uf)) return null;
+            const entry = MUNICIPALITIES_CACHE.get(uf);
+            // LRU
+            MUNICIPALITIES_CACHE.delete(uf);
+            MUNICIPALITIES_CACHE.set(uf, entry);
+            return entry && Array.isArray(entry.items) ? entry.items : null;
+        }
+        function setMunicipalitiesCache(uf, items){
+            if (!uf) return;
+            MUNICIPALITIES_CACHE.set(uf, { items: Array.isArray(items) ? items : [], ts: Date.now() });
+            while (MUNICIPALITIES_CACHE.size > MUNICIPALITIES_CACHE_MAX) {
+                const oldestKey = MUNICIPALITIES_CACHE.keys().next().value;
+                if (oldestKey === undefined) break;
+                MUNICIPALITIES_CACHE.delete(oldestKey);
+            }
+        }
+
+        function normalizeCityMatchText(value){
+            return normalizeSearchText(value).replace(/[^a-z0-9]/g, '');
+        }
+
+        function levenshteinDistance(a, b) {
+            if (a === b) return 0;
+            const s = String(a || '');
+            const t = String(b || '');
+            const n = s.length;
+            const m = t.length;
+            if (!n) return m;
+            if (!m) return n;
+
+            const v0 = new Array(m + 1);
+            const v1 = new Array(m + 1);
+            for (let i = 0; i <= m; i++) v0[i] = i;
+
+            for (let i = 0; i < n; i++) {
+                v1[0] = i + 1;
+                const sCode = s.charCodeAt(i);
+                for (let j = 0; j < m; j++) {
+                    const cost = sCode === t.charCodeAt(j) ? 0 : 1;
+                    v1[j + 1] = Math.min(
+                        v1[j] + 1,       // insertion
+                        v0[j + 1] + 1,   // deletion
+                        v0[j] + cost     // substitution
+                    );
+                }
+                for (let j = 0; j <= m; j++) v0[j] = v1[j];
+            }
+            return v0[m];
+        }
+
+        function rankMunicipalitiesByQuery(query, municipalities, limit = 10){
+            const q = normalizeCityMatchText(query);
+            if (!q || q.length < 2) return [];
+            const maxDist = Math.max(1, Math.floor(q.length * 0.34));
+
+            const scored = [];
+            (municipalities || []).forEach(item => {
+                if (!item || !item.name) return;
+                const nameNorm = item.norm || normalizeCityMatchText(item.name);
+                if (!nameNorm) return;
+
+                let score = null;
+                if (nameNorm.startsWith(q)) {
+                    score = 0 + Math.min(0.9, (nameNorm.length - q.length) / 100);
+                } else if (nameNorm.includes(q)) {
+                    score = 1 + Math.min(0.9, (nameNorm.length - q.length) / 100);
+                } else {
+                    const dist = levenshteinDistance(q, nameNorm);
+                    if (dist > maxDist) return;
+                    score = 2 + dist;
+                }
+                scored.push({ name: item.name, score });
+            });
+
+            scored.sort((a, b) => (a.score - b.score) || a.name.localeCompare(b.name, 'pt-BR'));
+            const seen = new Set();
+            const out = [];
+            for (const row of scored) {
+                const key = normalizeSearchText(row.name);
+                if (!key || seen.has(key)) continue;
+                seen.add(key);
+                out.push(row.name);
+                if (out.length >= (limit || 10)) break;
+            }
+            return out;
+        }
+
+        async function fetchIbgeMunicipalities(uf){
+            const normalizedUf = normalizeBrazilUf(uf);
+            if (!normalizedUf) return [];
+            const cached = getMunicipalitiesCache(normalizedUf);
+            if (cached) return cached;
+
+            const url = `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${encodeURIComponent(normalizedUf)}/municipios?orderBy=nome`;
+            const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const data = await resp.json().catch(()=> null);
+            const items = Array.isArray(data)
+                ? data.map(row => cleanText(row && row.nome)).filter(Boolean)
+                : [];
+            const normalized = items.map(name => ({ name, norm: normalizeCityMatchText(name) }));
+            setMunicipalitiesCache(normalizedUf, normalized);
+            return normalized;
+        }
+
+	        function photonExtractPointCoords(feature){
+	            const coords = feature && feature.geometry && feature.geometry.type === 'Point' && Array.isArray(feature.geometry.coordinates)
+	                ? feature.geometry.coordinates
+	                : null;
+	            if (!coords || coords.length < 2) return null;
+	            const lon = Number.parseFloat(coords[0]);
+	            const lat = Number.parseFloat(coords[1]);
+	            return (Number.isFinite(lat) && Number.isFinite(lon)) ? { lat, lon } : null;
+	        }
+	
+	        function rankCitySuggestionsByQuery(query, suggestions, limit = 10){
+	            const q = normalizeCityMatchText(query);
+	            if (!q || q.length < 2) return (suggestions || []).slice(0, limit || 10);
+	            const maxDist = Math.max(1, Math.floor(q.length * 0.34));
+	
+	            const scored = [];
+	            (suggestions || []).forEach(s => {
+	                if (!s || !s.city) return;
+	                const nameNorm = normalizeCityMatchText(s.city);
+	                if (!nameNorm) return;
+	
+	                let score = null;
+	                if (nameNorm.startsWith(q)) {
+	                    score = 0 + Math.min(0.9, (nameNorm.length - q.length) / 100);
+	                } else if (nameNorm.includes(q)) {
+	                    score = 1 + Math.min(0.9, (nameNorm.length - q.length) / 100);
+	                } else {
+	                    const dist = levenshteinDistance(q, nameNorm);
+	                    if (dist > maxDist) return;
+	                    score = 2 + dist;
+	                }
+	                scored.push({ s, score });
+	            });
+	
+	            scored.sort((a, b) => (a.score - b.score) || String(a.s.label || '').localeCompare(String(b.s.label || ''), 'pt-BR'));
+	            const out = [];
+	            for (const row of scored) {
+	                out.push(row.s);
+	                if (out.length >= (limit || 10)) break;
+	            }
+	            return out;
+	        }
+	
+	        async function fetchPhotonBrazilCitySuggestions(rawQuery, limit = 8){
+	            const query = cleanText(rawQuery);
+	            const normalized = normalizeSearchText(query);
+	            if (!normalized || normalized.length < 3) return [];
+	
+	            const photonLimit = Math.min(50, Math.max(20, (limit || 8) * 6));
+	            // bbox aproximado do Brasil (inclui regiões vizinhas; filtramos por countrycode BR)
+	            const bbox = '-74.0,-34.0,-34.0,5.3';
+	            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=${encodeURIComponent(String(photonLimit))}&bbox=${bbox}`;
+	            const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+	            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+	            const data = await resp.json().catch(()=> null);
+	
+	            const features = Array.isArray(data && data.features) ? data.features : [];
+	            const allowedPlaceValues = new Set(['municipality','city','town','village']);
+	            const byKey = new Map();
+	
+	            const addCandidate = (cityName, stateName, coords, source) => {
+	                const city = cleanText(cityName);
+	                const state = cleanText(stateName);
+	                if (!city || !state) return;
+	
+	                const uf = normalizeBrazilUf(state) || '';
+	                const label = uf ? `${city} - ${uf}` : `${city} - ${state}`;
+	                const key = normalizeSearchText(label);
+	                if (!key) return;
+	
+	                const existing = byKey.get(key);
+	                const cand = {
+	                    label,
+	                    city,
+	                    uf,
+	                    state,
+	                    lat: coords && Number.isFinite(coords.lat) ? coords.lat : null,
+	                    lon: coords && Number.isFinite(coords.lon) ? coords.lon : null,
+	                    _source: source || 'photon'
+	                };
+	
+	                // Prefere item com coordenadas (place) quando houver duplicata
+	                if (!existing) {
+	                    byKey.set(key, cand);
+	                } else if ((existing.lat == null || existing.lon == null) && (cand.lat != null && cand.lon != null)) {
+	                    byKey.set(key, cand);
+	                }
+	            };
+	
+	            for (const feature of features){
+	                const p = feature && typeof feature.properties === 'object' ? feature.properties : {};
+	                const country = cleanText(p.countrycode || p.countryCode).toUpperCase();
+	                if (country !== 'BR') continue;
+	
+	                const stateName = cleanText(p.state || p.region || '');
+	                if (!stateName) continue;
+	
+	                const osmKey = cleanText(p.osm_key || p.osmKey);
+	                const osmVal = cleanText(p.osm_value || p.osmValue);
+	                const name = cleanText(p.name || '');
+	                const cityProp = cleanText(p.city || '');
+	
+	                // 1) Resultados de lugar (município/cidade) — melhor precisão
+	                if (osmKey === 'place' && allowedPlaceValues.has(osmVal) && name) {
+	                    addCandidate(name, stateName, photonExtractPointCoords(feature), 'photon_place');
+	                    continue;
+	                }
+	
+	                // 2) POIs e outros tipos — extraímos o campo "city" para sugerir a cidade mesmo com erro de digitação
+	                if (cityProp) {
+	                    addCandidate(cityProp, stateName, null, 'photon_city');
+	                }
+	            }
+	
+	            const suggestions = Array.from(byKey.values());
+	            return rankCitySuggestionsByQuery(query, suggestions, limit || 8);
+	        }
+
+	        async function photonGeocodeCityUF(city, uf){
+	            const cityQuery = cleanText(city);
+	            if (!cityQuery) return null;
+
+	            const ufNorm = normalizeBrazilUf(uf);
+	            const bbox = '-74.0,-34.0,-34.0,5.3';
+	            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(cityQuery)}&limit=20&bbox=${bbox}`;
+	            const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+	            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+	            const data = await resp.json().catch(()=> null);
+
+	            const features = Array.isArray(data && data.features) ? data.features : [];
+	            const allowedPlaceValues = new Set(['municipality','city','town','village']);
+	            const qNorm = normalizeCityMatchText(cityQuery);
+
+	            let best = null;
+	            let bestScore = Infinity;
+	            for (const feature of features){
+	                const p = feature && typeof feature.properties === 'object' ? feature.properties : {};
+	                const country = cleanText(p.countrycode || p.countryCode).toUpperCase();
+	                if (country !== 'BR') continue;
+
+	                const stateName = cleanText(p.state || p.region || '');
+	                if (ufNorm) {
+	                    const fUf = normalizeBrazilUf(stateName);
+	                    if (fUf && fUf !== ufNorm) continue;
+	                }
+
+	                const osmKey = cleanText(p.osm_key || p.osmKey);
+	                const osmVal = cleanText(p.osm_value || p.osmValue);
+	                if (!(osmKey === 'place' && allowedPlaceValues.has(osmVal))) continue;
+
+	                const name = cleanText(p.name || '');
+	                if (!name) continue;
+
+	                const coords = photonExtractPointCoords(feature);
+	                if (!coords) continue;
+
+	                const nameNorm = normalizeCityMatchText(name);
+	                if (!nameNorm) continue;
+
+	                let score = null;
+	                if (qNorm && nameNorm === qNorm) score = 0;
+	                else if (qNorm && nameNorm.startsWith(qNorm)) score = 1;
+	                else if (qNorm && nameNorm.includes(qNorm)) score = 2;
+	                else if (qNorm) score = 3 + levenshteinDistance(qNorm, nameNorm);
+	                else score = 10;
+
+	                if (score < bestScore) {
+	                    bestScore = score;
+	                    best = coords;
+	                }
+	            }
+	            return best;
+	        }
+	
+	        async function fetchNominatimBrazilCitySuggestions(rawQuery, limit = 8){
+	            const query = cleanText(rawQuery);
+	            const normalized = normalizeSearchText(query);
+	            if (!normalized || normalized.length < 3) return [];
+	
+	            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=${encodeURIComponent(String(limit || 8))}&countrycodes=br&q=${encodeURIComponent(query)}`;
+	            const resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
+	            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+	            const data = await resp.json().catch(()=> null);
+	
+	            const out = [];
+	            const seen = new Set();
+	            if (Array.isArray(data)){
+	                for (const item of data){
+	                    const address = (item && typeof item.address === 'object') ? item.address : {};
+	                    const stateName = cleanText(address.state || address.region || '');
+	                    if (!stateName) continue;
+	
+	                    const category = cleanText(item?.category || item?.class);
+	                    const type = cleanText(item?.type);
+	                    const addresstype = cleanText(item?.addresstype);
+	                    const allowedAddressTypes = new Set(['municipality','city','town','village']);
+	                    const allowedCategories = new Set(['boundary','place']);
+	                    if (!allowedCategories.has(category) && !allowedAddressTypes.has(addresstype)) continue;
+	                    if (category === 'boundary' && type && type !== 'administrative') continue;
+	
+	                    let city = cleanText(
+	                        address.municipality ||
+	                        address.city ||
+	                        address.town ||
+	                        address.village ||
+	                        ''
+	                    );
+	                    if (!city) {
+	                        const cls = cleanText(item?.class || item?.category);
+	                        const t = cleanText(item?.type);
+	                        const looksLikePlace = cls === 'place' || cls === 'boundary';
+	                        const looksLikeCity = ['city','town','village','municipality','administrative'].includes(t);
+	                        if (looksLikePlace && looksLikeCity) {
+	                            const disp = cleanText(item?.display_name || '');
+	                            city = disp ? cleanText(disp.split(',')[0]) : '';
+	                        }
+	                    }
+	                    if (!city) continue;
+	
+	                    const uf = getBrazilUfFromStateName(stateName) || cleanText(address.state_code || '');
+	
+	                    const label = uf ? `${city} - ${uf}` : (stateName ? `${city} - ${stateName}` : city);
+	                    const key = normalizeSearchText(label);
+	                    if (!key || seen.has(key)) continue;
+	                    seen.add(key);
+	
+	                    const lat = Number.parseFloat(item?.lat);
+	                    const lon = Number.parseFloat(item?.lon);
+	                    out.push({
+	                        label,
+	                        city,
+	                        uf,
+	                        state: stateName,
+	                        lat: Number.isFinite(lat) ? lat : null,
+	                        lon: Number.isFinite(lon) ? lon : null,
+	                        _source: 'nominatim'
+	                    });
+	                }
+	            }
+	            return out;
+	        }
+	
+	        async function fetchBrazilCitySuggestions(rawQuery, limit = 8){
+	            const query = cleanText(rawQuery);
+	            const normalized = normalizeSearchText(query);
+	            if (!normalized || normalized.length < 3) return [];
+	            const cached = getCitySuggestionCache(normalized);
+	            if (cached) return cached;
+	
+	            let out = [];
+	            try{
+	                out = await fetchPhotonBrazilCitySuggestions(query, limit);
+	            }catch(err){
+	                console.warn('Falha ao buscar sugestões no Photon; tentando Nominatim:', err);
+	            }
+	            if (!out || !out.length){
+	                try{
+	                    out = await fetchNominatimBrazilCitySuggestions(query, limit);
+	                }catch(err){
+	                    console.warn('Falha ao buscar sugestões no Nominatim:', err);
+	                    out = [];
+	                }
+	            }
+	
+	            setCitySuggestionCache(normalized, out);
+	            return out;
+	        }
 
         // Funções principais
         async function carregarAstronomos() {
@@ -3062,51 +3498,78 @@ textarea:focus {
             return required.filter(f => !row[f] || String(row[f]).trim()==='');
         }
 
-        async function geocodeCityUF(city, uf, retries = 1) {
-            if (!city) {
-                console.log('❌ Nenhuma cidade fornecida');
-                return null;
-            }
+	        async function geocodeCityUF(city, uf, retries = 1) {
+	            if (!city) {
+	                console.log('❌ Nenhuma cidade fornecida');
+	                return null;
+	            }
 
-            const query = `${city}, ${uf}, Brasil`.trim();
-            console.log('🌍 Geocodificando:', query);
+	            const ufNorm = normalizeBrazilUf(uf) || cleanText(uf);
+	            const query = [cleanText(city), ufNorm, 'Brasil'].filter(Boolean).join(', ');
+	            console.log('🌍 Geocodificando:', query);
 
-            const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=br&q=${encodeURIComponent(query)}`;
-            console.log('🔗 URL:', url);
+	            // 1) Tenta obter coordenadas pelo Photon (mesmo fornecedor das sugestões)
+	            try{
+	                const photonCoords = await photonGeocodeCityUF(city, ufNorm);
+	                if (photonCoords && Number.isFinite(photonCoords.lat) && Number.isFinite(photonCoords.lon)) {
+	                    console.log('✅ Coordenadas obtidas (Photon):', photonCoords);
+	                    return photonCoords;
+	                }
+	            }catch(err){
+	                console.warn('⚠️ Photon falhou ao geocodificar; tentando Nominatim:', err);
+	            }
 
-            try {
-                const response = await fetch(url, { 
-                    headers: { 
-                        'Accept': 'application/json',
-                        'User-Agent': 'AppPlanetario/1.0'
-                    } 
-                });
-                
-                console.log('📡 Status da resposta:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-                }
-                
-                const data = await response.json();
-                console.log('📦 Dados retornados:', data);
-                
-                if (Array.isArray(data) && data.length > 0 && data[0].lat && data[0].lon) {
-                    const coords = {
-                        lat: parseFloat(data[0].lat),
-                        lon: parseFloat(data[0].lon)
-                    };
-                    console.log('✅ Coordenadas obtidas:', coords);
-                    return coords;
-                } else {
-                    console.log('❌ Nenhum resultado encontrado');
-                    return null;
-                }
-            } catch (error) {
-                console.error('💥 Erro na geocodificação:', error);
-                throw error;
-            }
-        }
+	            const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=br&q=${encodeURIComponent(query)}`;
+	            console.log('🔗 URL:', url);
+
+	            try {
+	                const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+	                
+	                console.log('📡 Status da resposta:', response.status);
+	                
+	                if (!response.ok) {
+	                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+	                }
+	                
+	                const data = await response.json();
+	                console.log('📦 Dados retornados:', data);
+	                
+	                const pickBest = (arr) => {
+	                    if (!Array.isArray(arr) || !arr.length) return null;
+	                    const allowedAddressTypes = new Set(['municipality','city','town','village']);
+	                    const best = arr.find(item => {
+	                        const cls = cleanText(item && (item.class || item.category));
+	                        const type = cleanText(item && item.type);
+	                        const addresstype = cleanText(item && item.addresstype);
+	                        if (allowedAddressTypes.has(addresstype)) return true;
+	                        if (cls === 'boundary' && type === 'administrative') return true;
+	                        if (cls === 'place' && allowedAddressTypes.has(type)) return true;
+	                        return false;
+	                    });
+	                    return best || arr[0] || null;
+	                };
+
+	                const best = pickBest(data);
+	                if (best && best.lat && best.lon) {
+	                    const coords = {
+	                        lat: parseFloat(best.lat),
+	                        lon: parseFloat(best.lon)
+	                    };
+	                    console.log('✅ Coordenadas obtidas:', coords);
+	                    return coords;
+	                } else {
+	                    console.log('❌ Nenhum resultado encontrado');
+	                    return null;
+	                }
+	            } catch (error) {
+	                console.error('💥 Erro na geocodificação:', error);
+	                if (retries && retries > 0) {
+	                    await sleep(600);
+	                    return geocodeCityUF(city, ufNorm, retries - 1);
+	                }
+	                throw error;
+	            }
+	        }
 
         function parseCSV(text){
             const lines = String(text||'').split(/\r?\n/).filter(l=> l.trim().length>0);
@@ -3355,18 +3818,20 @@ textarea:focus {
             const { city, uf } = extractCityUF(merged);
             if (!city) return false;
 
-            const cacheKey = `${city}|${uf || ''}`.toLowerCase();
-            let coords = geoCache && Object.prototype.hasOwnProperty.call(geoCache, cacheKey) ? geoCache[cacheKey] : undefined;
-            if (coords === undefined) {
-                coords = null;
-                try {
-                    coords = await geocodeCityUF(city, uf);
-                } catch (err) {
-                    console.warn('Falha ao geocodificar cidade base', city, uf, err);
-                }
-                if (geoCache) geoCache[cacheKey] = coords || null;
-                if (coords) await sleep(800);
-            }
+	            const cacheKey = `${city}|${uf || ''}`.toLowerCase();
+	            let coords = geoCache && Object.prototype.hasOwnProperty.call(geoCache, cacheKey) ? geoCache[cacheKey] : undefined;
+	            if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lon)) coords = undefined;
+	            if (coords === undefined) {
+	                try {
+	                    coords = await geocodeCityUF(city, uf);
+	                } catch (err) {
+	                    console.warn('Falha ao geocodificar cidade base', city, uf, err);
+	                }
+	                if (geoCache && coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lon)) {
+	                    geoCache[cacheKey] = coords;
+	                }
+	                if (coords) await sleep(800);
+	            }
             if (coords) {
                 if (updates) {
                     updates.origem_lat = coords.lat;
@@ -3605,6 +4070,464 @@ textarea:focus {
             });
             
             modal.style.display = 'block';
+
+            try{
+                bindAstronomerModalGeocodeAutofill();
+            }catch(err){
+                console.warn('Falha ao ativar geocoding automático no modal do astrônomo:', err);
+            }
+        }
+
+	        function bindAstronomerModalGeocodeAutofill(){
+	            const cityInput = document.getElementById('modal-cidade_base');
+	            const ufInput = document.getElementById('modal-estado');
+	            const latInput = document.getElementById('modal-origem_lat');
+	            const lonInput = document.getElementById('modal-origem_lon');
+	            if (!cityInput || !latInput || !lonInput) return;
+
+            const datalistId = 'lista-cidades-br';
+            let datalist = document.getElementById(datalistId);
+            if (!datalist) {
+                datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                document.body.appendChild(datalist);
+            }
+
+	            cityInput.setAttribute('list', datalistId);
+	            cityInput.setAttribute('autocomplete', 'off');
+	            cityInput.setAttribute('spellcheck', 'false');
+	
+	            // Fallback UI: datalist nem sempre exibe sugestões carregadas de forma assíncrona.
+	            // Este overlay garante que o usuário sempre veja as sugestões.
+	            const overlayId = 'cidade-suggestions-overlay';
+	            let overlay = document.getElementById(overlayId);
+	            if (!overlay) {
+	                overlay = document.createElement('div');
+	                overlay.id = overlayId;
+	                overlay.style.position = 'fixed';
+	                overlay.style.zIndex = '999999';
+	                overlay.style.background = 'rgba(10, 15, 26, 0.98)';
+	                overlay.style.border = '1px solid rgba(255,255,255,0.12)';
+	                overlay.style.borderRadius = '12px';
+	                overlay.style.boxShadow = '0 18px 40px rgba(0,0,0,0.55)';
+	                overlay.style.padding = '6px';
+	                overlay.style.display = 'none';
+	                overlay.style.maxHeight = '240px';
+	                overlay.style.overflowY = 'auto';
+	                overlay.style.fontSize = '13px';
+	                overlay.style.color = '#e5e7eb';
+	                overlay.style.backdropFilter = 'blur(8px)';
+	                document.body.appendChild(overlay);
+	            } else {
+	                overlay.style.display = 'none';
+	                overlay.innerHTML = '';
+	            }
+	
+	            const hideOverlay = () => {
+	                if (!overlay) return;
+	                overlay.style.display = 'none';
+	                overlay.innerHTML = '';
+	            };
+	
+	            const positionOverlay = () => {
+	                if (!overlay) return;
+	                const rect = cityInput.getBoundingClientRect();
+	                const left = Math.max(8, rect.left);
+	                const top = rect.bottom + 6;
+	                overlay.style.left = `${left}px`;
+	                overlay.style.top = `${top}px`;
+	                overlay.style.width = `${Math.max(240, rect.width)}px`;
+	            };
+	
+	            const renderOverlay = (items) => {
+	                if (!overlay) return;
+	                if (document.activeElement !== cityInput) { hideOverlay(); return; }
+	                overlay.innerHTML = '';
+	                const list = Array.isArray(items) ? items.slice(0, 10) : [];
+	                if (!list.length) { hideOverlay(); return; }
+	                positionOverlay();
+	
+	                list.forEach(s => {
+	                    if (!s || !s.label) return;
+	                    const row = document.createElement('div');
+	                    row.textContent = String(s.label);
+	                    row.style.padding = '8px 10px';
+	                    row.style.borderRadius = '10px';
+	                    row.style.cursor = 'pointer';
+	                    row.style.userSelect = 'none';
+	                    row.addEventListener('mouseenter', () => {
+	                        row.style.background = 'rgba(255,255,255,0.08)';
+	                    });
+	                    row.addEventListener('mouseleave', () => {
+	                        row.style.background = 'transparent';
+	                    });
+	                    row.addEventListener('mousedown', (e) => {
+	                        e.preventDefault();
+	                        cityInput.value = String(s.label);
+	                        hideOverlay();
+	                        setTimeout(() => { try { runGeocode(); } catch(_) {} }, 0);
+	                    });
+	                    overlay.appendChild(row);
+	                });
+	
+	                overlay.style.display = 'block';
+	            };
+	
+	            if (overlay && overlay.dataset.bound !== 'true') {
+	                overlay.dataset.bound = 'true';
+	                document.addEventListener('mousedown', (e) => {
+	                    try{
+	                        if (!overlay || overlay.style.display === 'none') return;
+	                        const input = document.getElementById('modal-cidade_base');
+	                        const target = e && e.target;
+	                        if (input && target === input) return;
+	                        if (overlay.contains(target)) return;
+	                        hideOverlay();
+	                    }catch(_){ }
+	                }, true);
+	                window.addEventListener('resize', () => { try { hideOverlay(); } catch(_) {} }, { passive: true });
+	                window.addEventListener('scroll', () => { try { hideOverlay(); } catch(_) {} }, true);
+	            }
+
+	            const clearAutofillFlags = (input) => {
+	                if (!input) return;
+	                try { delete input.dataset.autofilled; } catch (_) {}
+	                try { delete input.dataset.geokey; } catch (_) {}
+	            };
+
+	            const markManualEdit = (input) => {
+	                if (!input) return;
+	                input.addEventListener('input', () => {
+	                    try { input.dataset.manual = 'true'; } catch (_) {}
+	                    clearAutofillFlags(input);
+	                });
+	            };
+
+            markManualEdit(latInput);
+            markManualEdit(lonInput);
+            if (ufInput) markManualEdit(ufInput);
+
+            const shouldOverwrite = (input) => {
+                if (!input) return false;
+                const val = cleanText(input.value);
+                return val === '' || input.dataset.autofilled === 'true';
+            };
+
+            const buildGeoKey = (city, uf) => `${cleanText(city)}|${cleanText(uf)}`.toLowerCase();
+
+	            const parseCityUf = () => {
+	                let city = cleanText(cityInput.value);
+	                let uf = ufInput ? cleanText(ufInput.value) : '';
+	                if (city && !uf && city.includes(' - ')) {
+	                    const parts = city.split(' - ');
+	                    city = cleanText(parts[0] || '');
+	                    uf = cleanText(parts[1] || '');
+	                }
+	                return { city, uf };
+	            };
+	
+	            // Se o astrônomo já tiver coordenadas, associamos elas ao geoKey atual para permitir
+	            // sobrescrever automaticamente quando a cidade/UF mudar.
+	            try{
+	                const initialCityUf = parseCityUf();
+	                const initialGeoKey = buildGeoKey(initialCityUf.city, initialCityUf.uf);
+	                if (initialGeoKey && cleanText(latInput.value) !== '' && cleanText(lonInput.value) !== '') {
+	                    if (!latInput.dataset.geokey) latInput.dataset.geokey = initialGeoKey;
+	                    if (!lonInput.dataset.geokey) lonInput.dataset.geokey = initialGeoKey;
+	                }
+	            }catch(_){ }
+
+            let suggestionsByLabel = new Map();
+            let suggestTimer = null;
+            let suggestSeq = 0;
+
+	            const renderSuggestions = (items) => {
+	                datalist.innerHTML = '';
+	                (items || []).forEach(s => {
+	                    if (!s || !s.label) return;
+	                    const opt = document.createElement('option');
+	                    opt.value = String(s.label);
+	                    datalist.appendChild(opt);
+	                });
+	                // Exibe também no overlay para garantir visibilidade imediata
+	                try { renderOverlay(items || []); } catch (_) {}
+	            };
+
+            const scheduleSuggestions = () => {
+                if (suggestTimer) clearTimeout(suggestTimer);
+                suggestTimer = setTimeout(async () => {
+                    const q = cleanText(cityInput.value);
+                    let ufHint = ufInput ? normalizeBrazilUf(ufInput.value) : '';
+                    if (!ufHint && q.includes(' - ')) {
+                        const parts = q.split(' - ');
+                        ufHint = normalizeBrazilUf(parts[parts.length - 1] || '');
+                    }
+                    const qCity = q.includes(' - ') ? cleanText(q.split(' - ')[0]) : q;
+                    const normalized = ufHint ? normalizeCityMatchText(qCity) : normalizeSearchText(qCity);
+                    const minLen = ufHint ? 2 : 3;
+                    if (!normalized || normalized.length < minLen) {
+                        suggestionsByLabel = new Map();
+                        renderSuggestions([]);
+                        return;
+                    }
+                    const current = ++suggestSeq;
+                    try{
+                        let suggestions = [];
+                        if (ufHint) {
+                            try{
+                                const municipalities = await fetchIbgeMunicipalities(ufHint);
+                                const ranked = rankMunicipalitiesByQuery(qCity, municipalities, 10);
+                                suggestions = ranked.map(name => ({
+                                    label: `${name} - ${ufHint}`,
+                                    city: name,
+                                    uf: ufHint,
+                                    state: ufHint,
+                                    lat: null,
+                                    lon: null,
+                                    _source: 'ibge'
+                                }));
+                            }catch(err){
+                                console.warn('Falha ao obter municípios do IBGE; usando Nominatim:', err);
+                                suggestions = await fetchBrazilCitySuggestions(qCity, 10);
+                            }
+                        } else {
+                            suggestions = await fetchBrazilCitySuggestions(qCity, 10);
+                        }
+                        if (current !== suggestSeq) return;
+                        const map = new Map();
+                        (suggestions || []).forEach(s => {
+                            if (!s || !s.label) return;
+                            map.set(String(s.label), s);
+                        });
+                        suggestionsByLabel = map;
+                        renderSuggestions(suggestions || []);
+                    }catch(err){
+                        if (current !== suggestSeq) return;
+                        console.warn('Falha ao buscar sugestões de cidades:', err);
+                    }
+                }, 350);
+            };
+
+	            const applySelectionFromSuggestions = () => {
+	                const chosen = cleanText(cityInput.value);
+	                if (!chosen) return null;
+	                const match = suggestionsByLabel.get(chosen) || null;
+	                if (!match) return null;
+
+                // Preenche cidade e estado a partir da sugestão
+                if (match.city) {
+                    cityInput.value = String(match.city);
+                }
+	                if (ufInput) {
+	                    const ufValue = cleanText(match.uf) || cleanText(match.state);
+	                    if (ufValue && (cleanText(ufInput.value) === '' || ufInput.dataset.autofilled === 'true')) {
+	                        ufInput.value = String(ufValue);
+	                        ufInput.dataset.autofilled = 'true';
+	                        try { delete ufInput.dataset.manual; } catch (_) {}
+	                    }
+	                }
+
+	                // Preenche coordenadas direto da sugestão (quando disponíveis)
+	                const latManualBlock = latInput.dataset.manual === 'true' && cleanText(latInput.value) !== '';
+	                const lonManualBlock = lonInput.dataset.manual === 'true' && cleanText(lonInput.value) !== '';
+	                const canAutoOverwrite = !(latManualBlock || lonManualBlock);
+	                const lat = Number.isFinite(match.lat) ? match.lat : null;
+	                const lon = Number.isFinite(match.lon) ? match.lon : null;
+	                if (lat != null && lon != null && canAutoOverwrite) {
+	                    const { city, uf } = parseCityUf();
+	                    const geoKey = buildGeoKey(city, uf);
+	                    // Seleção de sugestão é uma ação explícita: pode sobrescrever coordenadas existentes
+	                    latInput.value = String(lat);
+	                    lonInput.value = String(lon);
+	                    latInput.dataset.autofilled = 'true';
+	                    lonInput.dataset.autofilled = 'true';
+	                    latInput.dataset.geokey = geoKey;
+	                    lonInput.dataset.geokey = geoKey;
+	                    try { delete latInput.dataset.manual; } catch (_) {}
+	                    try { delete lonInput.dataset.manual; } catch (_) {}
+	                    GEO_COORD_CACHE[geoKey] = { lat, lon };
+	                    toast('Coordenadas preenchidas automaticamente.', 'success');
+	                }
+
+	                return match;
+	            };
+	
+	            const maybeAutoSelectBestSuggestion = async () => {
+	                const raw = cleanText(cityInput.value);
+	                if (!raw) return null;
+	                if (suggestionsByLabel.has(raw)) return applySelectionFromSuggestions();
+	
+	                const rawCity = raw.includes(' - ') ? cleanText(raw.split(' - ')[0]) : raw;
+	                const qNorm = normalizeCityMatchText(rawCity);
+	                if (!qNorm || qNorm.length < 4) return null;
+	
+	                const pickBest = (candidates) => {
+	                    const list = Array.isArray(candidates) ? candidates : [];
+	                    const best = rankCitySuggestionsByQuery(rawCity, list, 1)[0] || null;
+	                    if (!best || !best.label) return null;
+	                    const bestNorm = normalizeCityMatchText(best.city || best.label);
+	                    const dist = levenshteinDistance(qNorm, bestNorm);
+	                    const maxDist = Math.max(1, Math.floor(qNorm.length * 0.34));
+	                    const strong = bestNorm.startsWith(qNorm) || bestNorm.includes(qNorm) || dist <= Math.min(2, maxDist);
+	                    return strong ? best : null;
+	                };
+	
+	                let best = pickBest(Array.from(suggestionsByLabel.values()));
+	                if (!best) {
+	                    // Se as sugestões ainda não foram carregadas (ex.: blur rápido), tenta buscar agora.
+	                    try{
+	                        let ufHint = ufInput ? normalizeBrazilUf(ufInput.value) : '';
+	                        if (!ufHint && raw.includes(' - ')) {
+	                            const parts = raw.split(' - ');
+	                            ufHint = normalizeBrazilUf(parts[parts.length - 1] || '');
+	                        }
+	                        let suggestions = [];
+	                        if (ufHint) {
+	                            try{
+	                                const municipalities = await fetchIbgeMunicipalities(ufHint);
+	                                const ranked = rankMunicipalitiesByQuery(rawCity, municipalities, 10);
+	                                suggestions = ranked.map(name => ({
+	                                    label: `${name} - ${ufHint}`,
+	                                    city: name,
+	                                    uf: ufHint,
+	                                    state: ufHint,
+	                                    lat: null,
+	                                    lon: null,
+	                                    _source: 'ibge'
+	                                }));
+	                            }catch(err){
+	                                suggestions = await fetchBrazilCitySuggestions(rawCity, 10);
+	                            }
+	                        } else {
+	                            suggestions = await fetchBrazilCitySuggestions(rawCity, 10);
+	                        }
+	
+	                        const map = new Map();
+	                        (suggestions || []).forEach(s => {
+	                            if (!s || !s.label) return;
+	                            map.set(String(s.label), s);
+	                        });
+	                        suggestionsByLabel = map;
+	                        renderSuggestions(suggestions || []);
+	                        best = pickBest(suggestions || []);
+	                    }catch(_){
+	                        best = null;
+	                    }
+	                }
+	
+	                if (!best) return null;
+	                cityInput.value = String(best.label);
+	                return applySelectionFromSuggestions();
+	            };
+
+	            let geoSeq = 0;
+	            const runGeocode = async () => {
+	                // Se o valor atual veio de uma sugestão, isso já pode ter preenchido UF/coords
+	                let applied = applySelectionFromSuggestions();
+	                if (!applied) {
+	                    applied = await maybeAutoSelectBestSuggestion();
+	                }
+
+	                const { city, uf } = parseCityUf();
+	                if (!city) return;
+
+	                const geoKey = buildGeoKey(city, uf);
+	                const alreadyApplied = cleanText(latInput.value) !== '' && cleanText(lonInput.value) !== '' && (latInput.dataset.geokey === geoKey || lonInput.dataset.geokey === geoKey);
+	                if (alreadyApplied) return;
+	
+	                const latManualBlock = latInput.dataset.manual === 'true' && cleanText(latInput.value) !== '';
+	                const lonManualBlock = lonInput.dataset.manual === 'true' && cleanText(lonInput.value) !== '';
+	                const manualBlock = latManualBlock || lonManualBlock;
+	                if (manualBlock) return;
+	
+	                const prevKey = cleanText(latInput.dataset.geokey || lonInput.dataset.geokey);
+	                const cityChanged = !!(prevKey && prevKey !== geoKey);
+	                const canOverwrite = (shouldOverwrite(latInput) && shouldOverwrite(lonInput)) || cityChanged;
+	                if (!canOverwrite) return;
+
+		                if (Object.prototype.hasOwnProperty.call(GEO_COORD_CACHE, geoKey)) {
+		                    const cached = GEO_COORD_CACHE[geoKey];
+		                    if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon)) {
+		                        latInput.value = String(cached.lat);
+		                        lonInput.value = String(cached.lon);
+	                        latInput.dataset.autofilled = 'true';
+	                        lonInput.dataset.autofilled = 'true';
+	                        latInput.dataset.geokey = geoKey;
+		                        lonInput.dataset.geokey = geoKey;
+		                        try { delete latInput.dataset.manual; } catch (_) {}
+		                        try { delete lonInput.dataset.manual; } catch (_) {}
+		                    }
+	                    // Se houver cache inválido (ex.: null), permite tentar novamente
+	                    if (!(cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon))) {
+	                        try { delete GEO_COORD_CACHE[geoKey]; } catch (_) {}
+	                    } else {
+	                        return;
+	                    }
+	                }
+
+                const currentSeq = ++geoSeq;
+                try{
+                    toast('Buscando coordenadas da cidade base...', 'info');
+                    const coords = await geocodeCityUF(city, uf);
+                    if (currentSeq !== geoSeq) return;
+	                    if (coords && Number.isFinite(coords.lat) && Number.isFinite(coords.lon)) {
+	                        GEO_COORD_CACHE[geoKey] = coords;
+	                    }
+	                    if (!coords || !Number.isFinite(coords.lat) || !Number.isFinite(coords.lon)) {
+	                        toast('Coordenadas não encontradas. Use uma sugestão da lista.', 'warning');
+	                        return;
+	                    }
+	                    latInput.value = String(coords.lat);
+	                    lonInput.value = String(coords.lon);
+	                    latInput.dataset.autofilled = 'true';
+	                    lonInput.dataset.autofilled = 'true';
+	                    latInput.dataset.geokey = geoKey;
+	                    lonInput.dataset.geokey = geoKey;
+	                    try { delete latInput.dataset.manual; } catch (_) {}
+	                    try { delete lonInput.dataset.manual; } catch (_) {}
+	                    toast('Coordenadas preenchidas automaticamente.', 'success');
+                }catch(err){
+                    if (currentSeq !== geoSeq) return;
+                    console.warn('Falha ao geocodificar cidade base no modal:', err);
+                    toast('Falha ao buscar coordenadas. Tente novamente.', 'error');
+                }
+            };
+
+            const clearCoordsIfAuto = () => {
+                const latAuto = latInput.dataset.autofilled === 'true';
+                const lonAuto = lonInput.dataset.autofilled === 'true';
+                if (!latAuto || !lonAuto) return;
+                latInput.value = '';
+                lonInput.value = '';
+                clearAutofillFlags(latInput);
+                clearAutofillFlags(lonInput);
+            };
+
+            cityInput.addEventListener('input', () => {
+                clearCoordsIfAuto();
+                scheduleSuggestions();
+                const chosen = cleanText(cityInput.value);
+                if (chosen && suggestionsByLabel.has(chosen)) {
+                    setTimeout(() => { runGeocode(); }, 0);
+                }
+            });
+	            cityInput.addEventListener('focus', scheduleSuggestions);
+	            cityInput.addEventListener('change', runGeocode);
+	            cityInput.addEventListener('blur', () => { setTimeout(() => { try { hideOverlay(); } catch(_) {} }, 120); });
+	            cityInput.addEventListener('blur', runGeocode);
+	            cityInput.addEventListener('keydown', (e) => {
+	                if (!e) return;
+	                if (e.key === 'Escape') { hideOverlay(); return; }
+	            });
+
+            if (ufInput) {
+                ufInput.addEventListener('input', () => {
+                    clearCoordsIfAuto();
+                    scheduleSuggestions();
+                });
+                ufInput.addEventListener('change', runGeocode);
+                ufInput.addEventListener('blur', runGeocode);
+            }
         }
 
         async function salvarAstronomo() {
@@ -4189,9 +5112,8 @@ textarea:focus {
                     if (idValues.id_reserva) payload.id_reserva = idValues.id_reserva;
                     if (idValues.id_n_marcar) payload.id_n_marcar = idValues.id_n_marcar;
                 }
-                if (SELECTED.from) payload.from = SELECTED.from;
-                if (SELECTED.to) payload.to = SELECTED.to;
-                if (SELECTED.search) payload.search = SELECTED.search;
+	                // Datas são filtradas no frontend; não enviar from/to para o backend.
+	                if (SELECTED.search) payload.search = SELECTED.search;
 
                 const bodyParams = new URLSearchParams();
                 Object.entries(payload || {}).forEach(([key, value]) => {
@@ -4216,15 +5138,44 @@ textarea:focus {
                     showNoDataPopup('Sem dados retornados do n8n.');
                 }
 
-                EVENTOS = rawEventos.map(normalizeAgendaEvent);
-                agendaPage = 1;
-                popularFiltroAgendaUnico(EVENTOS);
-                
-                renderAgenda();
-                atualizarTimestamp('agenda');
-                setStatus('agenda', `${EVENTOS.length} eventos carregados com sucesso!`, 'success');
-                toast('Agenda carregada com sucesso', 'success');
-            } catch (error) {
+	                EVENTOS = rawEventos.map(normalizeAgendaEvent);
+	                agendaPage = 1;
+	                popularFiltroAgendaUnico(EVENTOS);
+	                
+	                let totalExibidos = renderAgenda();
+	                let didAutoAdjustPeriod = false;
+	
+	                // Se o backend retornou eventos, mas o filtro de datas excluiu todos,
+	                // ajusta automaticamente o período (apenas se o usuário não mexeu nas datas).
+	                const hasDateFilter = !!(cleanText(SELECTED.from) || cleanText(SELECTED.to));
+	                if (totalExibidos === 0 && EVENTOS.length > 0 && hasDateFilter && !AGENDA_DATE_FILTER_TOUCHED) {
+	                    try{
+	                        const keys = EVENTOS.map(getEventDateKey).filter(Boolean).sort();
+	                        const minKey = keys[0];
+	                        const maxKey = keys[keys.length - 1];
+	                        if (minKey && maxKey) {
+	                            const dataInicio = document.getElementById('data-inicio');
+	                            const dataFim = document.getElementById('data-fim');
+	                            if (dataInicio) dataInicio.value = minKey;
+	                            if (dataFim) dataFim.value = maxKey;
+	                            SELECTED.from = minKey;
+	                            SELECTED.to = maxKey;
+	                            saveUIState();
+	                            agendaPage = 1;
+	                            totalExibidos = renderAgenda();
+	                            didAutoAdjustPeriod = true;
+	                            toast('Período ajustado automaticamente para exibir os eventos carregados.', 'info');
+	                        }
+	                    }catch(err){
+	                        console.warn('Falha ao ajustar período automaticamente:', err);
+	                    }
+	                }
+	                atualizarTimestamp('agenda');
+	                setStatus('agenda', `${totalExibidos} eventos exibidos (${EVENTOS.length} carregados)`, 'success');
+	                if (!didAutoAdjustPeriod) {
+	                    toast('Agenda carregada com sucesso', 'success');
+	                }
+	            } catch (error) {
                 console.error('Erro ao carregar agenda:', error);
                 setStatus('agenda', `Erro: ${error.message}`, 'error');
                 toast('Erro ao carregar agenda: ' + error.message, 'error');
@@ -4275,11 +5226,11 @@ textarea:focus {
             return null;
         }
 
-        function renderAgenda() {
-            const container = document.getElementById('lista-agenda');
+	        function renderAgenda() {
+	            const container = document.getElementById('lista-agenda');
 
-            // Começa da lista atual de eventos normalizados
-            let eventos = Array.isArray(EVENTOS) ? EVENTOS.slice() : [];
+	            // Começa da lista atual de eventos normalizados
+	            let eventos = Array.isArray(EVENTOS) ? EVENTOS.slice() : [];
 
             // Filtro por tipo de tarefa (frontend)
             const selectedKey = normalizeTaskType(SELECTED.taskType);
@@ -4297,10 +5248,10 @@ textarea:focus {
             // Filtro único (livre) para cidade/escola/outros campos
             const filtroLivreRaw = (SELECTED && SELECTED.search ? SELECTED.search : '').toString().trim();
             const filtroLivre = normalizeSearchText(filtroLivreRaw);
-            if (filtroLivre) {
-                eventos = eventos.filter(ev => {
-                    const bloco = [
-                        normalizeSearchText(ev.nome_da_escola),
+	            if (filtroLivre) {
+	                eventos = eventos.filter(ev => {
+	                    const bloco = [
+	                        normalizeSearchText(ev.nome_da_escola),
                         normalizeSearchText(ev.nome_escola),
                         normalizeSearchText(ev.escola),
                         normalizeSearchText(ev.nome_lead),
@@ -4320,13 +5271,34 @@ textarea:focus {
                         normalizeSearchText(ev.conteudo),
                         normalizeSearchText(ev.apresentacao)
                     ].filter(Boolean).join(' ');
-                    return bloco.includes(filtroLivre);
-                });
-            }
+	                    return bloco.includes(filtroLivre);
+	                });
+	            }
+	
+	            // Filtro por período (YYYY-MM-DD) — aplicado no frontend para garantir funcionamento
+	            let fromKey = cleanText(SELECTED && SELECTED.from ? SELECTED.from : '');
+	            let toKey = cleanText(SELECTED && SELECTED.to ? SELECTED.to : '');
+	            // Corrige caso usuário selecione datas invertidas
+	            if (fromKey && toKey && fromKey > toKey) {
+	                const tmp = fromKey;
+	                fromKey = toKey;
+	                toKey = tmp;
+	            }
+	            if (fromKey || toKey) {
+	                eventos = eventos.filter(ev => {
+	                    const key = getEventDateKey(ev);
+	                    if (!key) return false;
+	                    if (fromKey && key < fromKey) return false;
+	                    if (toKey && key > toKey) return false;
+	                    return true;
+	                });
+	            }
+	
+	            const totalFiltrado = eventos.length;
 
-            // Ordena pela data do evento (mais antigos primeiro)
-            eventos.sort((a, b) => {
-                const aKey = getEventDateKey(a);
+	            // Ordena pela data do evento (mais antigos primeiro)
+	            eventos.sort((a, b) => {
+	                const aKey = getEventDateKey(a);
                 const bKey = getEventDateKey(b);
                 if (aKey && bKey) return aKey.localeCompare(bKey);
                 if (aKey) return -1;
@@ -4339,16 +5311,61 @@ textarea:focus {
             const nextBtn = document.getElementById('agenda-next');
             const pageLabel = document.getElementById('agenda-page-label');
 
-            if (!eventos || eventos.length === 0) {
-                if (pagination) pagination.classList.add('hidden');
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>📅 Nenhum evento encontrado</h3>
-                        <p>Não há eventos para os filtros selecionados</p>
-                    </div>
-                `;
-                return;
-            }
+	            if (!eventos || eventos.length === 0) {
+	                if (pagination) pagination.classList.add('hidden');
+	
+	                const totalCarregados = Array.isArray(EVENTOS) ? EVENTOS.length : 0;
+	                let extraInfo = '';
+	                let minLoaded = '';
+	                let maxLoaded = '';
+	                if (totalCarregados > 0) {
+	                    try{
+	                        const keys = EVENTOS.map(getEventDateKey).filter(Boolean).sort();
+	                        minLoaded = keys[0] || '';
+	                        maxLoaded = keys[keys.length - 1] || '';
+	                    }catch(_){ }
+	
+	                    const periodoSelecionado = (fromKey || toKey)
+	                        ? `${fromKey ? formatarData(fromKey) : '—'} até ${toKey ? formatarData(toKey) : '—'}`
+	                        : 'Não definido';
+	                    const periodoDisponivel = (minLoaded && maxLoaded)
+	                        ? `${formatarData(minLoaded)} até ${formatarData(maxLoaded)}`
+	                        : '';
+	
+	                    extraInfo = `
+	                        <p style="margin-top:8px; opacity:0.9;">
+	                            ${totalCarregados} eventos carregados, mas nenhum corresponde ao período selecionado (${periodoSelecionado}).
+	                        </p>
+	                        ${periodoDisponivel ? `<p style=\"margin-top:4px; opacity:0.8;\">Período disponível nos eventos carregados: ${periodoDisponivel}.</p>` : ''}
+	                        ${minLoaded && maxLoaded ? `<button type=\"button\" class=\"btn btn-secondary\" id=\"btn-ajustar-periodo-agenda\" style=\"margin-top:10px;\">📅 Ajustar período para mostrar eventos</button>` : ''}
+	                    `;
+	                }
+	
+	                container.innerHTML = `
+	                    <div class="empty-state">
+	                        <h3>📅 Nenhum evento encontrado</h3>
+	                        <p>Não há eventos para os filtros selecionados</p>
+	                        ${extraInfo}
+	                    </div>
+	                `;
+	
+	                const btnAjustar = document.getElementById('btn-ajustar-periodo-agenda');
+	                if (btnAjustar && minLoaded && maxLoaded) {
+	                    btnAjustar.addEventListener('click', () => {
+	                        AGENDA_DATE_FILTER_TOUCHED = true;
+	                        const dataInicio = document.getElementById('data-inicio');
+	                        const dataFim = document.getElementById('data-fim');
+	                        if (dataInicio) dataInicio.value = minLoaded;
+	                        if (dataFim) dataFim.value = maxLoaded;
+	                        SELECTED.from = minLoaded;
+	                        SELECTED.to = maxLoaded;
+	                        saveUIState();
+	                        agendaPage = 1;
+	                        renderAgenda();
+	                    });
+	                }
+	                return 0;
+	            }
 
             const totalPages = Math.max(1, Math.ceil(eventos.length / AGENDA_PAGE_SIZE));
             if (agendaPage < 1) agendaPage = 1;
@@ -4366,10 +5383,10 @@ textarea:focus {
             
             container.innerHTML = '';
             
-            pageEventos.forEach(ev => {
-                const card = document.createElement('div');
-                card.className = 'event-card';
-                card.addEventListener('click', () => showEventDetails(ev));
+	            pageEventos.forEach(ev => {
+	                const card = document.createElement('div');
+	                card.className = 'event-card';
+	                card.addEventListener('click', () => showEventDetails(ev));
 
                 const dataEvento = formatarData(ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data);
                 
@@ -4425,9 +5442,11 @@ textarea:focus {
                     });
                 }
                 
-                container.appendChild(card);
-            });
-        }
+	                container.appendChild(card);
+	            });
+	
+	            return totalFiltrado;
+	        }
 
         // Normalização dos eventos da agenda (compatível com agenda principal)
         function normalizeAgendaEvent(event) {
@@ -5616,11 +6635,39 @@ textarea:focus {
                     try { adminSenhaInput.focus(); } catch (_) {}
                 });
             }
-            document.getElementById('btn-novo-astronomo').addEventListener('click', criarNovoAstronomo);
-            // Botões de fetch manual
-            document.getElementById('btn-atualizar-astronomos').addEventListener('click', carregarAstronomos);
-            document.getElementById('btn-filtrar-agenda').addEventListener('click', carregarAgenda);
-            document.getElementById('btn-atualizar-agenda').addEventListener('click', carregarAgenda);
+	            document.getElementById('btn-novo-astronomo').addEventListener('click', criarNovoAstronomo);
+	            // Botões de fetch manual
+	            document.getElementById('btn-atualizar-astronomos').addEventListener('click', carregarAstronomos);
+	            const btnFiltrarAgenda = document.getElementById('btn-filtrar-agenda');
+	            if (btnFiltrarAgenda) {
+	                // Filtrar é local (sem refetch). Atualizar é o fetch.
+	                btnFiltrarAgenda.addEventListener('click', () => {
+	                    const selectAstronomo = document.getElementById('select-astronomo');
+	                    const inputFrom = document.getElementById('data-inicio');
+	                    const inputTo = document.getElementById('data-fim');
+	                    const inputSearch = document.getElementById('search-agenda');
+	                    const inputTipo = document.getElementById('filtro-tipo-tarefa-agenda');
+	
+	                    SELECTED.id_astronomo = selectAstronomo ? (selectAstronomo.value || '') : (SELECTED.id_astronomo || '');
+	                    SELECTED.from = inputFrom ? (inputFrom.value || '') : (SELECTED.from || '');
+	                    SELECTED.to = inputTo ? (inputTo.value || '') : (SELECTED.to || '');
+	                    SELECTED.search = inputSearch ? (inputSearch.value || '') : (SELECTED.search || '');
+	                    SELECTED.taskType = inputTipo ? (inputTipo.value || 'all') : (SELECTED.taskType || 'all');
+	
+	                    if (SELECTED.from && SELECTED.to && SELECTED.from > SELECTED.to) {
+	                        const tmp = SELECTED.from;
+	                        SELECTED.from = SELECTED.to;
+	                        SELECTED.to = tmp;
+	                        if (inputFrom) inputFrom.value = SELECTED.from;
+	                        if (inputTo) inputTo.value = SELECTED.to;
+	                    }
+	
+	                    saveUIState();
+	                    agendaPage = 1;
+	                    renderAgenda();
+	                });
+	            }
+	            document.getElementById('btn-atualizar-agenda').addEventListener('click', carregarAgenda);
             const agendaPrevBtn = document.getElementById('agenda-prev');
             const agendaNextBtn = document.getElementById('agenda-next');
             if (agendaPrevBtn) {
@@ -5676,8 +6723,39 @@ textarea:focus {
                     }
                 });
             }
-            if (dataInicioEl) dataInicioEl.addEventListener('change', saveUIState);
-            if (dataFimEl) dataFimEl.addEventListener('change', saveUIState);
+	            const applyAgendaDateFiltersLocal = () => {
+	                const from = dataInicioEl ? cleanText(dataInicioEl.value) : '';
+	                const to = dataFimEl ? cleanText(dataFimEl.value) : '';
+	
+	                let fromKey = from;
+	                let toKey = to;
+	                if (fromKey && toKey && fromKey > toKey) {
+	                    // Corrige período invertido (mantém UX consistente)
+	                    const tmp = fromKey;
+	                    fromKey = toKey;
+	                    toKey = tmp;
+	                    if (dataInicioEl) dataInicioEl.value = fromKey;
+	                    if (dataFimEl) dataFimEl.value = toKey;
+	                }
+	
+	                SELECTED.from = fromKey;
+	                SELECTED.to = toKey;
+	                agendaPage = 1;
+	                renderAgenda();
+	            };
+		            const onAgendaDateChange = () => {
+		                AGENDA_DATE_FILTER_TOUCHED = true;
+		                saveUIState();
+		                applyAgendaDateFiltersLocal();
+		            };
+	            if (dataInicioEl) {
+	                dataInicioEl.addEventListener('change', onAgendaDateChange);
+	                dataInicioEl.addEventListener('input', onAgendaDateChange);
+	            }
+	            if (dataFimEl) {
+	                dataFimEl.addEventListener('change', onAgendaDateChange);
+	                dataFimEl.addEventListener('input', onAgendaDateChange);
+	            }
             if (searchAgendaEl) {
                 searchAgendaEl.addEventListener('input', () => {
                     saveUIState();
