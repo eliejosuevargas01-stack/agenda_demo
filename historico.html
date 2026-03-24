@@ -532,8 +532,8 @@
         }
 
         function applyEventsData(data, sourceLabel){
-            // Normaliza fonte
-            eventsData = dedupeEventsBySignature(normalizeAgendaPayload(data));
+            // Usa o payload completo, sem deduplicação no frontend.
+            eventsData = normalizeAgendaPayload(data);
 
             // Incluir eventos finalizados e não finalizados
             completedEvents = eventsData.map(event => {

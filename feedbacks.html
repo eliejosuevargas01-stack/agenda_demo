@@ -455,7 +455,7 @@
                 if ((!normalized || !normalized.length) && typeof showNoDataPopup === 'function') {
                     showNoDataPopup('Sem dados retornados do n8n.');
                 }
-                eventsData = dedupeEventsBySignature(normalized);
+                eventsData = normalized;
 
                 // Extrair apenas eventos que têm feedback (avaliação/NPM)
                 feedbacksData = eventsData.filter(hasFeedbackFromEvent);

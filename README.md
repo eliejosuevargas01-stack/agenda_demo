@@ -45,12 +45,14 @@ Na pratica, `despesas.html` usa duas chamadas de negocio:
 2. `action=lancar_despesas` para gravar despesas reais do evento.
 
 Observacao:
-1. A separacao de eventos finalizados para calculos reais e feita na propria pagina, filtrando os dados retornados por `historico`.
-2. A lista de eventos em despesas considera o payload operacional completo retornado por `historico`.
-3. A divisao operacional da lista e feita em 2 visoes: `Pendentes` (nao finalizados) e `Lancadas` (finalizados).
+1. A pagina usa o payload completo de `historico` como fonte unica para lista, cards e modais de despesas.
+2. A separacao operacional e feita no frontend em 2 visoes: `Pendentes` (eventos com `finalizado=false`/ausente) e `Lancadas` (eventos com `finalizado=true`).
+3. `completo` e `completo_ate` nao definem mais o status de finalizacao na UI de despesas.
 4. A visao padrao e `Pendentes`, para priorizar o que ainda precisa de lancamento/finalizacao.
 5. Cada card de evento mostra status de finalizacao e status de despesas (mesma percepcao de historico).
-6. Os cards-resumo (combustivel, hospedagem, alimentacao etc.) sao clicaveis e abrem popup de detalhamento por categoria.
+6. Os cards de `Estimados` priorizam os campos fixos do cadastro do astrônomo (`consumo_km_l`, `valor_litro`, `diaria_hospedagem`, `alimentacao_diaria`, `monitor`, `pedagios`) e usam distancia/rota apenas como apoio ao combustivel.
+7. Os cards de `Reais` usam apenas despesas realmente lancadas no payload (`despesas_reais`, `gastos_reais`, `despesas`, `gastos` ou campos reais/raiz equivalentes).
+8. Os cards-resumo (combustivel, hospedagem, alimentacao etc.) sao clicaveis e abrem popup de detalhamento por categoria.
 
 ## Integracoes e actions de negocio
 ### Endpoint de agenda (`/webhook/agenda-astronomos`)
@@ -168,18 +170,18 @@ Objetivo:
 3. Exibir impacto de lucro do astrônomo.
 
 Funcoes de negocio principais:
-1. `fetchEvents`: busca historico completo (`historico`) e filtra finalizados localmente para os indicadores reais.
-2. `extractExpenseEstimates`: calcula despesas estimadas por tarefa.
-3. `extractRealExpenses`: consolida despesas reais registradas com deteccao estrita de campos reais.
+1. `fetchEvents`: busca historico completo (`historico`) e usa o payload inteiro como base da tela, separando pendentes/lancadas apenas no frontend.
+2. `extractExpenseEstimates`: calcula despesas estimadas por tarefa priorizando os campos fixos do astrônomo (`consumo_km_l`, `valor_litro`, `diaria_hospedagem`, `alimentacao_diaria`, `monitor`, `pedagios`).
+3. `extractRealExpenses`: consolida despesas reais registradas lendo apenas payload de despesa lancada (objetos aninhados ou campos reais/raiz).
 4. `buildLodgingEligibility`: aplica regra de elegibilidade de hospedagem.
 5. `isLodgingEligibleEvent`: identifica se a tarefa deve receber hospedagem.
-6. `getFilteredEventsByExpenseView` e `getEventsForCurrentView`: separam o payload em `Pendentes` e `Lancadas` por status operacional.
-7. `getEventHistoryContext`: monta status operacional por tarefa (finalizado x nao finalizado) e contexto de despesas.
+6. `getFilteredEventsByExpenseView` e `getEventsForCurrentView`: separam o payload em `Pendentes` e `Lancadas` usando apenas `finalizado`/`finalizada`.
+7. `getEventHistoryContext`: monta status operacional por tarefa (finalizado x nao finalizado) e contexto de despesas sem usar `completo`/`completo_ate` para classificar a UI.
 8. `hasRealExpenseMarker`: evita classificar estimativa como despesa lancada quando nao ha marcador real.
 9. `openSummaryDetailsModal`: abre popup ao clicar nos cards-resumo com detalhamento por categoria e por evento.
 10. `bindSummaryDetailTriggers`: conecta cada card-resumo ao popup correspondente.
 11. `updateSummaryCards`: soma custos e lucro da visao ativa.
-12. `openExpensesModal`: abre formulario com pre-preenchimento.
+12. `openExpensesModal`: abre formulario com pre-preenchimento e refresh em segundo plano, sem derrubar a grade visivel da pagina.
 13. `submitExpensesForm`: envia `lancar_despesas` com payload padronizado.
 14. `getEventStableId`/`hasStableEventId`: padronizam identificacao do evento (incluindo aliases como `id_tarefa`) para selecao/lista e abertura do formulario.
 
@@ -190,12 +192,12 @@ Regra de negocio aplicada:
 4. Monitor em todos os dias/tarefas (com fallback para zero quando nao informado).
 5. Hospedagem apenas para blocos consecutivos elegiveis (pernoite).
 6. Lista operacional de despesas usa todo o payload de `historico` para nao perder eventos pendentes.
-7. Divisao operacional: `Pendentes` mostra nao finalizados; `Lancadas` mostra finalizados.
-8. Divisao por aba de resumo: em `Estimados` aparecem apenas valores estimados; em `Reais` aparecem apenas despesas realmente lancadas.
+7. Divisao operacional: `Pendentes` mostra eventos sem `finalizado=true`; `Lancadas` mostra eventos com `finalizado=true`.
+8. Divisao por aba de resumo: em `Estimados` aparecem custos previstos a partir dos campos fixos do astrônomo; em `Reais` aparecem apenas despesas realmente lancadas.
 9. Clique nos cards-resumo abre popup com detalhamento por categoria (itens e total da visao ativa), respeitando a aba ativa.
 10. Card de evento fica focado em status + botao de lancar/editar despesas.
 11. O botao de acao do card diferencia visualmente o estado de despesa lancada (`btn-success`) para manter legibilidade e evitar aparencia de desabilitado.
-12. Classificacao `Pendente` x `Lancada` e feita pelo status de finalizacao do evento (detecao robusta de campos de status/finalizacao do payload).
+12. Classificacao `Pendente` x `Lancada` e feita apenas pela flag `finalizado`/`finalizada`.
 
 ### `historico.html` (memoria operacional)
 Objetivo:
@@ -339,11 +341,12 @@ Chaves de contexto usadas no fluxo de negocio:
 1. A logica de negocio assume tarefas diarias consecutivas (nao lote unico por diarias).
 2. Soma de despesas e feita por tarefa recebida.
 3. `despesas.html` usa `historico` como fonte unica para eventos atuais e antigos.
-4. A lista de despesas usa todo payload do `historico` e organiza em `Pendentes` (nao finalizados) e `Lancadas` (finalizados).
+4. A lista de despesas usa todo payload do `historico` e organiza em `Pendentes` e `Lancadas` apenas pela flag `finalizado`.
 5. Cards-resumo financeiros respeitam aba ativa (`Estimados` vs `Reais`) e mostram popup coerente com a aba.
 6. Cards de evento mostram status historico e usam botao para lancar/editar despesas.
 7. Estado visual de `lancadas` no botao foi padronizado para evitar contraste ruim.
-8. `Pendentes` e `Lancadas` usam status de finalizacao do evento, sem depender de campos de despesa real para classificar a aba.
+8. `Pendentes` e `Lancadas` usam apenas `finalizado`/`finalizada`, sem depender de `completo`, `completo_ate` ou presencia de campos reais.
 9. PDF no historico ainda esta marcado como evolucao futura.
 10. O sistema tolera variacoes de campos no payload por meio de aliases.
 11. A abertura de lancamento de despesas usa ID estavel por aliases para evitar falha de clique quando o payload nao usa `id` como chave principal.
+12. As estimativas de despesas priorizam os campos fixos do cadastro do astrônomo; as despesas reais priorizam apenas o que ja foi lancado no payload.

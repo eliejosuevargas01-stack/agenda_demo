@@ -178,6 +178,48 @@ O `historico.html` tenta extrair despesas reais tanto do objeto raiz quanto de o
 Se o workflow mudou nomes:
 - Atualize os aliases usados pelo extrator de despesas reais no `historico.html`.
 
+### 5.7 Em `despesas.html` aparecem todos os eventos, mas ao abrir “Lançar despesas” a lista some
+
+Sintoma:
+- A grade aparece corretamente.
+- Ao clicar em **Lançar despesas**, a tela passa a mostrar apenas um evento ou parece “sumir tudo”.
+
+Causa técnica:
+- O modal fazia um refresh completo do `historico`.
+- Esse refresh reaplicava a seleção atual e trocava a grade pela renderização de um único evento.
+
+Estado atual esperado:
+- O modal pode atualizar os dados em segundo plano.
+- Esse refresh não deve mais alterar a grade principal nem o seletor visível.
+
+Como diagnosticar:
+- Verifique se a busca aberta pelo modal está rodando em modo de refresh de fundo.
+- Confirme que a lista principal continua sendo renderizada por `renderEventsForPeriod()`.
+- Confirme que o modal reaproveita apenas o evento atualizado, sem chamar renderização exclusiva da grade.
+
+### 5.8 Cards de estimativa zerados em `despesas.html`
+
+Regra atual:
+- O bloco **Estimados** deve priorizar os campos fixos do astrônomo:
+  - `consumo_km_l`
+  - `valor_litro`
+  - `diaria_hospedagem`
+  - `alimentacao_diaria`
+  - `monitor`
+  - `pedagios`
+
+Somente depois entram campos equivalentes do próprio evento, quando existirem.
+
+Importante:
+- `completo` e `completo_ate` não definem mais status de finalização nessa tela.
+- A separação `Pendentes` x `Lançadas` usa apenas `finalizado` / `finalizada`.
+- O bloco **Reais** usa apenas despesas já lançadas no payload.
+
+Checklist:
+- Verifique se a sessão/logon carregou os dados fixos do astrônomo no `localStorage`.
+- Verifique se `despesas.html` está lendo o payload consolidado da sessão/cache do astrônomo, e não só o evento bruto.
+- Se os campos fixos vierem zerados do backend/admin, o frontend vai refletir zero.
+
 ---
 
 ## 6) Cache, estado local e como “resetar” sem dor

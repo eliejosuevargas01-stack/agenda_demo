@@ -52,10 +52,6 @@
                             <p>Visão consolidada dos custos previstos por evento e margem estimada.</p>
                         </div>
                     </div>
-                    <div class="hero-actions expense-view-buttons">
-                        <button class="btn btn-secondary expense-view-button active" data-expense-view="pendentes">Pendentes</button>
-                        <button class="btn btn-secondary expense-view-button" data-expense-view="lancadas">Lançadas</button>
-                    </div>
                     <div class="summary-grid grid-3">
                         <div class="summary-card feature-card summary-detail-trigger" data-summary-mode="estimado" data-summary-key="combustivel">
                             <span class="label">⛽ Combustível (Evento - ida/volta)</span>
@@ -471,9 +467,81 @@
             const parsed = Number.parseFloat(cleaned);
             return Number.isFinite(parsed) ? parsed : null;
         }
+        function parseCoordinatePair(raw){
+            if (raw == null) return null;
+            const parts = String(raw)
+                .split(',')
+                .map(part => parseRouteNumber(part))
+                .filter(Number.isFinite);
+            if (parts.length < 2) return null;
+            return { lat: parts[0], lon: parts[1] };
+        }
+        function getSessionBaseCoordinates(){
+            const sess = buildSessionPayload(getUserSession() || null);
+            const lat = parseRouteNumber(
+                sess?.origem_lat ??
+                sess?.latitude_origem ??
+                sess?.lat_origem ??
+                sess?.latitude
+            );
+            const lon = parseRouteNumber(
+                sess?.origem_lon ??
+                sess?.longitude_origem ??
+                sess?.lon_origem ??
+                sess?.longitude
+            );
+            if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
+            const pair = parseCoordinatePair(sess?.coordenada ?? sess?.origem_coordenada ?? null);
+            return pair || null;
+        }
+        function getEventCoordinates(ev){
+            if (!ev || typeof ev !== 'object') return null;
+            const lat = parseRouteNumber(
+                ev?.destino_lat ??
+                ev?.latitude ??
+                ev?.lat ??
+                ev?.latitude_evento
+            );
+            const lon = parseRouteNumber(
+                ev?.destino_lon ??
+                ev?.longitude ??
+                ev?.lon ??
+                ev?.longitude_evento
+            );
+            if (Number.isFinite(lat) && Number.isFinite(lon)) return { lat, lon };
+            return parseCoordinatePair(ev?.coordenada ?? ev?.coordenadas ?? null);
+        }
+        function haversineDistanceKm(origin, destination){
+            if (!origin || !destination) return null;
+            const lat1 = Number(origin.lat);
+            const lon1 = Number(origin.lon);
+            const lat2 = Number(destination.lat);
+            const lon2 = Number(destination.lon);
+            if (![lat1, lon1, lat2, lon2].every(Number.isFinite)) return null;
+            const toRad = (deg) => (deg * Math.PI) / 180;
+            const earthRadiusKm = 6371;
+            const dLat = toRad(lat2 - lat1);
+            const dLon = toRad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = earthRadiusKm * c;
+            return Number.isFinite(distance) && distance > 0 ? distance : null;
+        }
         function sessionDefaults(){
             const sess = getUserSession();
-            const sources = [sess, sess?.astronomer, sess?.astronomo, sess?.profile];
+            const base = buildSessionPayload(sess || null);
+            const sources = [
+                base,
+                sess,
+                base?.astronomer,
+                base?.astronomo,
+                base?.profile,
+                sess?.astronomer,
+                sess?.astronomo,
+                sess?.profile
+            ];
             const pickNum = (keys) => {
                 for (const src of sources){
                     if (!src || typeof src !== 'object') continue;
@@ -490,6 +558,8 @@
                 hospedagem: pickNum(['diaria_hospedagem','valor_diaria_hospedagem','hospedagem_diaria']),
                 alimentacao: pickNum(['alimentacao_diaria','valor_diario_alimentacao']),
                 monitor: pickNum(['monitor','custo_monitor','monitor_media']),
+                pedagios: pickNum(['pedagios','custo_pedagios','valor_pedagios','pedagio']),
+                combustivelMedio: pickNum(['gasto_combustivel_media','combustivel_media','media_combustivel','custo_combustivel_medio'])
             };
         }
 
@@ -544,9 +614,41 @@
                 null
             );
         }
+        function getEventIdCandidates(obj){
+            if (!obj || typeof obj !== 'object') return [];
+            const values = [
+                getEventStableId(obj),
+                obj.id,
+                obj._id,
+                obj.id_tarefa,
+                obj.tarefa_id,
+                obj.id_evento,
+                obj.id_evento_unico,
+                obj.id_agendamento,
+                obj.uuid,
+                obj.evento_id
+            ];
+            return Array.from(new Set(
+                values
+                    .filter(v => v !== null && v !== undefined)
+                    .map(v => String(v).trim())
+                    .filter(Boolean)
+            ));
+        }
         function hasStableEventId(value){
             if (value === null || value === undefined) return false;
             return String(value).trim() !== '';
+        }
+        function findMatchingEventInList(events, target){
+            if (!Array.isArray(events) || !target) return null;
+            const targetId = getEventStableId(target);
+            if (hasStableEventId(targetId)) {
+                const byStableId = events.find(ev => String(getEventStableId(ev)) === String(targetId));
+                if (byStableId) return byStableId;
+            }
+            const targetIds = getEventIdCandidates(target);
+            if (!targetIds.length) return null;
+            return events.find(ev => getEventIdCandidates(ev).some(id => targetIds.includes(id))) || null;
         }
 
         function getEventDateOnly(ev){
@@ -672,7 +774,26 @@
             const eventTipoId = ev?.id_tipo_tarefa ?? ev?.id_tipo ?? ev?.tipo_tarefa_id ?? ev?.tipo_id ?? null;
             if (visitaId && eventTipoId != null && String(eventTipoId) === visitaId) return true;
             const t = String(ev?.tipo_da_tarefa || ev?.tipo || ev?.tipo_evento || '').toLowerCase();
-            return t.includes('visita');
+            if (t.includes('visita')) return true;
+
+            // O webhook `historico` já chega pré-filtrado sem PRE/RESERVA/Ñ MARCAR.
+            // Quando o tipo vier nulo, ainda tratamos o item como VISITA para não perder
+            // eventos válidos na renderização da página de despesas.
+            const hasExplicitType = eventTipoId != null || t.trim() !== '';
+            const hasHistoricalShape = Boolean(
+                ev?.id_tarefa ??
+                ev?.data_agendamento ??
+                ev?.completo ??
+                ev?.completo_ate ??
+                ev?.nome_da_escola ??
+                ev?.nome_escola ??
+                ev?.escola ??
+                ev?.nome_lead
+            );
+            if (ev?._sourceAction === 'historico' && !hasExplicitType && hasHistoricalShape) {
+                return true;
+            }
+            return false;
         }
         function normalizeStatusToken(value){
             return String(value ?? '')
@@ -703,36 +824,19 @@
                 status.includes('encerrada')
             );
         }
-        function isFinalizadoEvent(ev){
+        function readFinalizadoFlag(ev){
             if (!ev || typeof ev !== 'object') return false;
             const explicitFlags = [
                 ev?.finalizado,
-                ev?.finalizada,
-                ev?.evento_finalizado,
-                ev?.status_finalizacao,
-                ev?.status_da_finalizacao
+                ev?.finalizada
             ];
-            if (explicitFlags.some(v => isTruthyFlag(v) || hasFinalizadoKeyword(v))) return true;
-
-            const statusFields = [
-                ev?.status,
-                ev?.status_evento,
-                ev?.status_da_tarefa,
-                ev?.status_resultado,
-                ev?.resultado,
-                ev?.result,
-                ev?.situacao,
-                ev?.situacao_evento
-            ];
-            if (statusFields.some(hasFinalizadoKeyword)) return true;
-
-            const finalizacaoDates = [ev?.finalizado_em, ev?.data_finalizacao, ev?.finalizado_data, ev?.data_finalizado];
-            for (const raw of finalizacaoDates){
-                if (raw == null || String(raw).trim() === '') continue;
-                const dt = raw instanceof Date ? raw : new Date(raw);
-                if (!Number.isNaN(dt.getTime())) return true;
-            }
-            return false;
+            return explicitFlags.some(v => isTruthyFlag(v) || hasFinalizadoKeyword(v));
+        }
+        function isFinalizadoEvent(ev){
+            return readFinalizadoFlag(ev);
+        }
+        function hasExpenseLaunchFlag(ev){
+            return readFinalizadoFlag(ev);
         }
         function distanceKmFromEvent(ev, routeInfo){
             const override = parseRouteNumber(ev && ev._dist_override_km);
@@ -747,6 +851,10 @@
                 const v = parseRouteNumber(ev?.[k]);
                 if (v != null && v > 0) return v;
             }
+            const origin = getSessionBaseCoordinates();
+            const destination = getEventCoordinates(ev);
+            const fallbackDistance = haversineDistanceKm(origin, destination);
+            if (fallbackDistance != null && fallbackDistance > 0) return fallbackDistance;
             return null;
         }
 
@@ -757,21 +865,6 @@
         }
         function extractExpenseEstimates(ev, routeInfo) {
             try {
-                const isVisita = (() => {
-                    const sess = getUserSession();
-                    const ids = getSessionTaskIds(sess || null);
-                    const visitaId = ids && ids.visita ? String(ids.visita) : null;
-                    const eventTipoId = ev?.id_tipo_tarefa ?? ev?.id_tipo ?? ev?.tipo_tarefa_id ?? ev?.tipo_id ?? null;
-                    if (visitaId && eventTipoId != null && String(eventTipoId) === visitaId) return true;
-                    const evVisitaId = ev?.id_visita;
-                    if (evVisitaId && eventTipoId != null && String(eventTipoId) === String(evVisitaId)) return true;
-                    const t = String(ev?.tipo_da_tarefa || ev?.tipo || ev?.tipo_evento || '').toLowerCase();
-                    return t.includes('visita');
-                })();
-                if (!isVisita) {
-                    return { combustivel:null, hospedagem:null, alimentacao:null, pedagios:null, monitor:null, total:null };
-                }
-
                 const pick = (...keys) => {
                     for (const k of keys) {
                         const v = readNested(ev, k) ?? ev[k];
@@ -783,34 +876,47 @@
                 const preferMedia = (mediaVal, normalVal) => (Number.isFinite(mediaVal) && mediaVal > 0) ? mediaVal : normalVal;
                 const defaults = sessionDefaults();
                 const rotaContinua = isContinuousRoute(ev, routeInfo);
-                const combustivelMedia = pick('gasto_combustivel_media', 'combustivel_media');
+                const combustivelMedia = Number.isFinite(defaults.combustivelMedio) && defaults.combustivelMedio > 0
+                    ? defaults.combustivelMedio
+                    : pick('gasto_combustivel_media', 'combustivel_media');
                 let combustivelNormal = (routeInfo && routeInfo.fuelCost != null) ? routeInfo.fuelCost : null;
                 if (combustivelNormal == null) {
                     const distKmRaw = distanceKmFromEvent(ev, routeInfo);
                     const distKm = distKmRaw != null ? (rotaContinua ? distKmRaw : distKmRaw * 2) : null; // ida e volta quando não é rota contínua
-                    const consumo = pick('consumo_km_l','km_por_litro','km_per_liter') ?? defaults.consumoKmL;
-                    const valorLitro = pick('valor_litro','valor_litro_real','preco_litro','valor_litro_combustivel') ?? defaults.valorLitro;
+                    const consumo = defaults.consumoKmL ?? pick('consumo_km_l','km_por_litro','km_per_liter');
+                    const valorLitro = defaults.valorLitro ?? pick('valor_litro','valor_litro_real','preco_litro','valor_litro_combustivel');
                     if (distKm != null && distKm > 0 && consumo && consumo > 0 && valorLitro && valorLitro > 0) {
                         combustivelNormal = (distKm / consumo) * valorLitro;
                     }
                 }
                 if (combustivelNormal == null) combustivelNormal = pick('custo_total_combustivel', 'gasto_combustivel', 'combustivel');
                 const combustivel = preferMedia(combustivelMedia, combustivelNormal);
-                const hospedagemBase = preferMedia(
-                    pick('hospedagem_media', 'custo_hospedagem_media', 'gasto_hospedagem_media', 'diaria_hospedagem_media'),
-                    (pick('hospedagem', 'custo_hospedagem', 'gasto_hospedagem', 'hospedagem_total', 'valor_diaria_hospedagem', 'diaria_hospedagem', 'hospedagem_diaria') ?? defaults.hospedagem)
-                );
-                const alimentacaoBase = preferMedia(
-                    pick('alimentacao_media', 'custo_alimentacao_media', 'gasto_alimentacao_media', 'alimentacao_diaria_media'),
-                    (pick('alimentacao', 'custo_alimentacao', 'gasto_alimentacao', 'alimentacao_total', 'valor_diario_alimentacao', 'alimentacao_diaria') ?? defaults.alimentacao)
-                );
+                const hospedagemBase = Number.isFinite(defaults.hospedagem)
+                    ? defaults.hospedagem
+                    : preferMedia(
+                        pick('hospedagem_media', 'custo_hospedagem_media', 'gasto_hospedagem_media', 'diaria_hospedagem_media'),
+                        pick('hospedagem', 'custo_hospedagem', 'gasto_hospedagem', 'hospedagem_total', 'valor_diaria_hospedagem', 'diaria_hospedagem', 'hospedagem_diaria')
+                    );
+                const alimentacaoBase = Number.isFinite(defaults.alimentacao)
+                    ? defaults.alimentacao
+                    : preferMedia(
+                        pick('alimentacao_media', 'custo_alimentacao_media', 'gasto_alimentacao_media', 'alimentacao_diaria_media'),
+                        pick('alimentacao', 'custo_alimentacao', 'gasto_alimentacao', 'alimentacao_total', 'valor_diario_alimentacao', 'alimentacao_diaria')
+                    );
                 const hospedagem = isLodgingEligibleEvent(ev) ? (Number.isFinite(hospedagemBase) ? hospedagemBase : 0) : 0;
                 const alimentacao = Number.isFinite(alimentacaoBase) ? alimentacaoBase : 0;
-                const pedagios = preferMedia(pick('pedagios_media'), pick('pedagios', 'custo_pedagios'));
-                const monitorBase = preferMedia(
-                    pick('monitor_media', 'custo_monitor_medio'),
-                    (pick('monitor', 'custo_monitor', 'gasto_monitor') ?? defaults.monitor)
-                );
+                const pedagios = Number.isFinite(defaults.pedagios)
+                    ? defaults.pedagios
+                    : preferMedia(
+                        pick('pedagios_media'),
+                        pick('pedagios', 'custo_pedagios')
+                    );
+                const monitorBase = Number.isFinite(defaults.monitor)
+                    ? defaults.monitor
+                    : preferMedia(
+                        pick('monitor_media', 'custo_monitor_medio'),
+                        pick('monitor', 'custo_monitor', 'gasto_monitor')
+                    );
                 // Regra de negócio: monitor sempre entra em cada evento (como alimentação).
                 const monitor = Number.isFinite(monitorBase) ? monitorBase : 0;
 
@@ -835,6 +941,7 @@
             if (!ev || typeof ev !== 'object') return false;
             if (ev?.despesas_reais && typeof ev.despesas_reais === 'object') return true;
             if (ev?.gastos_reais && typeof ev.gastos_reais === 'object') return true;
+            if (hasExpenseLaunchFlag(ev)) return true;
             const explicitRealKeys = [
                 'combustivel_real','hospedagem_real','alimentacao_real','pedagios_real','monitor_real',
                 'outros_real','total_real','total_despesas_reais','despesas_reais_total','gasto_total_real'
@@ -984,8 +1091,41 @@
                 currentSummaryTab = showEstimados ? 'estimados' : 'reais';
             };
 
-            if (tabEstimados) tabEstimados.addEventListener('click', () => setTab('estimados'));
-            if (tabReais) tabReais.addEventListener('click', () => setTab('reais'));
+            const syncExpenseViewButtons = () => {
+                document.querySelectorAll('.expense-view-button').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.expenseView === currentExpenseViewFilter);
+                });
+            };
+
+            const applyExpenseView = (view, options = {}) => {
+                const { refreshFromWebhook = false, silent = false } = options || {};
+                currentExpenseViewFilter = view === 'lancadas' ? 'lancadas' : 'pendentes';
+                selectedEvent = null;
+                if (eventSelect) eventSelect.value = '';
+                syncExpenseViewButtons();
+
+                if (refreshFromWebhook) {
+                    fetchEvents({
+                        preserveSelection: false,
+                        skipPending: true,
+                        silent
+                    }).catch(err => console.warn('Falha ao atualizar visão de despesas:', err));
+                    return;
+                }
+
+                populateEventSelect();
+                updateSummaryCards();
+                renderEventsForPeriod();
+            };
+
+            if (tabEstimados) tabEstimados.addEventListener('click', () => {
+                setTab('estimados');
+                applyExpenseView('pendentes');
+            });
+            if (tabReais) tabReais.addEventListener('click', () => {
+                setTab('reais');
+                applyExpenseView('lancadas', { refreshFromWebhook: true, silent: true });
+            });
 
             setTab('estimados');
 
@@ -995,47 +1135,27 @@
             let currentPeriodFilter = 'all';
             let currentExpenseViewFilter = 'pendentes';
             const PENDING_EXPENSE_EVENT_KEY = 'despesas_evento_selecionado';
+            let eventsFetchPromise = null;
+
+            syncExpenseViewButtons();
 
             function applyPendingSelectedEvent(){
                 try{
                     const raw = localStorage.getItem(PENDING_EXPENSE_EVENT_KEY);
                     if (!raw) return;
                     const pending = JSON.parse(raw);
-                    const buildIdCandidates = (obj) => {
-                        if (!obj || typeof obj !== 'object') return [];
-                        const values = [
-                            obj.id,
-                            obj._id,
-                            obj.id_tarefa,
-                            obj.tarefa_id,
-                            obj.id_evento,
-                            obj.id_evento_unico,
-                            obj.id_agendamento,
-                            obj.uuid,
-                            obj.evento_id
-                        ];
-                        const ids = values
-                            .filter(v => v !== null && v !== undefined)
-                            .map(v => String(v).trim())
-                            .filter(Boolean);
-                        return Array.from(new Set(ids));
-                    };
-
-                    const pendingIds = buildIdCandidates(pending);
+                    const pendingIds = getEventIdCandidates(pending);
                     if (!pendingIds.length) {
                         localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                         return;
                     }
 
                     const pendingId = getEventStableId(pending || {});
-                    let match = null;
-                    if (hasStableEventId(pendingId)) {
-                        match = allEvents.find(ev => String(getEventStableId(ev)) === String(pendingId)) || null;
-                    }
+                    let match = findMatchingEventInList(allEvents, pending);
                     if (!match) {
                         const idIndex = new Map();
                         (Array.isArray(allEvents) ? allEvents : []).forEach(ev => {
-                            buildIdCandidates(ev).forEach(id => {
+                            getEventIdCandidates(ev).forEach(id => {
                                 if (!idIndex.has(id)) idIndex.set(id, ev);
                             });
                         });
@@ -1063,7 +1183,7 @@
                             return;
                         }
                         const alreadyInList = (Array.isArray(allEvents) ? allEvents : []).some(ev =>
-                            buildIdCandidates(ev).some(id => pendingIds.includes(id))
+                            getEventIdCandidates(ev).some(id => pendingIds.includes(id))
                         );
                         if (!alreadyInList) {
                             allEvents = [...(Array.isArray(allEvents) ? allEvents : []), fallback];
@@ -1095,7 +1215,7 @@
                     updateSummaryCards();
                     if (pending && pending._open_expenses) {
                         if (typeof setTab === 'function') setTab('reais');
-                        openExpensesModal(targetEvent);
+                        openExpensesModal(targetEvent, { skipRefresh: true });
                     }
                     localStorage.removeItem(PENDING_EXPENSE_EVENT_KEY);
                 }catch(err){
@@ -1442,9 +1562,7 @@
                 const finalizado = isFinalizadoEvent(event);
                 const realExp = extractRealExpenses(event);
                 const despesasLancadas = isLaunchedExpenseEvent(event);
-                const finalizadoRaw = event?.finalizado_em ?? event?.data_finalizacao ?? event?.finalizado_data ?? null;
-                const finalizadoEm = finalizado ? formatHistoryDate(finalizadoRaw) : null;
-                return { finalizado, despesasLancadas, realExp, finalizadoEm };
+                return { finalizado, despesasLancadas, realExp };
             }
 
             function sortEventsByDateDesc(events){
@@ -1464,10 +1582,10 @@
             }
 
             function isLaunchedExpenseEvent(event){
-                // Regra operacional atual:
-                // - Pendentes: eventos não finalizados;
-                // - Lançadas: eventos finalizados.
-                return isFinalizadoEvent(event);
+                // Regra operacional:
+                // - Reais/lançadas: apenas eventos com finalizado=true
+                // - Estimadas/pendentes: todo o restante
+                return hasExpenseLaunchFlag(event);
             }
 
             function getFilteredEventsByExpenseView(events, view){
@@ -1578,36 +1696,75 @@
                 `;
             }
 
-            async function fetchEvents() {
+            async function fetchEvents(options = {}) {
+                const {
+                    preserveSelection = false,
+                    targetEvent = null,
+                    skipPending = false,
+                    silent = false,
+                    backgroundRefresh = false
+                } = options || {};
+
+                if (eventsFetchPromise) return eventsFetchPromise;
+
+                const selectionSnapshot = preserveSelection
+                    ? (targetEvent || selectedEvent || (eventSelect?.value ? { id: eventSelect.value } : null))
+                    : null;
+
+                eventsFetchPromise = (async () => {
+                    try {
+                        if (!silent) {
+                            eventSelect.innerHTML = '<option value="">Carregando eventos...</option>';
+                        }
+                        const s = getUserSession();
+                        let data;
+                        if (s?.id_astronomo != null) {
+                            data = await callAgendaWebhook('historico', { id_astronomo: s.id_astronomo });
+                        } else {
+                            data = await callAgendaWebhook('historico', {});
+                        }
+                        if (data == null) throw new Error('Sem dados retornados');
+                        const rawEventos = normalizeAgendaPayload(data);
+                        if ((!rawEventos || !rawEventos.length) && !silent && typeof showNoDataPopup === 'function') {
+                            showNoDataPopup('Sem dados retornados do n8n.');
+                        }
+                        let eventsArray = rawEventos.map(ev => normalizeEvent({ ...(ev || {}), _sourceAction: 'historico' }));
+                        allEvents = eventsArray;
+                        refreshLodgingEligibility(allEvents);
+                        realEvents = allEvents.filter(isFinalizadoEvent);
+                        const matchedEvent = selectionSnapshot ? findMatchingEventInList(allEvents, selectionSnapshot) : null;
+                        if (!backgroundRefresh) {
+                            populateEventSelect();
+                            updateSummaryCards();
+                            renderEventsForPeriod();
+                            if (matchedEvent) {
+                                const matchedId = getEventStableId(matchedEvent);
+                                if (eventSelect && hasStableEventId(matchedId)) {
+                                    eventSelect.value = String(matchedId);
+                                }
+                                selectedEvent = matchedEvent;
+                                renderSelectedEventDetails(matchedEvent);
+                            }
+                        }
+                        if (!skipPending) {
+                            applyPendingSelectedEvent();
+                        }
+                        return { events: allEvents, matchedEvent };
+                    } catch (error) {
+                        console.error('Erro ao buscar eventos:', error);
+                        if (!silent) {
+                            eventSelect.innerHTML = '<option value="">Erro ao carregar eventos</option>';
+                        }
+                        showNotification(`Erro ao carregar eventos: ${error.message}`, 'error');
+                        throw error;
+                    }
+                })();
+
                 try {
-                    eventSelect.innerHTML = '<option value="">Carregando eventos...</option>';
-                    const s = getUserSession();
-                    let data;
-                    if (s?.id_astronomo != null) {
-                        data = await callAgendaWebhook('historico', { id_astronomo: s.id_astronomo });
-                    } else {
-                        data = await callAgendaWebhook('historico', {});
-                    }
-                    if (data == null) throw new Error('Sem dados retornados');
-                    const rawEventos = normalizeAgendaPayload(data);
-                    if ((!rawEventos || !rawEventos.length) && typeof showNoDataPopup === 'function') {
-                        showNoDataPopup('Sem dados retornados do n8n.');
-                    }
-                    let eventsArray = rawEventos.map(normalizeEvent);
-                    // Mantém apenas eventos VISITA
-                    eventsArray = eventsArray.filter(ev => isVisitaEvent(ev, s));
-                    allEvents = eventsArray;
-                    refreshLodgingEligibility(allEvents);
-                    realEvents = allEvents.filter(isFinalizadoEvent);
-                    populateEventSelect();
-                    updateSummaryCards();
-                    renderEventsForPeriod();
-                    applyPendingSelectedEvent();
-                } catch (error) {
-                console.error('Erro ao buscar eventos:', error);
-                eventSelect.innerHTML = '<option value="">Erro ao carregar eventos</option>';
-                showNotification(`Erro ao carregar eventos: ${error.message}`, 'error');
-            }
+                    return await eventsFetchPromise;
+                } finally {
+                    eventsFetchPromise = null;
+                }
             }
 
             function getFilteredEventsByPeriod(events, period) {
@@ -1664,9 +1821,7 @@
                 const titulo = event.nome_da_escola || event.nome_escola || event.escola || event.nome_lead || event.cidade_destino || event.cidade || 'Evento sem nome';
                 const history = getEventHistoryContext(event);
                 const totalRealLabel = Number.isFinite(history.realExp?.total) ? formatCurrencyBr(history.realExp.total) : null;
-                const statusEventoTexto = history.finalizado
-                    ? (history.finalizadoEm ? `Finalizado em ${history.finalizadoEm}` : 'Finalizado')
-                    : 'Não finalizado';
+                const statusEventoTexto = history.finalizado ? 'Finalizado' : 'Não finalizado';
                 const statusDespesasTexto = history.despesasLancadas
                     ? `Lançadas${totalRealLabel ? ` (${totalRealLabel})` : ''}`
                     : 'Pendentes';
@@ -2011,14 +2166,18 @@
                 const history = getEventHistoryContext(ev);
                 const estimates = extractExpenseEstimates(ev, ev.routeInfo);
                 const real = history.realExp || {};
+                const estimatedTotal = Number.isFinite(estimates.total)
+                    ? estimates.total
+                    : [estimates.combustivel, estimates.hospedagem, estimates.alimentacao, estimates.pedagios, estimates.monitor]
+                        .filter(Number.isFinite)
+                        .reduce((sum, value) => sum + value, 0);
+                const realTotal = hasRealExpenses(real) ? getRealExpenseTotal(real) : 0;
                 const titulo = ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead || ev?.cidade || 'Evento sem nome';
                 const cidade = ev?.cidade_destino || ev?.cidade || ev?.cidade_evento || ev?.cidade_lead || ev?.cidade_da_escola || 'Cidade não informada';
                 const local = ev?.local_instalacao || ev?.endereco || 'Local a definir';
                 const rawDate = parseDatePreserveUTC(ev?.data_agendamento);
                 const dataLabel = rawDate ? rawDate.toLocaleDateString('pt-BR') : 'Data não informada';
-                const statusEventoTexto = history.finalizado
-                    ? (history.finalizadoEm ? `Finalizado em ${history.finalizadoEm}` : 'Finalizado')
-                    : 'Não finalizado';
+                const statusEventoTexto = history.finalizado ? 'Finalizado' : 'Não finalizado';
                 const statusDespesasTexto = history.despesasLancadas ? 'Despesas lançadas' : 'Despesas pendentes';
                 const hospedagemRule = isLodgingEligibleEvent(ev)
                     ? 'Hospedagem aplicável: bloco consecutivo com pernoite.'
@@ -2087,6 +2246,8 @@
                     <div class="expense-details-meta">
                         <span class="expense-meta-chip"><i class="fas fa-flag-checkered"></i>${statusEventoTexto}</span>
                         <span class="expense-meta-chip"><i class="fas fa-file-invoice-dollar"></i>${statusDespesasTexto}</span>
+                        <span class="expense-meta-chip"><i class="fas fa-calculator"></i>Total estimado: ${formatCurrencyBr(estimatedTotal)}</span>
+                        <span class="expense-meta-chip"><i class="fas fa-wallet"></i>Total real: ${formatCurrencyBr(realTotal)}</span>
                     </div>
                     <div class="expense-details-grid">
                         ${cards.map(buildExpenseDetailCard).join('')}
@@ -2108,11 +2269,11 @@
             const expensesModalClose = document.getElementById('expenses-modal-close');
             const expensesForm = document.getElementById('expenses-form');
             const expCancelBtn = document.getElementById('exp-cancel');
-            function openExpensesModal(ev) {
+            function renderExpensesModalForEvent(ev) {
                 const eventId = getEventStableId(ev || {});
                 if (!hasStableEventId(eventId)) {
                     showNotification('Evento sem ID. Não é possível lançar despesas.', 'error');
-                    return;
+                    return false;
                 }
                 document.getElementById('exp-id-evento').value = String(eventId);
                 const idLabel = document.getElementById('exp-id-label');
@@ -2128,12 +2289,13 @@
                     expIdVisible.style.display = eventId ? 'block' : 'none';
                 }
                 const estimates = extractExpenseEstimates(ev, ev.routeInfo);
-                document.getElementById('exp-combustivel').value = estimates.combustivel?.toFixed(2) || '';
-                document.getElementById('exp-hospedagem').value = estimates.hospedagem?.toFixed(2) || '';
-                document.getElementById('exp-alimentacao').value = estimates.alimentacao?.toFixed(2) || '';
-                document.getElementById('exp-pedagios').value = estimates.pedagios?.toFixed(2) || '';
-                document.getElementById('exp-monitor').value = estimates.monitor?.toFixed(2) || '';
-                document.getElementById('exp-outros').value = '';
+                const realExpenses = extractRealExpenses(ev);
+                document.getElementById('exp-combustivel').value = Number.isFinite(realExpenses.combustivel) ? realExpenses.combustivel.toFixed(2) : (estimates.combustivel?.toFixed(2) || '');
+                document.getElementById('exp-hospedagem').value = Number.isFinite(realExpenses.hospedagem) ? realExpenses.hospedagem.toFixed(2) : (estimates.hospedagem?.toFixed(2) || '');
+                document.getElementById('exp-alimentacao').value = Number.isFinite(realExpenses.alimentacao) ? realExpenses.alimentacao.toFixed(2) : (estimates.alimentacao?.toFixed(2) || '');
+                document.getElementById('exp-pedagios').value = Number.isFinite(realExpenses.pedagios) ? realExpenses.pedagios.toFixed(2) : (estimates.pedagios?.toFixed(2) || '');
+                document.getElementById('exp-monitor').value = Number.isFinite(realExpenses.monitor) ? realExpenses.monitor.toFixed(2) : (estimates.monitor?.toFixed(2) || '');
+                document.getElementById('exp-outros').value = Number.isFinite(realExpenses.outros) ? realExpenses.outros.toFixed(2) : '';
                 const panel = document.getElementById('exp-estimates-panel');
                 if (panel){
                     const fmt = (v) => Number.isFinite(v) ? formatCurrencyBr(v) : 'R$ 0,00';
@@ -2141,6 +2303,7 @@
                     const hospedagemRegra = isLodgingEligibleEvent(ev)
                         ? 'Aplicável (bloco consecutivo com pernoite)'
                         : 'Não aplicável (dia único / sem pernoite)';
+                    const totalReal = hasRealExpenses(realExpenses) ? getRealExpenseTotal(realExpenses) : null;
                     panel.innerHTML = `
                         <div class="estimate-item"><span class="label">Tipo</span><span>${tipo}</span></div>
                         <div class="estimate-item"><span class="label">Regra hospedagem</span><span>${hospedagemRegra}</span></div>
@@ -2150,10 +2313,33 @@
                         <div class="estimate-item"><span class="label">Pedágios</span><span>${fmt(estimates.pedagios)}</span></div>
                         <div class="estimate-item"><span class="label">Monitor</span><span>${fmt(estimates.monitor)}</span></div>
                         <div class="estimate-item"><span class="label">Total estimado</span><span>${fmt(estimates.total)}</span></div>
+                        <div class="estimate-item"><span class="label">Total real lançado</span><span>${fmt(totalReal)}</span></div>
                     `;
                 }
                 expensesModal.classList.add('open');
                 expensesModal.setAttribute('aria-hidden', 'false');
+                return true;
+            }
+            function openExpensesModal(ev, options = {}) {
+                const opts = options || {};
+                if (!renderExpensesModalForEvent(ev)) return;
+                if (opts.skipRefresh) return;
+                const originalEventId = getEventStableId(ev || {});
+                fetchEvents({
+                    preserveSelection: true,
+                    targetEvent: ev,
+                    skipPending: true,
+                    silent: true,
+                    backgroundRefresh: true
+                }).then(({ matchedEvent } = {}) => {
+                    const refreshedEvent = matchedEvent || findMatchingEventInList(allEvents, ev);
+                    if (!refreshedEvent) return;
+                    const modalEventId = document.getElementById('exp-id-evento')?.value;
+                    if (!hasStableEventId(originalEventId) || String(modalEventId) !== String(originalEventId)) return;
+                    renderExpensesModalForEvent(refreshedEvent);
+                }).catch(err => {
+                    console.warn('Falha ao atualizar despesas lançadas antes de abrir o formulário:', err);
+                });
             }
             function closeExpensesModal() {
                 expensesModal.classList.remove('open');
@@ -2264,14 +2450,12 @@
             // View filter buttons (Pendentes, Lançadas)
             document.querySelectorAll('.expense-view-button').forEach(button => {
                 button.addEventListener('click', () => {
-                    document.querySelectorAll('.expense-view-button').forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                    currentExpenseViewFilter = button.dataset.expenseView || 'pendentes';
-                    selectedEvent = null;
-                    eventSelect.value = "";
-                    populateEventSelect();
-                    updateSummaryCards();
-                    renderEventsForPeriod();
+                    const targetView = button.dataset.expenseView || 'pendentes';
+                    setTab(targetView === 'lancadas' ? 'reais' : 'estimados');
+                    applyExpenseView(targetView, {
+                        refreshFromWebhook: targetView === 'lancadas',
+                        silent: true
+                    });
                 });
             });
 

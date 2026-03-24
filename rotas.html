@@ -1034,9 +1034,8 @@
                     if ((!rawEventos || !rawEventos.length) && typeof showNoDataPopup === 'function') {
                         showNoDataPopup('Sem dados retornados do n8n.');
                     }
-                    const deduped = dedupeEventosPorAssinatura(rawEventos);
-                    if (deduped.length) hadRawEventos = true;
-                    eventos = filterEventosFromToday(deduped).filter(isVisitaEvent);
+                    if (rawEventos.length) hadRawEventos = true;
+                    eventos = filterEventosFromToday(rawEventos).filter(isVisitaEvent);
                     if (eventos.length) {
                         saveAgendaCache(eventos, sessVal);
                         saveRotasCache(eventos, sessVal);
@@ -1046,9 +1045,9 @@
                 }
 
                 if (!eventos.length) {
-                    const deduped = dedupeEventosPorAssinatura(carregarEventosLocais(sessVal));
-                    if (deduped.length) hadRawEventos = true;
-                    eventos = filterEventosFromToday(deduped).filter(isVisitaEvent);
+                    const cachedEventos = carregarEventosLocais(sessVal);
+                    if (cachedEventos.length) hadRawEventos = true;
+                    eventos = filterEventosFromToday(cachedEventos).filter(isVisitaEvent);
                 }
                 if (!eventos.length) {
                     rotasContainer.innerHTML = `

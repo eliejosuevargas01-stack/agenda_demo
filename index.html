@@ -1479,7 +1479,7 @@
             if (!id) return;
             const idStr = String(id);
             eventsDataRaw = eventsDataRaw.filter(ev => String(getEventId(ev)) !== idStr);
-            eventsData = dedupeEventsById(eventsDataRaw);
+            eventsData = eventsDataRaw;
         }
 
         async function finalizarEvento(ev, btn){
