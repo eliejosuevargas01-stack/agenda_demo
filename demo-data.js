@@ -54,7 +54,7 @@ window.INITIAL_DEMO_DATA = {
         {
             id_admin: 1,
             usuario: "admin",
-            email: "admin@uraniaplanetario.com.br",
+            email: "admin@urania.example",
             senha: "admin",
             role: "admin"
         }

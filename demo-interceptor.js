@@ -179,7 +179,7 @@
                         const newAdmin = {
                             id_admin: nextId,
                             usuario: body.email ? body.email.split('@')[0] : `admin_${nextId}`,
-                            email: body.email || `admin_${nextId}@uraniaplanetario.com.br`,
+                            email: body.email || `admin_${nextId}@urania.example`,
                             senha: body.senha || 'admin123',
                             role: 'admin'
                         };
