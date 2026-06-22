@@ -5419,28 +5419,15 @@ textarea:focus {
                             <button class="btn btn-imagens" data-id="${ev.id_evento || ev.id_evento_unico || ev.id}">
                                 🖼️ Ver Imagens
                             </button>
-                            <button class="btn btn-success btn-lancar-despesas" data-id="${ev.id_evento || ev.id_evento_unico || ev.id}">
-                                💰 Lançar despesas
-                            </button>
-                            <button class="btn btn-primary btn-finalizar-evento" data-id="${ev.id_evento || ev.id_evento_unico || ev.id}">
-                                ✅ Finalizar
-                            </button>
                         </div>
                     </div>
                 `;
-                
-                const despBtn = card.querySelector('.btn-lancar-despesas');
-                if (despBtn) {
-                    despBtn.addEventListener('click', async function(e){
+
+                const imgBtn = card.querySelector('.btn-imagens');
+                if (imgBtn) {
+                    imgBtn.addEventListener('click', function(e){
                         e.stopPropagation();
-                        await lancarDespesasEvento(ev, despBtn);
-                    });
-                }
-                const finBtn = card.querySelector('.btn-finalizar-evento');
-                if (finBtn) {
-                    finBtn.addEventListener('click', async function(e){
-                        e.stopPropagation();
-                        await finalizarEvento(ev, finBtn);
+                        showEventDetails(ev);
                     });
                 }
                 
@@ -7343,53 +7330,6 @@ textarea:focus {
             }
         }
 
-        async function lancarDespesasEvento(evento, btn){
-            const id = evento && (evento.id_evento || evento.id_evento_unico || evento.id);
-            if (!id) {
-                toast('ID do evento não encontrado para lançar despesas', 'error');
-                return;
-            }
-            if (btn){
-                btn.disabled = true;
-                btn.dataset.prevLabel = btn.innerText;
-                btn.innerText = 'Enviando...';
-            }
-            try{
-                const normalizedEvent = (evento && typeof evento === 'object')
-                    ? { ...evento, finalizado: true }
-                    : { finalizado: true };
-                delete normalizedEvent.ids_eventos;
-                delete normalizedEvent._duplicate_ids;
-                const body = {
-                    action: 'lancar_despesas',
-                    id: id,
-                    id_evento: id,
-                    finalizado: true,
-                    evento: {
-                        ...normalizedEvent,
-                        id: id,
-                        id_evento: id,
-                        id_evento_unico: id,
-                        finalizado: true
-                    }
-                };
-                const resp = await fetch(API_AGENDA, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify(body)
-                });
-                const txt = await resp.text().catch(()=> '');
-                if (!resp.ok) throw new Error(txt || `HTTP ${resp.status}`);
-                toast('Despesas enviadas ao webhook', 'success');
-            }catch(err){
-                console.error('Erro ao lançar despesas:', err);
-                toast('Erro ao lançar despesas', 'error');
-            }finally{
-                if (btn){
-                    btn.disabled = false;
-                    btn.innerText = btn.dataset.prevLabel || '💰 Lançar despesas';
-                }
-            }
-        }    </script>
+    </script>
 </body>
 </html>
