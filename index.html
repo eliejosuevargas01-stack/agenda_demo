@@ -6,13 +6,18 @@
     <title>Agenda do Astrônomo</title>
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <link rel="stylesheet" href="css/styles.css">
+    <script src="auth.js"></script>
+    <script src="demo-data.js"></script>
+    <script src="demo-interceptor.js"></script>
 
-    <!-- Reaproveita o visual da Agenda Urânia/RH (ajuste caminhos se necessário) -->
+    <!-- Reaproveita o visual da Agenda/RH (ajuste caminhos se necessário) -->
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <!-- <link rel="stylesheet" href="css/style.css"> -->
-    <!-- <link rel="stylesheet" href="css/docs-urania.css"> -->
+    <!-- <link rel="stylesheet" href="css/docs-app.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
     <!-- <link rel="stylesheet" href="css/agenda.css"> -->
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page agenda-page">
     <!-- Fundo galáctico reaproveitado -->
@@ -34,42 +39,14 @@
             </header>
 
             <div class="navigation">
-                <a href="apresentacao.html" class="nav-button"><i class="fas fa-clipboard-list"></i> Apresentação</a>
                 <a href="index.html" class="nav-button active"><i class="fas fa-calendar-alt"></i> Agenda</a>
                 <a href="feedbacks.html" class="nav-button"><i class="fas fa-comment-dots"></i> Feedbacks</a>
                 <a href="despesas.html" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Despesas</a>
                 <a href="historico.html" class="nav-button"><i class="fas fa-history"></i> Históricos</a>
                 <a href="account.html" class="nav-button account-header-btn"><i class="fas fa-user-astronaut"></i> Minha Conta</a>
                 <a href="rotas.html" class="nav-button"><i class="fas fa-route"></i> Rotas</a>
+                <a href="debug-astronomo.html" class="nav-button"><i class="fas fa-bug"></i> Debug</a>
             </div>
-
-            <section class="hero">
-                <div>
-                    <span class="hero-eyebrow"><i class="fas fa-calendar-alt"></i> Agenda</span>
-                    <h1>Planeje, visualize e acompanhe as rotas do astrônomo.</h1>
-                    <p>Centralize o calendário, visualize eventos por dia e mantenha a agenda sincronizada para decisões rápidas.</p>
-                </div>
-                <div class="panel-card">
-                    <div class="panel-title">
-                        <span>Painel rápido</span>
-                        <span class="panel-tag">Atualização automática</span>
-                    </div>
-                    <div class="panel-list">
-                        <div class="panel-item">
-                            <span class="panel-label">Agenda do mês</span>
-                            <span class="panel-value">Visão consolidada</span>
-                        </div>
-                        <div class="panel-item">
-                            <span class="panel-label">Eventos do dia</span>
-                            <span class="panel-value">Detalhes em tempo real</span>
-                        </div>
-                        <div class="panel-item">
-                            <span class="panel-label">Rotas contínuas</span>
-                            <span class="panel-value">Sugestões automáticas</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
 
             <div class="panel-card" style="margin-bottom: 12px;">
                 <div class="filters-row">
@@ -98,7 +75,7 @@
                 <div class="calendar-panel">
                     <div class="panel-card">
                         <div class="panel-title">
-                            <span>📅 Calendário</span>
+                            <span>📅 Calendário <span class="info-icon" title="Eventos sem data definida não aparecem no calendário.&#10;Se o calendário estiver vazio, considere que seu dia está livre.&#10;&#10;Eventos duplicados foram agrupados para facilitar a visualização da agenda.&#10;&#10;Cada dia marcado no calendário representa uma diária.&#10;Por isso, eventos com várias diárias aparecem ocupando vários dias consecutivos a partir da data de início." aria-label="Informações sobre o calendário">ℹ️</span></span>
                         </div>
                         <div class="calendar-header-row">
                             <button class="calendar-nav-btn btn btn-secondary" id="btn-prev-month">← Mês anterior</button>
@@ -149,7 +126,7 @@
                 <div class="events-panel">
                     <div class="panel-card">
                         <div class="panel-title">
-                            <span>📋 Eventos</span>
+                            <span>📋 Eventos <span class="info-icon" title="Os eventos listados são carregados da agenda.&#10;Clique em um evento para ver detalhes e ações disponíveis." aria-label="Informações sobre os eventos">ℹ️</span></span>
                             <span id="events-count" style="font-size:0.8rem; opacity:0.85;">0 evento(s)</span>
                         </div>
                         <div class="events-list" id="events-list">
@@ -173,15 +150,40 @@
         </div>
     </div>
 
-    <!-- Lightbox de imagens em tela cheia -->
-    <div class="image-lightbox" id="image-lightbox" aria-hidden="true">
-        <div class="image-lightbox__backdrop" id="image-lightbox-backdrop"></div>
-        <div class="image-lightbox__content">
-            <button class="image-lightbox__close" id="image-lightbox-close" aria-label="Fechar imagens">✕</button>
-            <button class="image-lightbox__nav" id="image-lightbox-prev" aria-label="Imagem anterior">‹</button>
-            <img id="image-lightbox-img" alt="Imagem do evento" loading="lazy" decoding="async">
-            <button class="image-lightbox__nav" id="image-lightbox-next" aria-label="Próxima imagem">›</button>
-            <div class="image-lightbox__counter" id="image-lightbox-counter"></div>
+    <div class="modal finalize-modal" id="finalize-modal" aria-hidden="true" role="dialog">
+        <div class="modal-content">
+            <h3 class="modal-title">Finalizar evento</h3>
+            <p class="modal-text">Para finalizar é necessário lançar as despesas reais. Deseja lançar as despesas deste evento agora?</p>
+            <label class="modal-text" style="display:flex; gap:8px; align-items:center; margin:6px 0 14px;">
+                <input type="checkbox" id="finalize-dont-show" />
+                Não mostrar novamente
+            </label>
+            <div class="modal-actions">
+                <button class="btn btn-secondary" id="finalize-cancel">Não</button>
+                <button class="btn btn-primary" id="finalize-confirm">Sim, lançar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de carrossel de imagens (somente visualização) -->
+    <div class="modal event-image-carousel-modal" id="event-image-carousel-modal" aria-hidden="true">
+        <div class="modal-content carousel-modal">
+            <div class="carousel-modal__header">
+                <h3 id="event-image-carousel-title">Imagens do Evento</h3>
+                <button type="button" class="carousel-close" onclick="closeEventImageCarousel()" aria-label="Fechar imagens">✕</button>
+            </div>
+            <div class="carousel-modal__body">
+                <button type="button" class="carousel-nav" onclick="prevEventCarouselImage()" aria-label="Imagem anterior">‹</button>
+                <div class="carousel-image-wrapper">
+                    <img id="event-image-carousel-img" class="carousel-image" src="" alt="Imagem do evento" loading="lazy" decoding="async">
+                    <div id="event-image-carousel-empty" class="carousel-empty" style="display:none;">Nenhuma imagem encontrada para este evento.</div>
+                </div>
+                <button type="button" class="carousel-nav" onclick="nextEventCarouselImage()" aria-label="Próxima imagem">›</button>
+            </div>
+            <div class="carousel-footer">
+                <span id="event-image-carousel-counter"></span>
+                <a id="event-image-carousel-link" href="#" target="_blank" rel="noopener noreferrer">Abrir imagem original</a>
+            </div>
         </div>
     </div>
 
@@ -199,7 +201,7 @@
             if (!isReload) return;
             try{
                 const keep = new Set(['astronomo_session','userSession']);
-                const prefixes = ['agenda_cache_v1','rotas_cache_v1','rotas_override_v1','route_cache_osrm_v1','coord_cache_nominatim_v1','route_block_cache_v1'];
+                const prefixes = ['agenda_cache_v1','agenda_payload_v1','rotas_cache_v1','rotas_override_v1','route_cache_osrm_v1','coord_cache_nominatim_v1','route_block_cache_v1'];
                 const contains = ['user_theme','savedUser','astronomersData','astronomersLastUpdate'];
                 const toDelete = [];
                 for (let i=0;i<localStorage.length;i++){
@@ -214,13 +216,15 @@
             }catch(_){}
         })();
 
-        // ==== Configuração do webhook (mesmo endpoint da agenda) ====
-        const API_EVENT_IMAGES = "https://myn8n.seommerce.shop/webhook/agenda_inteligente_demo";
+        // ==== Configuração dos webhooks ====
+        const API_EVENT_IMAGES = "https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/novo-astronomo-1";
         // Cache local para reutilizar os eventos nas demais páginas
         const AGENDA_CACHE_PREFIX = 'agenda_cache_v1';
+        const AGENDA_PAYLOAD_PREFIX = 'agenda_payload_v1';
         const ROTAS_CACHE_KEY = 'rotas_cache_v1';
         const ROTA_OVERRIDE_PREFIX = 'rotas_override_v1';
         const WEATHER_API_BASE = 'https://api.open-meteo.com/v1/forecast';
+        const WEATHER_GEO_API_BASE = 'https://geocoding-api.open-meteo.com/v1/search';
 
         function agendaCacheKey(sess){
             const ns = (sess && (sess.id_astronomo ?? sess.usuario ?? sess.username)) || 'anon';
@@ -234,6 +238,21 @@
                 localStorage.setItem(key, JSON.stringify(payload));
             }catch(err){
                 console.warn('Falha ao salvar cache local da agenda:', err);
+            }
+        }
+
+        function agendaPayloadKey(sess){
+            const ns = (sess && (sess.id_astronomo ?? sess.usuario ?? sess.username)) || 'anon';
+            return `${AGENDA_PAYLOAD_PREFIX}::${String(ns).toLowerCase()}`;
+        }
+
+        function saveAgendaPayload(payload, sess){
+            try{
+                const key = agendaPayloadKey(sess);
+                const pack = { ts: Date.now(), payload: payload ?? null };
+                localStorage.setItem(key, JSON.stringify(pack));
+            }catch(err){
+                console.warn('Falha ao salvar payload bruto da agenda:', err);
             }
         }
 
@@ -303,24 +322,27 @@
         const eventModalBody     = document.getElementById('event-modal-body');
         const eventModalClose    = document.getElementById('event-modal-close');
         const eventModalBackdrop = document.getElementById('event-modal-backdrop');
+        const finalizeModal      = document.getElementById('finalize-modal');
+        const finalizeConfirmBtn = document.getElementById('finalize-confirm');
+        const finalizeCancelBtn  = document.getElementById('finalize-cancel');
+        const finalizeDontShowEl = document.getElementById('finalize-dont-show');
+        const eventImageCarouselModal = document.getElementById('event-image-carousel-modal');
         if (btnOpenRotas) btnOpenRotas.disabled = true;
-        // Lightbox refs
-        const lightboxEl         = document.getElementById('image-lightbox');
-        const lightboxImg        = document.getElementById('image-lightbox-img');
-        const lightboxCounter    = document.getElementById('image-lightbox-counter');
-        const lightboxPrev       = document.getElementById('image-lightbox-prev');
-        const lightboxNext       = document.getElementById('image-lightbox-next');
-        const lightboxClose      = document.getElementById('image-lightbox-close');
-        const lightboxBackdrop   = document.getElementById('image-lightbox-backdrop');
 
         // ==== Estado simples ====
-        let eventsData = [];          // eventos normalizados
+        let eventsData = [];          // eventos normalizados (dedupe)
+        let eventsDataRaw = [];       // eventos normalizados (sem dedupe)
+        let showDuplicates = true;
         let currentMonthDate = new Date(); // data base do mês atual
         let selectedDate = startOfDay(new Date());      // dia selecionado no calendário
         let currentTaskFilter = { type: 'visita', id: null };
         let currentSession = null;
+        let pendingFinalizeEvent = null;
+        const FINALIZE_PREF_KEY = 'finalize_modal_skip_v1';
         const WEATHER_CACHE_TTL = 30 * 60 * 1000; // 30 min
+        const GEO_CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 dias
         const weatherCache = new Map();
+        const geoCache = new Map();
         let weatherRenderToken = 0;
         const INDEX_UI_STATE_KEY = 'index_ui_state_v1';
         const getSelectedTaskFilter = () => {
@@ -330,10 +352,32 @@
             const idVal = opt && opt.value && opt.value !== 'all' && opt.value !== type ? opt.value : null;
             return { type, id: idVal };
         };
-        // Lightbox state
-        let lightboxImages = [];
-        let lightboxIndex = 0;
-        const API_AGENDA = "https://myn8n.seommerce.shop/webhook/agenda_inteligente_demo";
+        let EVENT_CAROUSEL_IMAGES = [];
+        let EVENT_CAROUSEL_INDEX = 0;
+        const API_AGENDA = "https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos";
+
+        async function readResponsePayload(resp){
+            let text = '';
+            try { text = await resp.text(); } catch (_) { text = ''; }
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (_) { return text; }
+        }
+
+        function normalizeAgendaPayload(data){
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (typeof data !== 'object') return [];
+            if (Array.isArray(data.eventos)) return data.eventos;
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.events)) return data.events;
+            if (Array.isArray(data.agenda)) return data.agenda;
+            return [data];
+        }
+
+        function getWebhookTipoFromSelect(){
+            // Sempre solicita TODOS do webhook; o filtro por tipo é aplicado no frontend.
+            return 'TODOS';
+        }
 
         function saveIndexUIState(){
             try{
@@ -393,6 +437,10 @@
                     username: base.usuario || base.username || base.astronomo || base.nome_completo || src.username || src.user || null,
                     usuario: base.usuario || base.username || base.astronomo || null,
                     id_astronomo: id,
+                    id_visita: base.id_visita ?? base.visita_id ?? null,
+                    id_pre: base.id_pre ?? base.pre_id ?? null,
+                    id_reserva: base.id_reserva ?? base.reserva_id ?? null,
+                    id_n_marcar: base.id_n_marcar ?? base.id_nao_marcar ?? base.nao_marcar_id ?? null,
                     assistant_id: base.assistant_id ?? null,
                     row_number: base.row_number ?? base.row_num ?? null,
                     sessionId: src.sessionId ?? src.session_id ?? src.token ?? null,
@@ -435,6 +483,30 @@
             return `${nome}${id ? ' · ' + id : ''}`;
         }
 
+        function findAstronomerFromCache(sess){
+            try{
+                const raw = localStorage.getItem('astronomersData');
+                const list = raw ? JSON.parse(raw) : null;
+                if (!Array.isArray(list) || !list.length) return null;
+                const id = sess?.id_astronomo ?? sess?.assistant_id ?? sess?.id ?? null;
+                const user = (sess?.usuario || sess?.username || sess?.astronomo || '').toString().trim().toLowerCase();
+                return list.find(a => {
+                    if (!a || typeof a !== 'object') return false;
+                    const aId = a.id_astronomo ?? a.id ?? a.assistant_id ?? null;
+                    if (id != null && String(aId) === String(id)) return true;
+                    const aUser = (a.usuario || a.username || a.astronomo || '').toString().trim().toLowerCase();
+                    return user && aUser && aUser === user;
+                }) || null;
+            }catch(_){
+                return null;
+            }
+        }
+
+        function buildSessionPayload(sess){
+            const cached = findAstronomerFromCache(sess);
+            return { ...(cached || {}), ...(sess || {}) };
+        }
+
         // ==== Util: normalizar tipo de tarefa em categoria (visita, pre, reserva, nao_marcar, outros) ====
         function classifyTaskType(rawTipo){
             if (!rawTipo) return 'outros';
@@ -451,6 +523,7 @@
         }
 
         function getSessionTaskIds(sess){
+            const base = buildSessionPayload(sess);
             const parseId = (v) => {
                 if (v === undefined || v === null || v === '') return null;
                 const n = toNumber(v);
@@ -459,10 +532,10 @@
                 return s || null;
             };
             return {
-                visita: parseId(sess?.id_visita || sess?.visita_id),
-                pre: parseId(sess?.id_pre || sess?.pre_id),
-                reserva: parseId(sess?.id_reserva || sess?.reserva_id),
-                nao_marcar: parseId(sess?.id_n_marcar || sess?.id_nao_marcar || sess?.nao_marcar_id)
+                visita: parseId(base?.id_visita || base?.visita_id),
+                pre: parseId(base?.id_pre || base?.pre_id),
+                reserva: parseId(base?.id_reserva || base?.reserva_id),
+                nao_marcar: parseId(base?.id_n_marcar || base?.id_nao_marcar || base?.nao_marcar_id)
             };
         }
 
@@ -500,7 +573,7 @@
 
         // ==== Util: pegar data do evento ====
         function getEventDate(ev){
-            const raw = ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data || ev.date;
+            const raw = ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data || ev.date;
             if (!raw) return null;
             const d = new Date(raw);
             if (Number.isNaN(d.getTime())) return null;
@@ -540,11 +613,67 @@
 
         function normalizeCityUF(str){
             if (!str) return '';
-            const tokens = String(str).split('-').map(s => s.trim()).filter(Boolean);
+            const cleaned = String(str)
+                .replace(/\s*\/\s*/g, ' - ')
+                .replace(/\s*,\s*/g, ' - ')
+                .replace(/\s*\|\s*/g, ' - ')
+                .trim();
+            const tokens = cleaned.split('-').map(s => s.trim()).filter(Boolean);
             if (!tokens.length) return '';
             const city = tokens[0];
             const uf = tokens.find(t => t.length === 2 && /^[A-Za-z]{2}$/.test(t)) || tokens[1];
             return uf ? `${city} - ${uf.toUpperCase()}` : city;
+        }
+
+        function getSessionCityLabel(sess){
+            const raw = sess?.cidade_base
+                || sess?.cidade
+                || sess?.cidade_origem
+                || sess?.base
+                || sess?.origem_real
+                || sess?.origem
+                || sess?.origem_cidade
+                || sess?.cidade_base_astronomo
+                || sess?.cidade_astronomo
+                || sess?.astronomo_cidade
+                || '';
+            return normalizeCityUF(raw);
+        }
+
+        function normalizeGeoQuery(label){
+            if (!label) return '';
+            let q = String(label).replace(/\s+/g, ' ').trim();
+            if (!q) return '';
+            q = q.replace(/\s*\/\s*/g, ', ').replace(/\s*-\s*/g, ', ');
+            if (!/brasil|brazil/i.test(q)) q = `${q}, Brasil`;
+            return q;
+        }
+
+        async function geocodeCity(label){
+            const query = normalizeGeoQuery(label);
+            if (!query) return null;
+            const key = query.toLowerCase();
+            const cached = geoCache.get(key);
+            if (cached && (Date.now() - cached.ts) < GEO_CACHE_TTL) return cached.data;
+
+            const url = `${WEATHER_GEO_API_BASE}?name=${encodeURIComponent(query)}&count=1&language=pt&format=json&country_code=BR`;
+            const resp = await fetch(url, { headers:{'Accept':'application/json'}, method:'GET' });
+            const body = await resp.text().catch(()=> '');
+            if (!resp.ok) throw new Error(body || 'Falha ao localizar cidade');
+            let data = null;
+            try{ data = body ? JSON.parse(body) : null; }catch(_){ data = null; }
+            const first = data && Array.isArray(data.results) ? data.results[0] : null;
+            if (!first) return null;
+
+            const lat = Number(first.latitude);
+            const lon = Number(first.longitude);
+            if (!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+            const name = first.name ? String(first.name) : '';
+            const admin = first.admin1 ? String(first.admin1) : '';
+            const labelOut = name ? (admin ? `${name} - ${admin}` : name) : label;
+            const parsed = { lat, lon, label: labelOut };
+            geoCache.set(key, { ts: Date.now(), data: parsed });
+            return parsed;
         }
 
         function formatOrigemDestino(ev){
@@ -799,16 +928,39 @@
         }
 
         // ==== Previsão do tempo (Open-Meteo) ====
-        function extractEventLocations(ev){
+        function extractEventLocations(ev, sess){
+            const sessionLabel = getSessionCityLabel(sess || {});
+            const origemLabel = normalizeCityUF(
+                ev?.cidade_base ||
+                ev?.origem_real ||
+                ev?.base ||
+                ev?.cidade_origem ||
+                ev?.origem ||
+                ev?.origem_cidade ||
+                ev?.cidade_base_astronomo ||
+                ev?.cidade_astronomo ||
+                ev?.astronomo_cidade ||
+                ev?.local_origem ||
+                ''
+            ) || sessionLabel;
+            const destinoLabel = normalizeCityUF(
+                ev?.cidade_destino ||
+                ev?.cidade ||
+                ev?.destino ||
+                ev?.cidade_evento ||
+                ev?.cidade_lead ||
+                ev?.cidade_da_escola ||
+                ''
+            );
             const origem = {
                 lat: toNumber(ev?.origem_lat ?? ev?.lat_origem ?? ev?.latitude_origem),
                 lon: toNumber(ev?.origem_lon ?? ev?.lon_origem ?? ev?.longitude_origem),
-                label: normalizeCityUF(ev?.cidade_base || ev?.origem_real || ev?.base || ev?.cidade_origem || '')
+                label: origemLabel
             };
             const destino = {
                 lat: toNumber(ev?.destino_lat ?? ev?.lat_destino ?? ev?.latitude_destino ?? ev?.lat),
                 lon: toNumber(ev?.destino_lon ?? ev?.lon_destino ?? ev?.longitude_destino ?? ev?.lon),
-                label: normalizeCityUF(ev?.cidade_destino || ev?.cidade || ev?.destino || '')
+                label: destinoLabel
             };
             return { origem, destino };
         }
@@ -873,13 +1025,13 @@
             return parsed;
         }
 
-        function pickEventForWeather(dayEvents){
+        function pickEventForWeather(dayEvents, sess){
             if (!Array.isArray(dayEvents) || !dayEvents.length) return null;
-            const withCoords = dayEvents.find(ev => {
-                const locs = extractEventLocations(ev);
-                return hasValidCoords(locs.origem) || hasValidCoords(locs.destino);
+            const withLocation = dayEvents.find(ev => {
+                const locs = extractEventLocations(ev, sess);
+                return hasValidCoords(locs.origem) || hasValidCoords(locs.destino) || !!locs.origem.label || !!locs.destino.label;
             });
-            return withCoords || dayEvents[0];
+            return withLocation || dayEvents[0];
         }
 
         async function renderWeatherForSelection(dayEvents){
@@ -892,15 +1044,23 @@
                 return;
             }
 
-            const eventTarget = pickEventForWeather(dayEvents);
-            const { origem, destino } = extractEventLocations(eventTarget || {});
+            const visitaEvents = dayEvents.filter(isVisitaEvent);
+            if (!visitaEvents.length) {
+                dayWeatherMetaEl.textContent = 'Clima apenas para VISITA';
+                dayWeatherBodyEl.innerHTML = `<div class="day-weather__empty">Nenhum evento VISITA nesta data para consultar o clima.</div>`;
+                return;
+            }
+
+            const sess = currentSession || getLoggedSession();
+            const eventTarget = pickEventForWeather(visitaEvents, sess);
+            const { origem, destino } = extractEventLocations(eventTarget || {}, sess);
             const locations = [];
-            if (hasValidCoords(origem)) locations.push({ ...origem, role:'Origem' });
-            if (hasValidCoords(destino)) locations.push({ ...destino, role:'Destino' });
+            if (hasValidCoords(origem) || origem.label) locations.push({ ...origem, role:'Origem' });
+            if (hasValidCoords(destino) || destino.label) locations.push({ ...destino, role:'Destino' });
 
             if (!locations.length) {
-                dayWeatherMetaEl.textContent = 'Evento sem coordenadas';
-                dayWeatherBodyEl.innerHTML = `<div class="day-weather__empty">Não encontramos coordenadas de origem/destino para consultar o clima.</div>`;
+                dayWeatherMetaEl.textContent = 'Sem cidade definida';
+                dayWeatherBodyEl.innerHTML = `<div class="day-weather__empty">Não encontramos cidade de origem/destino para consultar o clima.</div>`;
                 return;
             }
 
@@ -910,8 +1070,16 @@
 
             const results = await Promise.all(locations.map(async (loc) => {
                 try{
-                    const data = await fetchWeather(loc.lat, loc.lon);
-                    return { loc, data };
+                    let resolved = { ...loc };
+                    if (!hasValidCoords(resolved)) {
+                        const geo = await geocodeCity(resolved.label);
+                        if (geo) {
+                            resolved = { ...resolved, lat: geo.lat, lon: geo.lon, label: resolved.label || geo.label };
+                        }
+                    }
+                    if (!hasValidCoords(resolved)) throw new Error('Cidade não encontrada');
+                    const data = await fetchWeather(resolved.lat, resolved.lon);
+                    return { loc: resolved, data };
                 }catch(err){
                     return { loc, error: err };
                 }
@@ -952,20 +1120,27 @@
         }
 
         function buildWhatsappLink(ev){
-            const phone =
-                ev.telefone_responsavel ||
-                ev.telefone_responsavel_evento ||
-                ev.telefone ||
-                ev.whatsapp ||
-                ev.celular ||
-                ev.contato ||
-                ev.fone ||
-                ev.phone ||
-                ev.phone_number ||
-                null;
-            const digits = normalizePhone(phone);
-            if (!digits) return null;
-            return `https://wa.me/${digits}`;
+            const candidates = [
+                ev.telefone_contato,
+                ev.telefone_responsavel_evento,
+                ev.telefone_responsavel,
+                ev.telefone_do_responsavel,
+                ev.responsavel_telefone,
+                ev.responsavel_celular,
+                ev.whatsapp_responsavel,
+                ev.celular_responsavel,
+                ev.contato_responsavel,
+                ev.fone_responsavel,
+                ev.responsavel_whatsapp,
+                ev.telefone_evento,
+                ev.telefone_escola
+            ];
+            for (const phone of candidates){
+                const digits = normalizePhone(phone);
+                if (!digits) continue;
+                return `https://wa.me/${digits}`;
+            }
+            return null;
         }
 
         function buildRouteLink(ev){
@@ -1026,10 +1201,8 @@
             const dataObj = getEventDate(event);
             const taskMeta = resolveTaskType(event, session, tipo_da_tarefa);
             const eventId = getEventId(event);
-            const diariasRaw = event.numero_de_diarias ?? event.diarias ?? event.qtd_diarias ?? event.numero_diarias ?? 1;
-            const diariasNum = Math.max(1, parseInt(parseNum(diariasRaw), 10) || 1);
             const spanStart = dataObj instanceof Date ? dataObj : null;
-            const spanEnd = spanStart ? new Date(spanStart.getFullYear(), spanStart.getMonth(), spanStart.getDate() + diariasNum - 1) : null;
+            const spanEnd = spanStart ? new Date(spanStart.getFullYear(), spanStart.getMonth(), spanStart.getDate()) : null;
             const color = colorForEvent(eventId);
 
             return {
@@ -1048,7 +1221,7 @@
         }
 
         function getEventId(ev){
-            return ev.id_evento || ev.id_evento_unico || ev.id || ev.id_agendamento || ev.uuid || String(Math.random()).slice(2);
+            return ev._id || ev.id_evento || ev.id_evento_unico || ev.id || ev.id_agendamento || ev.uuid || String(Math.random()).slice(2);
         }
 
         function isDateInEventSpan(date, ev){
@@ -1095,21 +1268,211 @@
             });
         }
 
+        function getEventIdCandidates(ev){
+            if (!ev || typeof ev !== 'object') return [];
+            const ids = [
+                ev.id_evento,
+                ev.id_evento_unico,
+                ev.id_agendamento,
+                ev.id,
+                ev.uuid,
+                ev.evento_id
+            ].filter(v => v !== undefined && v !== null && v !== '');
+            if (!ids.length && ev._id) ids.push(ev._id);
+            return ids.map(v => String(v));
+        }
+
+        function scoreEventForMerge(ev){
+            if (!ev || typeof ev !== 'object') return 0;
+            let score = 0;
+            if (ev.id_evento != null) score += 6;
+            if (ev.id_evento_unico != null) score += 5;
+            if (ev.id_agendamento != null) score += 4;
+            if (ev.id != null) score += 3;
+            if (ev.uuid) score += 2;
+            if (ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data) score += 2;
+            if (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead) score += 2;
+            if (ev.cidade || ev.cidade_destino) score += 1;
+            if (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao) score += 1;
+            const lat = toNumber(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
+            const lon = toNumber(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
+            if (lat !== null && lon !== null) score += 1;
+            if (ev.finalizado === true || ev.finalizado === 'true') score += 1;
+            return score;
+        }
+
+        function mergeDuplicateEvents(base, incoming){
+            if (!base) return incoming;
+            if (!incoming) return base;
+            const incomingWins = scoreEventForMerge(incoming) > scoreEventForMerge(base);
+            const primary = incomingWins ? incoming : base;
+            const secondary = incomingWins ? base : incoming;
+            const merged = { ...primary };
+            Object.entries(secondary).forEach(([k,v]) => {
+                if (merged[k] === undefined || merged[k] === null || merged[k] === '' || merged[k] === 'null') {
+                    merged[k] = v;
+                }
+            });
+            const ids = new Set([...getEventIdCandidates(base), ...getEventIdCandidates(incoming)]);
+            if (ids.size > 1) merged._duplicate_ids = Array.from(ids);
+            return merged;
+        }
+
+        function dedupeEventsBySignature(arr){
+            if (!Array.isArray(arr)) return [];
+            const sigMap = new Map();
+            const result = [];
+            arr.forEach(ev => {
+                const sig = canonicalEventSignature(ev);
+                if (!sig) {
+                    result.push(ev);
+                    return;
+                }
+                if (sigMap.has(sig)) {
+                    const merged = mergeDuplicateEvents(sigMap.get(sig), ev);
+                    const idx = result.indexOf(sigMap.get(sig));
+                    if (idx >= 0) result[idx] = merged;
+                    sigMap.set(sig, merged);
+                } else {
+                    sigMap.set(sig, ev);
+                    result.push(ev);
+                }
+            });
+            return result;
+        }
+
+        function eventGroupKey(ev){
+            if (!ev || typeof ev !== 'object') return '';
+            const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || '').toString().trim().toLowerCase();
+            const cidade = normalizeCityUF(ev.cidade || ev.cidade_destino || '').toString().trim().toLowerCase();
+            const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
+            const tipo = (ev._taskType || ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
+            const idTipo = ev.id_tipo_tarefa ?? ev.id_tipo ?? ev.id_tipo_evento ?? ev.id_tipo_da_tarefa ?? ev.tipo_tarefa_id ?? '';
+            const astroId = ev.id_astronomo ?? ev.astronomo_id ?? ev.astronomoId ?? '';
+            return JSON.stringify({ escola, cidade, conteudo, tipo, idTipo: String(idTipo), astroId: String(astroId) });
+        }
+
+        function collapseConsecutiveEventSpans(list){
+            if (!Array.isArray(list)) return [];
+            const grouped = new Map();
+            const passthrough = [];
+            list.forEach(ev => {
+                const key = eventGroupKey(ev);
+                if (!key) {
+                    passthrough.push(ev);
+                    return;
+                }
+                const start = ev._spanStart || ev._date || getEventDate(ev);
+                const end = ev._spanEnd || start;
+                if (!(start instanceof Date) || Number.isNaN(start.getTime())) return;
+                const endDate = (end instanceof Date && !Number.isNaN(end.getTime())) ? end : start;
+                const item = {
+                    ev,
+                    start: startOfDay(start),
+                    end: startOfDay(endDate)
+                };
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key).push(item);
+            });
+
+            const result = [];
+            grouped.forEach(items => {
+                items.sort((a, b) => a.start - b.start);
+                let current = null;
+                items.forEach(item => {
+                    if (!current) {
+                        current = { ...item };
+                        return;
+                    }
+                    const nextStart = item.start;
+                    const currEnd = current.end;
+                    const mergeLimit = new Date(currEnd.getFullYear(), currEnd.getMonth(), currEnd.getDate() + 1);
+                    if (nextStart <= mergeLimit) {
+                        current.end = item.end > current.end ? item.end : current.end;
+                        current.ev = mergeDuplicateEvents(current.ev, item.ev);
+                    } else {
+                        result.push(current);
+                        current = { ...item };
+                    }
+                });
+                if (current) result.push(current);
+            });
+
+            const collapsed = result.map(item => {
+                const merged = { ...item.ev };
+                merged._spanStart = item.start;
+                merged._spanEnd = item.end;
+                merged._date = item.start;
+                return merged;
+            });
+            return collapsed.concat(passthrough);
+        }
+
         function dedupeEventsById(list){
-            return uniqueEventsById(Array.isArray(list) ? list : []);
+            const base = uniqueEventsById(Array.isArray(list) ? list : []);
+            const grouped = new Map();
+            const passthrough = [];
+            base.forEach(ev => {
+                const key = eventGroupKey(ev);
+                if (!key) {
+                    passthrough.push(ev);
+                    return;
+                }
+                if (!grouped.has(key)) grouped.set(key, []);
+                grouped.get(key).push(ev);
+            });
+            const result = [];
+            grouped.forEach(items => {
+                items.sort((a, b) => {
+                    const da = getEventDate(a);
+                    const db = getEventDate(b);
+                    if (!da && !db) return 0;
+                    if (!da) return 1;
+                    if (!db) return -1;
+                    return da - db;
+                });
+                let merged = items[0];
+                for (let i = 1; i < items.length; i++) {
+                    merged = mergeDuplicateEvents(merged, items[i]);
+                }
+                const diariasRaw = merged.numero_de_diarias ?? merged.diarias ?? merged.qtd_diarias ?? merged.numero_diarias ?? 1;
+                const diariasNum = Math.max(1, parseInt(parseNum(diariasRaw), 10) || 1);
+                const start = getEventDate(merged);
+                if (start instanceof Date && !Number.isNaN(start.getTime())) {
+                    const startDay = startOfDay(start);
+                    merged._spanStart = startDay;
+                    merged._spanEnd = new Date(startDay.getFullYear(), startDay.getMonth(), startDay.getDate() + diariasNum - 1);
+                    merged._date = startDay;
+                }
+                result.push(merged);
+            });
+            return result.concat(passthrough);
         }
 
         function isVisitaEvent(ev){
-            const t = (ev && (ev._taskType || ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '')).toString().toLowerCase();
+            if (ev && typeof ev === 'object' && ev._taskType) {
+                return String(ev._taskType).toLowerCase() === 'visita';
+            }
+            const t = (ev && (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '')).toString().toLowerCase();
             return t.includes('visita');
         }
 
         async function lancarDespesas(ev, btn){
-            const id = getEventId(ev);
-            if (!id) return;
-            // Salva o evento selecionado para ser usado no formulário real em despesas.html
+            const id =
+                ev?.id ??
+                ev?.id_tarefa ??
+                ev?.id_evento ??
+                ev?.id_evento_unico ??
+                ev?.id_agendamento ??
+                ev?.uuid ??
+                ev?.evento_id ??
+                null;
+            if (id === null || id === undefined || String(id).trim() === '') {
+                alert('Evento sem ID. Não é possível lançar despesas.');
+                return;
+            }
             try{
-                localStorage.setItem('despesas_evento_selecionado', JSON.stringify(ev));
+                localStorage.setItem('despesas_evento_selecionado', JSON.stringify({ ...(ev || {}), id, _open_expenses: true }));
             }catch(_){}
             window.location.href = 'despesas.html';
         }
@@ -1117,40 +1480,12 @@
         function removeEventById(id){
             if (!id) return;
             const idStr = String(id);
-            eventsData = eventsData.filter(ev => String(getEventId(ev)) !== idStr);
+            eventsDataRaw = eventsDataRaw.filter(ev => String(getEventId(ev)) !== idStr);
+            eventsData = eventsDataRaw;
         }
 
         async function finalizarEvento(ev, btn){
-            const id = getEventId(ev);
-            if (!id) return;
-            if (btn){
-                btn.disabled = true;
-                btn.dataset.prevLabel = btn.innerHTML;
-                btn.innerHTML = 'Finalizando...';
-            }
-            try{
-                const payload = { action:'finalizar_evento', id_evento:id, finalizado:true };
-                const resp = await fetch(API_AGENDA, {
-                    method:'POST',
-                    headers:{'Content-Type':'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const txt = await resp.text().catch(()=> '');
-                if (!resp.ok) throw new Error(txt || `HTTP ${resp.status}`);
-                removeEventById(id);
-                renderCalendar();
-                renderEventsList();
-                renderDayEventsDetails();
-                alert('Evento finalizado e removido da lista.');
-            }catch(err){
-                console.error('Erro ao finalizar evento:', err);
-                alert('Erro ao finalizar evento: ' + (err && err.message));
-            }finally{
-                if (btn){
-                    btn.disabled = false;
-                    btn.innerHTML = btn.dataset.prevLabel || '✅ Finalizar';
-                }
-            }
+            await lancarDespesas(ev, btn);
         }
 
         async function deletarEvento(ev, btn){
@@ -1192,19 +1527,14 @@
             if (!ev || typeof ev !== 'object') return '';
             const baseDate = ev._date || getEventDate(ev);
             const dateStr = baseDate ? dateKey(baseDate) : '';
-            const horarioRaw = ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data;
+            const horarioRaw = ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data;
             const horario = horarioRaw ? new Date(horarioRaw) : null;
             const horaStr = horario instanceof Date && !Number.isNaN(horario.getTime()) ? horario.toISOString() : '';
             const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || '').toString().trim().toLowerCase();
             const cidade = normalizeCityUF(ev.cidade || ev.cidade_destino || '').toLowerCase();
             const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
             const tipo = (ev._taskType || ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
-            const diarias = getDiariasCount(ev);
-            const valor = ev.valor_total ?? ev.total ?? ev.valor ?? ev.custo_total ?? null;
-            const dist = getDistanceKmValue(ev);
-            const lat = toNumber(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
-            const lon = toNumber(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
-            return JSON.stringify({ dateStr, horaStr, escola, cidade, conteudo, tipo, diarias, valor, dist, lat, lon });
+            return JSON.stringify({ dateStr, horaStr, escola, cidade, conteudo, tipo });
         }
 
         function getDiariasCount(ev){
@@ -1217,12 +1547,47 @@
             return Math.max(1, diff);
         }
 
+        function getEffectiveEvents(){
+            return Array.isArray(eventsDataRaw) ? eventsDataRaw : [];
+        }
+
+        function toggleDuplicateView(force){
+            showDuplicates = true;
+            renderCalendar();
+            renderEventsList();
+            renderDayEventsDetails();
+        }
+
+        function showDuplicatePopup(ignoredCount){
+            // Popup de duplicados desativado a pedido.
+            // Mantido aqui para reativação futura:
+            /*
+            if (!ignoredCount) return;
+            if (!window.AstroPopup || typeof window.AstroPopup.show !== 'function') return;
+            const actionLabel = 'Duplicados visíveis';
+            window.AstroPopup.show(
+                'Eventos duplicados idênticos foram ignorados. Se quiser ver mais, clique em Ver eventos duplicados.',
+                'info',
+                60000,
+                {
+                    actionLabel,
+                    closeOnAction: false,
+                    onAction: (btn) => {
+                        toggleDuplicateView();
+                        if (btn) btn.textContent = 'Duplicados visíveis';
+                    }
+                }
+            );
+            */
+        }
+
         // ==== Filtro por tipo de tarefa ====
         function getFilteredEvents(){
-            if (!Array.isArray(eventsData) || eventsData.length === 0) return [];
-            if (!currentTaskFilter || currentTaskFilter.type === 'all') return eventsData;
+            const base = getEffectiveEvents();
+            if (!Array.isArray(base) || base.length === 0) return [];
+            if (!currentTaskFilter || currentTaskFilter.type === 'all') return base;
             const sameType = ev => ev._taskType === currentTaskFilter.type;
-            const byType = eventsData.filter(sameType);
+            const byType = base.filter(sameType);
             if (!currentTaskFilter.id) return byType;
 
             const byId = byType.filter(ev => String(ev._taskTypeId || '') === String(currentTaskFilter.id));
@@ -1274,9 +1639,8 @@
                 const dayStyle = mainColor ? `style="--day-color:${mainColor}"` : '';
                 const chips = hasEvents
                     ? eventsForDay.slice(0,4).map((ev) => {
-                        const diarias = getDiariasCount(ev);
                         const title = ev.nome_da_escola || ev.cidade || 'Evento';
-                        return `<span class="day-event-chip" style="--ev-color:${ev._color || '#7b5cff'}" title="${title}">${diarias}</span>`;
+                        return `<span class="day-event-chip" style="--ev-color:${ev._color || '#7b5cff'}" title="${title}">•</span>`;
                     }).join('') + (eventsForDay.length > 4 ? `<span class="day-event-chip more">+${eventsForDay.length - 4}</span>` : '')
                     : '';
 
@@ -1366,6 +1730,7 @@
                             <span class="day-detail__chip"><i class="fas fa-route"></i> ${distancia}</span>
                             <span class="day-detail__chip"><i class="fas fa-coins"></i> ${valor}</span>
                             ${duracao ? `<span class="day-detail__chip"><i class="fas fa-hourglass-half"></i> ${duracao}</span>` : ''}
+                            <span class="day-detail__chip"><i class="fas fa-flag"></i> ${formatTaskLabel(ev._taskType)}</span>
                             <span class="day-detail__chip"><i class="fas fa-clipboard-check"></i> Resultado: ${getResultadoLabel(ev)}</span>
                         </div>
                     </div>
@@ -1380,211 +1745,228 @@
                 if (!ev) return;
                 card.addEventListener('click', () => openEventModal(ev));
             });
+
+            renderWeatherForSelection(dayEvents);
         }
 
-        // ==== Imagens do evento (carrossel) ====
+        // ==== Imagens do evento (carrossel somente visualização) ====
+        function normalizeEventImageEntries(items){
+            if (!Array.isArray(items)) return [];
+            const isImageUrl = (value) => {
+                const url = String(value || '').trim();
+                return url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:image/');
+            };
+            return items
+                .map(item => {
+                    if (!item || typeof item !== 'object') return null;
+                    const rawUrl = item.url || item.img || item.imagem || item.conteudo_base64;
+                    const url = String(rawUrl || '').trim();
+                    if (!isImageUrl(url)) return null;
+                    return {
+                        url,
+                        name: String(item.name || item.nome || '').trim(),
+                        row: item.row ?? item.row_number ?? item.row_num ?? null
+                    };
+                })
+                .filter(Boolean);
+        }
+
         async function fetchEventImages(eventId, extraPayload){
             const formData = new FormData();
             formData.append('action', 'get_img');
             if (eventId) {
-                formData.append('id_evento', eventId);
-                formData.append('id_evento_unico', eventId);
+                formData.append('id_evento', String(eventId));
+                formData.append('id_evento_unico', String(eventId));
             }
             const row = extraPayload && (extraPayload.row_number ?? extraPayload.row ?? extraPayload.row_num);
             if (row != null) formData.append('row_number', String(row));
-            if (extraPayload && extraPayload.school) formData.append('nome_da_escola', extraPayload.school);
+            if (extraPayload && extraPayload.school) formData.append('nome_da_escola', String(extraPayload.school));
 
-            const response = await fetch(API_EVENT_IMAGES, { method:'POST', body: formData });
+            const response = await fetch(API_EVENT_IMAGES, { method: 'POST', body: formData });
             const bodyText = await response.text().catch(() => '');
             if (!response.ok) throw new Error(bodyText || 'Erro ao buscar imagens');
 
             let entries = [];
+            const pushEntry = (url, name, rowVal) => {
+                entries.push({ url, name, row: rowVal });
+            };
+
             try {
                 const data = bodyText ? JSON.parse(bodyText) : null;
-                if (Array.isArray(data) && data.length && typeof data[0] === 'object' && ('img' in data[0])) {
-                    entries = data
-                        .map(item => {
-                            if (!item || typeof item.img !== 'string') return null;
-                            const url = item.img.trim();
-                            if (!url || !url.startsWith('http')) return null;
-                            const name = (item.name || '').toString().trim();
-                            const rowNum = item.row_number != null ? Number(item.row_number) : null;
-                            return { url, name, row: rowNum };
-                        })
-                        .filter(Boolean);
-                } else if (data && Array.isArray(data.links)) {
-                    entries = data.links
-                        .map(link => {
-                            const url = String(link || '').trim();
-                            return url && url.startsWith('http') ? { url, name: '', row: null } : null;
-                        })
-                        .filter(Boolean);
-                } else if (data && Array.isArray(data.data)) {
-                    entries = data.data
-                        .map(link => {
-                            const url = String(link || '').trim();
-                            return url && url.startsWith('http') ? { url, name: '', row: null } : null;
-                        })
-                        .filter(Boolean);
-                } else if (data && typeof data === 'object') {
-                    Object.values(data).forEach(v => {
-                        if (typeof v === 'string' && v.startsWith('http')) {
-                            entries.push({ url: v, name: '', row: null });
-                        } else if (Array.isArray(v)) {
-                            v.forEach(inner => {
-                                if (typeof inner === 'string' && inner.startsWith('http')) {
-                                    entries.push({ url: inner, name: '', row: null });
-                                }
-                            });
+
+                if (Array.isArray(data)) {
+                    data.forEach(item => {
+                        if (typeof item === 'string') {
+                            pushEntry(item, '', null);
+                            return;
                         }
+                        if (!item || typeof item !== 'object') return;
+                        const url = item.conteudo_base64 || item.img || item.imagem || item.url;
+                        pushEntry(url, item.name || item.nome || '', item.row_number ?? item.row ?? item.row_num ?? null);
                     });
+                } else if (data && typeof data === 'object') {
+                    const directUrl = data.conteudo_base64 || data.img || data.imagem || data.url;
+                    if (directUrl) {
+                        pushEntry(directUrl, data.name || data.nome || '', data.row_number ?? data.row ?? data.row_num ?? null);
+                    }
+
+                    if (Array.isArray(data.links)) {
+                        data.links.forEach(url => pushEntry(url, '', null));
+                    }
+                    if (Array.isArray(data.data)) {
+                        data.data.forEach(item => {
+                            if (typeof item === 'string') {
+                                pushEntry(item, '', null);
+                                return;
+                            }
+                            if (!item || typeof item !== 'object') return;
+                            const url = item.conteudo_base64 || item.img || item.imagem || item.url;
+                            pushEntry(url, item.name || item.nome || '', item.row_number ?? item.row ?? item.row_num ?? null);
+                        });
+                    }
+                } else if (typeof data === 'string') {
+                    pushEntry(data, '', null);
                 }
             } catch (_) {
-                const regex = /(https?:\/\/[^\s"']+)/g;
+                const regex = /(https?:\/\/[^\s"']+|data:image\/[^\s"']+)/g;
                 let match;
                 while ((match = regex.exec(bodyText)) !== null) {
-                    const url = match[1];
-                    if (url && url.startsWith('http')) entries.push({ url, name: '', row: null });
+                    pushEntry(match[1], '', null);
                 }
             }
 
+            const normalized = normalizeEventImageEntries(entries);
             const seen = new Set();
-            return entries.filter(entry => {
-                const key = entry && entry.url ? String(entry.url) : '';
+            return normalized.filter(entry => {
+                const key = entry.url;
                 if (!key || seen.has(key)) return false;
                 seen.add(key);
                 return true;
             });
         }
 
-        function renderImageCarousel(container, entries){
-            if (!container) return;
+        function setEventImagesPreviewLayout(previewEl, count){
+            if (!previewEl) return;
+            previewEl.classList.toggle('event-images-preview--single', count === 1);
+        }
+
+        function renderEventImagesPreview(entries, previewEl, title){
+            if (!previewEl) return;
+
             if (!Array.isArray(entries) || !entries.length) {
-                container.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
+                previewEl.className = 'event-images-preview';
+                previewEl.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
+                setEventImagesPreviewLayout(previewEl, 0);
                 return;
             }
 
-            let idx = 0;
-            container.innerHTML = `
-                <div class="img-carousel">
-                    <button class="img-carousel-nav" data-dir="-1" aria-label="Imagem anterior">‹</button>
-                    <div class="img-carousel-frame">
-                        <img data-carousel-img src="" alt="Imagem do evento" loading="lazy" decoding="async" referrerpolicy="no-referrer">
-                    </div>
-                    <button class="img-carousel-nav" data-dir="1" aria-label="Próxima imagem">›</button>
-                </div>
-                <div class="img-carousel-meta">
-                    <span data-carousel-counter></span>
-                    <a data-carousel-link href="#" target="_blank" rel="noopener noreferrer">Abrir imagem</a>
-                </div>
-            `;
+            previewEl.innerHTML = '';
+            previewEl.className = 'event-images-preview image-gallery';
+            entries.forEach((entry, index) => {
+                const card = document.createElement('div');
+                card.className = 'gallery-item';
 
-            const imgEl = container.querySelector('[data-carousel-img]');
-            const counterEl = container.querySelector('[data-carousel-counter]');
-            const linkEl = container.querySelector('[data-carousel-link]');
-            const navButtons = Array.from(container.querySelectorAll('.img-carousel-nav'));
-            navButtons.forEach(btn => { btn.disabled = entries.length <= 1; });
+                const img = document.createElement('img');
+                img.src = entry.url;
+                img.alt = entry.name || `Imagem ${index + 1}`;
+                img.loading = 'lazy';
+                img.decoding = 'async';
 
-            const update = () => {
-                const item = entries[idx];
-                if (!item) return;
-                imgEl.src = item.url;
-                imgEl.alt = item.name || 'Imagem do evento';
-                counterEl.textContent = `${idx + 1} / ${entries.length}`;
-                linkEl.href = item.url;
-                linkEl.textContent = item.name ? `Abrir ${item.name}` : 'Abrir imagem em nova aba';
-            };
+                const overlay = document.createElement('div');
+                overlay.className = 'overlay';
+                overlay.textContent = `Imagem ${index + 1}`;
 
-            navButtons.forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const dir = Number(btn.dataset.dir) || 1;
-                    idx = (idx + dir + entries.length) % entries.length;
-                    update();
-                });
+                card.appendChild(img);
+                card.appendChild(overlay);
+                card.addEventListener('click', () => openEventImageCarousel(entries, index, title));
+                previewEl.appendChild(card);
             });
 
-            update();
+            setEventImagesPreviewLayout(previewEl, entries.length);
         }
 
-        function setLightboxImages(entries){
-            lightboxImages = Array.isArray(entries) ? entries.filter(e => e && e.url) : [];
-            lightboxIndex = 0;
-            updateImageLightbox();
-        }
+        function updateEventImageCarouselUI(){
+            const modal = eventImageCarouselModal;
+            const imgEl = document.getElementById('event-image-carousel-img');
+            const emptyEl = document.getElementById('event-image-carousel-empty');
+            const counterEl = document.getElementById('event-image-carousel-counter');
+            const linkEl = document.getElementById('event-image-carousel-link');
+            const navButtons = modal ? modal.querySelectorAll('.carousel-nav') : [];
+            if (!modal || !imgEl || !emptyEl || !counterEl || !linkEl) return;
 
-        function updateImageLightbox(){
-            if (!lightboxEl || !lightboxImg || !lightboxCounter) return;
-            if (!lightboxImages.length) {
-                lightboxEl.classList.remove('show');
-                lightboxEl.setAttribute('aria-hidden','true');
+            if (!EVENT_CAROUSEL_IMAGES.length) {
+                imgEl.style.display = 'none';
+                emptyEl.style.display = 'block';
+                counterEl.textContent = '';
+                linkEl.style.display = 'none';
+                navButtons.forEach(btn => { btn.disabled = true; });
                 return;
             }
-            const cur = lightboxImages[lightboxIndex];
-            lightboxImg.src = cur.url;
-            lightboxImg.alt = cur.name || 'Imagem do evento';
-            lightboxCounter.textContent = `${lightboxIndex + 1} / ${lightboxImages.length}`;
+
+            if (EVENT_CAROUSEL_INDEX < 0) EVENT_CAROUSEL_INDEX = EVENT_CAROUSEL_IMAGES.length - 1;
+            if (EVENT_CAROUSEL_INDEX >= EVENT_CAROUSEL_IMAGES.length) EVENT_CAROUSEL_INDEX = 0;
+
+            const current = EVENT_CAROUSEL_IMAGES[EVENT_CAROUSEL_INDEX];
+            imgEl.src = current.url;
+            imgEl.alt = current.name || `Imagem ${EVENT_CAROUSEL_INDEX + 1}`;
+            imgEl.style.display = 'block';
+            emptyEl.style.display = 'none';
+            counterEl.textContent = `${EVENT_CAROUSEL_INDEX + 1} / ${EVENT_CAROUSEL_IMAGES.length}`;
+
+            linkEl.href = current.url;
+            linkEl.style.display = 'inline-flex';
+
+            const disableNav = EVENT_CAROUSEL_IMAGES.length <= 1;
+            navButtons.forEach(btn => { btn.disabled = disableNav; });
         }
 
-        function openImageLightbox(idx = 0){
-            if (!lightboxImages.length || !lightboxEl) return;
-            lightboxIndex = Math.max(0, Math.min(idx, lightboxImages.length - 1));
-            updateImageLightbox();
-            lightboxEl.classList.add('show');
-            lightboxEl.setAttribute('aria-hidden','false');
+        function openEventImageCarousel(entries, startIndex = 0, title){
+            if (!eventImageCarouselModal) return;
+            EVENT_CAROUSEL_IMAGES = normalizeEventImageEntries(entries);
+            EVENT_CAROUSEL_INDEX = Number.isFinite(Number(startIndex)) ? Number(startIndex) : 0;
+
+            const titleEl = document.getElementById('event-image-carousel-title');
+            if (titleEl) titleEl.textContent = title || 'Imagens do Evento';
+
+            eventImageCarouselModal.classList.add('open');
+            eventImageCarouselModal.setAttribute('aria-hidden', 'false');
+            updateEventImageCarouselUI();
         }
 
-        function closeImageLightbox(){
-            if (!lightboxEl) return;
-            lightboxEl.classList.remove('show');
-            lightboxEl.setAttribute('aria-hidden','true');
+        function closeEventImageCarousel(){
+            if (!eventImageCarouselModal) return;
+            eventImageCarouselModal.classList.remove('open');
+            eventImageCarouselModal.setAttribute('aria-hidden', 'true');
+            EVENT_CAROUSEL_IMAGES = [];
+            EVENT_CAROUSEL_INDEX = 0;
         }
 
-        function nextLightboxImage(){
-            if (!lightboxImages.length) return;
-            lightboxIndex = (lightboxIndex + 1) % lightboxImages.length;
-            updateImageLightbox();
+        function nextEventCarouselImage(){
+            if (!EVENT_CAROUSEL_IMAGES.length) return;
+            EVENT_CAROUSEL_INDEX = (EVENT_CAROUSEL_INDEX + 1) % EVENT_CAROUSEL_IMAGES.length;
+            updateEventImageCarouselUI();
         }
 
-        function prevLightboxImage(){
-            if (!lightboxImages.length) return;
-            lightboxIndex = (lightboxIndex - 1 + lightboxImages.length) % lightboxImages.length;
-            updateImageLightbox();
+        function prevEventCarouselImage(){
+            if (!EVENT_CAROUSEL_IMAGES.length) return;
+            EVENT_CAROUSEL_INDEX = (EVENT_CAROUSEL_INDEX - 1 + EVENT_CAROUSEL_IMAGES.length) % EVENT_CAROUSEL_IMAGES.length;
+            updateEventImageCarouselUI();
         }
 
-        async function loadEventImagesIntoContainer(eventId, container, triggerBtn, extraPayload){
-            if (!container || !eventId) return;
-            container.innerHTML = `<div class="event-images-placeholder">Carregando imagens...</div>`;
-            if (triggerBtn) {
-                triggerBtn.disabled = true;
-                triggerBtn.dataset.prevLabel = triggerBtn.innerHTML;
-                triggerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando';
-            }
+        async function loadEventImagesIntoContainer(eventId, previewEl, extraPayload, title){
+            if (!previewEl || !eventId) return;
+            previewEl.className = 'event-images-preview';
+            previewEl.innerHTML = `<div class="event-images-placeholder">Carregando imagens...</div>`;
+            setEventImagesPreviewLayout(previewEl, 0);
+
             try {
                 const entries = await fetchEventImages(eventId, extraPayload);
-                if (Array.isArray(entries) && entries.length) {
-                    container.innerHTML = `
-                        <div class="event-images-placeholder">
-                            ${entries.length} imagem(ns) encontrada(s). Clique em "Ver imagens" para abrir em tela cheia.
-                        </div>
-                    `;
-                    setLightboxImages(entries);
-                    openImageLightbox(0);
-                    if (triggerBtn) {
-                        triggerBtn.innerHTML = '<i class="fas fa-image"></i> Abrir em tela cheia';
-                        triggerBtn.disabled = false;
-                        triggerBtn.onclick = () => openImageLightbox(0);
-                    }
-                } else {
-                    container.innerHTML = `<div class="event-images-placeholder">Nenhuma imagem encontrada para este evento.</div>`;
-                }
-            } catch (err) {
-                console.error('Erro ao carregar imagens do evento:', err);
-                container.innerHTML = `<div class="event-images-placeholder">Erro ao carregar imagens. Tente novamente.</div>`;
-            } finally {
-                if (triggerBtn) {
-                    triggerBtn.disabled = false;
-                    triggerBtn.innerHTML = triggerBtn.dataset.prevLabel || '<i class="fas fa-image"></i> Ver imagens';
-                }
+                renderEventImagesPreview(entries, previewEl, title);
+            } catch (error) {
+                console.error('Erro ao carregar imagens do evento:', error);
+                previewEl.className = 'event-images-preview';
+                previewEl.innerHTML = `<div class="event-images-placeholder">Erro ao carregar imagens. Tente novamente.</div>`;
+                setEventImagesPreviewLayout(previewEl, 0);
             }
         }
 
@@ -1594,138 +1976,151 @@
                 eventModal.classList.remove('show');
                 eventModal.setAttribute('aria-hidden', 'true');
             }
+            closeEventImageCarousel();
         }
 
-        function openEventModal(ev){
+        // ==== Modal de detalhes OTIMIZADO ====
+        function openEventModal(ev) {
             if (!ev || !eventModalBody) return;
 
             const eventId = getEventId(ev);
-            const rotaLabel = formatYesNo(ev.rota_continua ?? ev.rota ?? ev.continua);
-            const valorTotal = ev.valor_total ?? ev.total ?? ev.valor ?? ev.custo_total ?? null;
-            const brindeInfo = formatYesNo(ev.brinde ?? ev.gift);
-            const diarias = ev.numero_de_diarias ?? ev.diarias ?? ev.qtd_diarias ?? null;
-            const conteudo = ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || 'Não informado';
-            const distancia = getDistanceLabel(ev);
-            const duracao = getDurationLabel(ev);
-            const destLatVal = formatCoord(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
-            const destLonVal = formatCoord(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
-            const origLatVal = formatCoord(ev.origem_lat ?? ev.lat_origem ?? ev.latitude_origem);
-            const origLonVal = formatCoord(ev.origem_lon ?? ev.lon_origem ?? ev.longitude_origem);
 
-            const headerHtml = `
-                <div class="event-modal-quick">
-                    <span class="event-chip"><strong>Rota contínua?</strong> ${rotaLabel}</span>
-                    <span class="event-chip"><strong>Valor total</strong> ${valorTotal !== null ? valorTotal : 'Não informado'}</span>
-                    <span class="event-chip"><strong>Brinde</strong> ${brindeInfo}</span>
-                    <span class="event-chip"><strong>Diárias</strong> ${diarias !== null ? diarias : 'Não informado'}</span>
-                    <span class="event-chip"><strong>Conteúdo</strong> ${conteudo}</span>
-                    <span class="event-chip"><strong>Distância</strong> ${distancia}</span>
-                    ${duracao ? `<span class="event-chip"><strong>Duração</strong> ${duracao}</span>` : ''}
-                    <span class="event-chip"><strong>Resultado</strong> ${getResultadoLabel(ev)}</span>
-                    <span class="event-chip"><strong>destino_lat</strong> ${destLatVal}</span>
-                    <span class="event-chip"><strong>destino_lon</strong> ${destLonVal}</span>
-                    <span class="event-chip"><strong>origem_lat</strong> ${origLatVal}</span>
-                    <span class="event-chip"><strong>origem_lon</strong> ${origLonVal}</span>
-                </div>
-            `;
+            // 1. Definição de dados principais
+            const titleLabel = ev.nome_da_escola || ev.cidade || (ev.tipo_da_tarefa || 'Evento Detalhado');
+            const responsavel = ev.responsavel || ev.responsavel_visita || ev.contato_responsavel || ev.nome_responsavel || '';
+            const cidade = normalizeCityUF(ev.cidade_destino || ev.cidade || '');
+            const dataFormatada = ev._date ? formatDateBr(ev._date) : 'Data a definir';
 
+            // Links e Ações
             const whatsappLink = buildWhatsappLink(ev);
             const routeLink = buildRouteLink(ev);
             const searchLinks = buildSearchLinks(ev);
-            const despesasBtn = `<button class="btn btn-secondary btn-compact" data-ev-action="despesas" data-ev-id="${eventId}">💰 Lançar despesas</button>`;
-            const finalizarBtn = `<button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-id="${eventId}">✅ Finalizar</button>`;
+
+            // Botões de ação principais (somente VISITA pode lançar despesas)
+            const canFinalize = isVisitaEvent(ev);
+            const finalizarBtn = canFinalize
+                ? `<button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-id="${eventId}">✅ Finalizar</button>`
+                : '';
             const deletarBtn = `<button class="btn btn-danger btn-compact" data-ev-action="deletar" data-ev-id="${eventId}">🗑️ Deletar</button>`;
 
-            const responsavel = ev.responsavel || ev.responsavel_visita || ev.contato_responsavel || ev.nome_responsavel || ev.responsavel_pelo_evento || ev.professor || '';
-            const escola = ev.nome_da_escola || ev.nome_escola || ev.escola || '';
-            const cidade = normalizeCityUF(ev.cidade_destino || ev.cidade || '');
-            const whatsappDisplay = whatsappLink
-                ? `<a href="${whatsappLink}" target="_blank" rel="noopener noreferrer">${ev.telefone_responsavel_evento || ev.telefone_responsavel || ev.telefone || ev.whatsapp || 'Abrir'}</a>`
-                : 'Não informado';
-            const infoAdicional =
-                ev.informacoes_adicionais ??
-                ev.informacoes ??
-                ev.observacoes ??
-                ev.observacao ??
-                '';
+            // 2. Construção dos "Quick Chips" (Apenas info relevante)
+            let chipsHtml = '';
 
-            const linksHtmlParts = [];
-            if (whatsappLink) linksHtmlParts.push(`<a href="${whatsappLink}" target="_blank" rel="noopener noreferrer"><i class="fas fa-whatsapp"></i> WhatsApp</a>`);
-            if (routeLink) linksHtmlParts.push(`<a href="${routeLink}" target="_blank" rel="noopener noreferrer"><i class="fas fa-route"></i> Rota</a>`);
-            if (searchLinks?.hotels) linksHtmlParts.push(`<a href="${searchLinks.hotels}" target="_blank" rel="noopener noreferrer"><i class="fas fa-bed"></i> Hotéis</a>`);
-            if (searchLinks?.food) linksHtmlParts.push(`<a href="${searchLinks.food}" target="_blank" rel="noopener noreferrer"><i class="fas fa-utensils"></i> Restaurantes</a>`);
-            linksHtmlParts.push(`<div class="modal-actions-inline">${despesasBtn}${finalizarBtn}${deletarBtn}</div>`);
+            // Valor (se existir)
+            const valor = ev.valor_total ?? ev.total ?? ev.valor ?? ev.custo_total;
+            if (valor) chipsHtml += `<span class="event-chip"><i class="fas fa-coins"></i> <strong>Valor:</strong> ${formatCurrencyBR(valor)}</span>`;
 
-            const linksHtml = linksHtmlParts.length
-                ? `<div class="event-modal-section event-modal-links"><h4>Links úteis</h4>${linksHtmlParts.join('')}</div>`
-                : '';
+            // Distância (se existir)
+            const dist = getDistanceLabel(ev);
+            if (dist && dist !== '—') chipsHtml += `<span class="event-chip"><i class="fas fa-route"></i> ${dist}</span>`;
 
-            const imagesSection = `
-                <div class="event-modal-section event-images-section">
-                    <div class="event-images-header">
-                        <h4>Imagens do evento</h4>
-                        <button class="event-images-btn" ${eventId ? '' : 'disabled'} data-event-id="${eventId || ''}">
-                            <i class="fas fa-image"></i> Ver imagens
-                        </button>
-                    </div>
-                    <div class="event-images-body" id="event-images-body">
-                        <div class="event-images-placeholder">
-                            ${eventId ? 'Clique em "Ver imagens" para carregar as fotos deste evento.' : 'ID do evento não encontrado para buscar imagens.'}
-                        </div>
-                    </div>
-                </div>
-            `;
+            // Resultado (apenas se preenchido)
+            const resultado = getResultadoLabel(ev);
+            if (resultado && resultado !== 'Resultado não informado') {
+                chipsHtml += `<span class="event-chip"><i class="fas fa-clipboard-check"></i> ${resultado}</span>`;
+            }
 
-            const detailRows = [];
+            // Rota Contínua (APENAS se for true)
+            if (ev.rota_continua === true || ev.rota_continua === 'true' || ev.rota_continua === 1) {
+                chipsHtml += `<span class="event-chip" style="border-color:var(--neon-purple); color:var(--neon-purple);"><i class="fas fa-infinity"></i> Rota Contínua</span>`;
+            }
+
+            // 3. Renderização Dinâmica dos Detalhes (Filtrando lixo)
+            const excludeKeys = new Set([
+                'id', '_id', '_date', '_color', '_spanStart', '_spanEnd', '_taskType', '_taskTypeId',
+                'tasktypeid', 'spanstart', 'spanend', 'color',
+                'rota_continua', 'rotacontinua', 'rota', 'continua', 'blocoindex',
+                'rota_idx', '_rota_idx', 'rota_total', '_rota_total',
+                'dist_override_km', '_dist_override_km',
+                'createdat', 'created_at', 'updatedat', 'updated_at',
+                'origem_lat', 'origem_lon', 'destino_lat', 'destino_lon',
+                'lat_origem', 'lon_origem', 'lat_destino', 'lon_destino',
+                'latitude_origem', 'longitude_origem', 'latitude_destino', 'longitude_destino',
+                'nome_da_escola', 'cidade_destino', 'cidade', 'responsavel'
+            ]);
+
+            let detailsHtml = '';
+
+            // Adiciona Observações primeiro se existir (campo importante)
+            const obs = ev.informacoes_adicionais || ev.observacoes || ev.observacao || ev.obs;
+            if (obs) {
+                detailsHtml += `
+                    <div class="event-detail-box" style="grid-column: 1/-1;">
+                        <span class="event-detail-label">Observações</span>
+                        <span class="event-detail-value" style="white-space: pre-wrap;">${obs}</span>
+                    </div>`;
+            }
+
+            // Loop inteligente
             Object.entries(ev).forEach(([key, val]) => {
-                // pula metadados e campos sensíveis
-                if (key === '_taskType') return;
-                if (key === '_date') {
-                    detailRows.push(`<div class="event-detail-row"><strong>Data</strong><span>${val instanceof Date ? formatDateBr(val) : String(val)}</span></div>`);
-                    return;
-                }
-                const sensitiveKeys = ['senha_usuario', 'senha', 'password', 'pass'];
-                if (sensitiveKeys.includes(String(key).toLowerCase())) return;
+                const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
 
-                if (typeof val === 'object') {
-                    try {
-                        const label = key === 'faixa_de_alunos' ? 'Número de Alunos' : prettifyKey(key);
-                        detailRows.push(`<div class="event-detail-row"><strong>${label}</strong><span>${JSON.stringify(val)}</span></div>`);
-                    } catch(_) {}
-                    return;
-                }
-                const label = key === 'faixa_de_alunos' ? 'Número de Alunos' : prettifyKey(key);
-                detailRows.push(`<div class="event-detail-row"><strong>${label}</strong><span>${val !== undefined && val !== null ? String(val) : '—'}</span></div>`);
+                // Filtros de exclusão
+                if (excludeKeys.has(key) || excludeKeys.has(normalizedKey)) return;
+                if (val === null || val === undefined || val === '' || val === 'null') return;
+                if ((typeof val === 'string') && val.trim() === '') return;
+
+                // Filtro específico: Se for booleano false, não mostra
+                if (val === false || val === 'false') return;
+
+                // Formatação da Chave (ex: numero_de_alunos -> Número de Alunos)
+                let label = key.replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+                label = label.charAt(0).toUpperCase() + label.slice(1);
+
+                // Formatação do Valor
+                let displayVal = val;
+                if (typeof val === 'object') displayVal = JSON.stringify(val);
+                if (val === true || val === 'true') displayVal = 'Sim';
+
+                detailsHtml += `
+                    <div class="event-detail-box">
+                        <span class="event-detail-label">${label}</span>
+                        <span class="event-detail-value">${displayVal}</span>
+                    </div>
+                `;
             });
 
-            const titleLabel = escola || cidade || (ev.tipo_da_tarefa || 'Evento');
+            // 4. Montagem dos Botões de Links
+            let linksHtml = '';
+            if (whatsappLink) linksHtml += `<a href="${whatsappLink}" target="_blank" class="modal-btn-link"><i class="fab fa-whatsapp"></i> WhatsApp</a>`;
+            if (routeLink) linksHtml += `<a href="${routeLink}" target="_blank" class="modal-btn-link"><i class="fas fa-location-arrow"></i> Rota GPS</a>`;
+            if (searchLinks?.hotels) linksHtml += `<a href="${searchLinks.hotels}" target="_blank" class="modal-btn-link"><i class="fas fa-bed"></i> Hotéis</a>`;
 
+            // 5. HTML Final do Modal
             eventModalBody.innerHTML = `
-                <h3 class="event-modal-title">${titleLabel}</h3>
-                ${headerHtml}
-                <div class="event-modal-section">
-                    <h4>Responsável</h4>
-                    <div class="event-details-grid">
-                        <div class="event-detail-row"><strong>Nome</strong><span>${responsavel || 'Não informado'}</span></div>
-                        <div class="event-detail-row"><strong>WhatsApp</strong><span>${whatsappDisplay}</span></div>
-                        ${cidade ? `<div class="event-detail-row"><strong>Destino</strong><span>${cidade}</span></div>` : ''}
+                <div class="event-modal-header">
+                    <h3 class="event-modal-title">${titleLabel}</h3>
+                    <div class="event-modal-subtitle">
+                        <span><i class="fas fa-calendar-day"></i> ${dataFormatada}</span>
+                        ${cidade ? `<span><i class="fas fa-map-marker-alt"></i> ${cidade}</span>` : ''}
+                        ${responsavel ? `<span><i class="fas fa-user"></i> ${responsavel}</span>` : ''}
                     </div>
                 </div>
-                <div class="event-modal-section">
-                    <h4>Informações adicionais</h4>
-                    <div class="event-details-grid">
-                        <div class="event-detail-row" style="grid-column:1/-1; white-space:pre-wrap;">
-                            <strong>Observações</strong>
-                            <span>${infoAdicional ? infoAdicional : 'Não informado'}</span>
-                        </div>
-                    </div>
+
+                <div class="event-modal-quick">
+                    ${chipsHtml}
                 </div>
-                ${linksHtml}
-                ${imagesSection}
-                <div class="event-modal-section">
-                    <h4>Detalhes do evento</h4>
-                    <div class="event-details-grid">
-                        ${detailRows.join('')}
+
+                <div class="event-details-grid">
+                    ${detailsHtml}
+                </div>
+
+                <div class="event-modal-actions">
+                    ${linksHtml}
+                </div>
+
+                <div class="event-modal-actions" style="border:none; padding-top:0; margin-top:10px; justify-content: flex-end;">
+                    ${finalizarBtn}
+                    ${deletarBtn}
+                </div>
+
+                <div class="event-images-section">
+                    <div class="event-images-header">
+                        <h4>Galeria</h4>
+                        <span class="event-images-hint">Clique em uma miniatura para ampliar</span>
+                    </div>
+                    <div class="event-images-preview" id="event-images-preview">
+                        <div class="event-images-placeholder">Carregando imagens...</div>
                     </div>
                 </div>
             `;
@@ -1733,37 +2128,30 @@
             eventModal.classList.add('show');
             eventModal.setAttribute('aria-hidden', 'false');
 
-            const imagesBody = eventModalBody.querySelector('#event-images-body');
-            const imagesBtn = eventModalBody.querySelector('.event-images-btn');
-            if (imagesBtn && imagesBody && eventId) {
-                imagesBtn.addEventListener('click', () => {
-                    loadEventImagesIntoContainer(
-                        eventId,
-                        imagesBody,
-                        imagesBtn,
-                        {
-                            row_number: ev.row_number ?? ev.row_num ?? ev.row,
-                            school: escola || ev.nome_da_escola || ''
-                        }
-                    );
-                });
+            // Carrega miniaturas da galeria do evento automaticamente
+            const imagesPreview = eventModalBody.querySelector('#event-images-preview');
+            if (imagesPreview && eventId) {
+                loadEventImagesIntoContainer(eventId, imagesPreview, {
+                    row_number: ev.row_number,
+                    school: ev.nome_da_escola
+                }, titleLabel);
             }
 
-            // Ações internas do modal (lançar despesas/finalizar/deletar)
             eventModalBody.querySelectorAll('[data-ev-action]').forEach(btn => {
                 const action = btn.dataset.evAction;
                 btn.addEventListener('click', (e) => {
                     e.preventDefault();
-                    e.stopPropagation();
-                    if (action === 'despesas') {
-                        lancarDespesas(ev, btn);
-                    } else if (action === 'finalizar') {
-                        finalizarEvento(ev, btn);
-                    } else if (action === 'deletar') {
-                        deletarEvento(ev, btn);
-                    }
+                    if (action === 'finalizar') finalizarEvento(ev, btn);
+                    else if (action === 'deletar') deletarEvento(ev, btn);
                 });
             });
+        }
+
+        function formatInfoTitle(text){
+            return text
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/\n/g, '&#10;');
         }
 
         // ==== Render da lista de eventos ====
@@ -1805,15 +2193,18 @@
             const renderedEvents = [];
             const parts = [];
 
-            function renderCards(label, items, extraClass){
+            function renderCards(label, items, extraClass, infoText){
                 if (!items.length) return;
                 const icon = extraClass === 'upcoming' ? 'fa-rocket' : extraClass === 'pending' ? 'fa-clock' : 'fa-circle';
                 const stateLabel = extraClass === 'pending' ? 'Pendente' : 'Próximo';
                 const stateClass = extraClass === 'pending' ? 'state-pending' : 'state-upcoming';
+                const infoIcon = infoText
+                    ? `<span class="info-icon" title="${formatInfoTitle(infoText)}" aria-label="Informações sobre ${label}">ℹ️</span>`
+                    : '';
                 parts.push(`
                     <section class="events-block">
                         <header class="events-header">
-                            <div><i class="fas ${icon}"></i> ${label}</div>
+                            <div><i class="fas ${icon}"></i> ${label} ${infoIcon}</div>
                             <span class="meta">${items.length} evento(s)</span>
                         </header>
                         <div class="events-scroll">
@@ -1835,12 +2226,18 @@
                     const brindeOk = ['1','true','sim','yes','ok','s'].includes(brindeField);
                     const brindeLabel = brindeOk ? 'Brinde incluso' : 'Sem brinde';
                     const duracao = getDurationLabel(ev);
-                    const diariasCount = getDiariasCount(ev);
+                    const diariasCount = Math.max(1, parseInt(parseNum(ev.numero_de_diarias ?? ev.diarias ?? ev.qtd_diarias ?? ev.numero_diarias ?? 1), 10) || 1);
                     const rotaContinua = ev.rota_continua === true || ev.rota_continua === 'true' || ev.rota_continua === 1;
                     const destLatVal = formatCoord(ev.destino_lat ?? ev.lat_destino ?? ev.latitude_destino);
                     const destLonVal = formatCoord(ev.destino_lon ?? ev.lon_destino ?? ev.longitude_destino);
                     const origLatVal = formatCoord(ev.origem_lat ?? ev.lat_origem ?? ev.latitude_origem);
                     const origLonVal = formatCoord(ev.origem_lon ?? ev.lon_origem ?? ev.longitude_origem);
+                    const canFinalize = isVisitaEvent(ev);
+                    const actionsHtml = canFinalize
+                        ? `<div class="event-card__actions">
+                            <button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-idx="${idx}">✅ Finalizar</button>
+                        </div>`
+                        : '';
 
                     parts.push(`
                         <div class="event-card ${ev.rota_continua && ev.blocoIndex != null ? ('rota-continua-bloco-' + (ev.blocoIndex % 3)) : ''}" data-ev-idx="${idx}">
@@ -1865,10 +2262,7 @@
                             <span class="chip"><i class="fas fa-meteor"></i>${conteudo}</span>
                             ${duracao ? `<span class="chip"><i class="fas fa-hourglass-half"></i>${duracao}</span>` : ''}
                         </div>
-                        <div class="event-card__actions">
-                            <button class="btn btn-secondary btn-compact" data-ev-action="despesas" data-ev-idx="${idx}">💰 Lançar despesas</button>
-                            <button class="btn btn-secondary btn-compact" data-ev-action="finalizar" data-ev-idx="${idx}">✅ Finalizar</button>
-                        </div>
+                        ${actionsHtml}
                     </div>
                 `);
             });
@@ -1881,8 +2275,18 @@
             }
 
             parts.push('<div class="events-container">');
-            renderCards('Próximos', visitasFuturas, 'upcoming');
-            renderCards('Pendentes de finalizar', visitasPassadas, 'pending');
+            renderCards(
+                'Próximos Eventos',
+                visitasFuturas,
+                'upcoming',
+                'Aqui você vê todos os eventos que ainda vão acontecer no futuro.\nSe não houver eventos listados, significa que sua agenda está livre para novos compromissos.'
+            );
+            renderCards(
+                'Eventos Pendentes de Finalização',
+                visitasPassadas,
+                'pending',
+                'Aqui ficam os eventos que já aconteceram ou que ainda não possuem uma data definida.\nEsses eventos precisam ser finalizados ou organizados.'
+            );
             parts.push('</div>');
             if (outros.length) {
                 renderCards('Outros eventos', outros, 'other');
@@ -1904,9 +2308,7 @@
                     const action = btn.dataset.evAction;
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        if (action === 'despesas') {
-                            lancarDespesas(ev, btn);
-                        } else if (action === 'finalizar') {
+                        if (action === 'finalizar') {
                             finalizarEvento(ev, btn);
                         }
                     });
@@ -1918,6 +2320,7 @@
         async function carregarAgenda(){
             const sess = getLoggedSession();
             currentSession = sess;
+            showDuplicates = true;
             const hasSession = !!(sess && sess.id_astronomo != null);
             statusTextEl.textContent = hasSession
                 ? 'Conectando ao servidor...'
@@ -1927,58 +2330,61 @@
                 if (btnOpenRotas) btnOpenRotas.disabled = true;
 
             try {
-                // Monta URL com parâmetros (mantido para uso futuro)
-                // const buildUrl = () => {
-                //     const u = new URL(API_AGENDA);
-                //     u.searchParams.set('action', 'atualizar_agenda');
-                //     u.searchParams.set('tipo', 'atualizar_agenda');
-                //     if (sess && sess.id_astronomo != null) u.searchParams.set('id_astronomo', String(sess.id_astronomo));
-                //     if (sess && sess.usuario) u.searchParams.set('usuario', String(sess.usuario));
-                //     return u.toString();
-                // };
+                const buildAgendaParams = () => {
+                    const baseSess = buildSessionPayload(sess);
+                    const params = {
+                        action: 'atualizar_agenda',
+                        tipo: getWebhookTipoFromSelect()
+                    };
+                    if (baseSess && baseSess.id_astronomo != null) params.id_astronomo = baseSess.id_astronomo;
+                    if (baseSess && baseSess.usuario) params.usuario = baseSess.usuario;
+                    const ids = getSessionTaskIds(baseSess || null);
+                    if (ids && ids.visita) params.id_visita = ids.visita;
+                    if (ids && ids.pre) params.id_pre = ids.pre;
+                    if (ids && ids.reserva) params.id_reserva = ids.reserva;
+                    if (ids && ids.nao_marcar) params.id_n_marcar = ids.nao_marcar;
+                    return params;
+                };
 
-                let resp = null;
+                const payload = buildAgendaParams();
+                const url = API_AGENDA;
+
                 let data = null;
-                let lastErr = null;
 
                 // 1ª tentativa: POST (padrão do webhook)
                 try {
-                    resp = await fetch(API_AGENDA, {
+                    const resp = await fetch(url, {
                         method: 'POST',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
                     if (resp && resp.ok) {
-                        try { data = await resp.json(); } catch (_) { data = null; }
+                        data = await readResponsePayload(resp);
                     } else {
                         const txt = resp ? await resp.text().catch(()=>'') : '';
                         throw new Error(`HTTP ${resp ? resp.status : '??'}: ${txt || 'erro'}`);
                     }
                 } catch (err) {
-                    lastErr = err;
+                    throw err;
                 }
 
                 if (!data) {
-                    throw lastErr || new Error('Não foi possível obter dados da agenda');
+                    data = [];
                 }
 
-                let rawEventos = [];
-                if (!data) {
-                    rawEventos = [];
-                } else if (Array.isArray(data)) {
-                    rawEventos = data;
-                } else if (Array.isArray(data.eventos)) {
-                    rawEventos = data.eventos;
-                } else if (Array.isArray(data.data)) {
-                    rawEventos = data.data;
-                } else {
-                    // fallback: se vier um objeto único já de evento
-                    rawEventos = [data];
+                saveAgendaPayload(data, sess);
+
+                const rawEventos = normalizeAgendaPayload(data);
+                if ((!rawEventos || !rawEventos.length) && typeof showNoDataPopup === 'function') {
+                    showNoDataPopup('Sem dados retornados do n8n.');
                 }
 
-                eventsData = dedupeEventsById(rawEventos.map(ev => normalizeEvent(ev, sess)));
+                eventsDataRaw = rawEventos.map(ev => normalizeEvent(ev, sess));
+                // Deduplicação desativada: usamos sempre o payload completo.
+                eventsData = eventsDataRaw;
                 applyRotaContinuaBlocks(eventsData);
                 applyRouteOverrides(eventsData, sess);
-                saveAgendaCache(eventsData, sess);
+                saveAgendaCache(eventsDataRaw, sess);
                 syncRotasCache(eventsData, sess);
                 if (btnOpenRotas) btnOpenRotas.disabled = false;
                 // redefine filtro (ids podem mudar conforme login)
@@ -1986,7 +2392,8 @@
                     currentTaskFilter = getSelectedTaskFilter();
                 }
 
-                statusTextEl.textContent = `Agenda carregada: ${eventsData.length} evento(s).`;
+                const rawCount = Array.isArray(eventsDataRaw) ? eventsDataRaw.length : 0;
+                statusTextEl.textContent = `Agenda carregada: ${rawCount} evento(s).`;
                 if (!selectedDate || !(selectedDate instanceof Date) || Number.isNaN(selectedDate.getTime())) {
                     const firstEvent = eventsData
                         .map(ev => ev && ev._date)
@@ -2002,15 +2409,6 @@
                 renderEventsList();
                 renderDayEventsDetails();
 
-                refreshRotasOverrides(sess, eventsData)
-                    .then(payload => {
-                        if (payload && payload.overrides) {
-                            applyRouteOverrides(eventsData, sess);
-                            renderEventsList();
-                            renderDayEventsDetails();
-                        }
-                    })
-                    .catch(err => console.warn('Erro ao aplicar overrides de rota contínua:', err));
                 computeContinuousRoutes(eventsData)
                     .then(metrics => {
                         applyContinuousRouteMetrics(eventsData, metrics);
@@ -2067,11 +2465,15 @@
                         const rawCache = cacheKey ? localStorage.getItem(cacheKey) : null;
                         const parsed = rawCache ? JSON.parse(rawCache) : null;
                         if (parsed && Array.isArray(parsed.events) && parsed.events.length) {
-                            eventsData = dedupeEventsById(parsed.events.map(ev => normalizeEvent(ev, sess)));
+                            eventsDataRaw = parsed.events.map(ev => normalizeEvent(ev, sess));
+                            // Deduplicação desativada: usamos sempre o payload completo.
+                            eventsData = eventsDataRaw;
                             applyRotaContinuaBlocks(eventsData);
                             applyRouteOverrides(eventsData, sess);
                             syncRotasCache(eventsData, sess);
                             btnOpenRotas.disabled = false;
+                            const rawCount = Array.isArray(eventsDataRaw) ? eventsDataRaw.length : 0;
+                            statusTextEl.textContent = `Agenda carregada: ${rawCount} evento(s).`;
                             computeContinuousRoutes(eventsData)
                                 .then(metrics => {
                                     applyContinuousRouteMetrics(eventsData, metrics);
@@ -2095,13 +2497,47 @@
 
             if (eventModalClose) eventModalClose.addEventListener('click', closeEventModal);
             if (eventModalBackdrop) eventModalBackdrop.addEventListener('click', closeEventModal);
+            if (eventImageCarouselModal) {
+                eventImageCarouselModal.addEventListener('click', (ev) => {
+                    if (ev.target === eventImageCarouselModal) closeEventImageCarousel();
+                });
+            }
+            if (finalizeCancelBtn && finalizeModal) {
+                finalizeCancelBtn.addEventListener('click', () => {
+                    finalizeModal.classList.remove('open');
+                    finalizeModal.setAttribute('aria-hidden', 'true');
+                    pendingFinalizeEvent = null;
+                });
+            }
+            if (finalizeConfirmBtn && finalizeModal) {
+                finalizeConfirmBtn.addEventListener('click', () => {
+                    if (!pendingFinalizeEvent) return;
+                    const { ev, id } = pendingFinalizeEvent;
+                    if (finalizeDontShowEl && finalizeDontShowEl.checked) {
+                        try{ localStorage.setItem(FINALIZE_PREF_KEY, '1'); }catch(_){}
+                    }
+                    try{
+                        localStorage.setItem('despesas_evento_selecionado', JSON.stringify({ ...(ev || {}), id, _open_expenses: true }));
+                    }catch(_){}
+                    finalizeModal.classList.remove('open');
+                    finalizeModal.setAttribute('aria-hidden', 'true');
+                    pendingFinalizeEvent = null;
+                    window.location.href = 'despesas.html';
+                });
+            }
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape') closeEventModal();
+                if (e.key === 'Escape') {
+                    if (finalizeModal && finalizeModal.classList.contains('open')) {
+                        finalizeModal.classList.remove('open');
+                        finalizeModal.setAttribute('aria-hidden', 'true');
+                        pendingFinalizeEvent = null;
+                    } else if (eventImageCarouselModal && eventImageCarouselModal.classList.contains('open')) {
+                        closeEventImageCarousel();
+                    } else {
+                        closeEventModal();
+                    }
+                }
             });
-            if (lightboxClose) lightboxClose.addEventListener('click', closeImageLightbox);
-            if (lightboxBackdrop) lightboxBackdrop.addEventListener('click', closeImageLightbox);
-            if (lightboxNext) lightboxNext.addEventListener('click', nextLightboxImage);
-            if (lightboxPrev) lightboxPrev.addEventListener('click', prevLightboxImage);
 
             updateTaskFilterLabels(sess);
             // força estado inicial para VISITA
@@ -2205,14 +2641,14 @@
 
             for (let i=0;i<events.length;i++){
                 const ev = events[i];
-                const day = parseDay(ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data || ev._date);
+                const day = parseDay(ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data || ev._date);
                 if (!day || !isLongTrip(ev)) {
                     if (current.length > 0) { groups.push(current.slice()); current = []; }
                     continue;
                 }
                 const next = events[i+1];
                 if (next) {
-                    const nextDay = parseDay(next.data_e_hora_do_agendamento || next.data_agendamento || next.data || next._date);
+                    const nextDay = parseDay(next.data_e_hora_agendamento || next.data_e_hora_do_agendamento || next.data_agendamento || next.data || next._date);
                     const consecutive = nextDay && day && daysBetween(day, nextDay) === 1;
                     const nextLong = isLongTrip(next);
                     if (consecutive && nextLong) {
@@ -2349,7 +2785,7 @@
         }
 
         function getEventDate(event) {
-            const raw = event.data_e_hora_do_agendamento || event.data_agendamento || event.data || event._date;
+            const raw = event.data_e_hora_agendamento || event.data_e_hora_do_agendamento || event.data_agendamento || event.data || event._date;
             if (!raw) return null;
             const d = new Date(raw);
             return Number.isNaN(d.getTime()) ? null : d;
@@ -2421,7 +2857,7 @@
 
             // filtra futuros
             const future = events
-                .map(ev => ({ ev, day: normalizeDate(ev.data_e_hora_do_agendamento || ev.data || ev.data_agendamento || ev._date) }))
+                .map(ev => ({ ev, day: normalizeDate(ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data || ev.data_agendamento || ev._date) }))
                 .filter(v => v.day && isFutureOrToday(v.day))
                 .sort((a,b)=> a.day - b.day);
 
@@ -2618,7 +3054,8 @@
         async function fetchRotasSessao(sess){
             if (!sess) return null;
             const buildUrl = () => {
-                const u = new URL("https://myn8n.seommerce.shop/webhook/agenda_inteligente_demo");
+                const u = new URL(API_AGENDA);
+                u.searchParams.set('tipo', 'TODOS');
                 if (sess.id_astronomo != null) u.searchParams.set('id_astronomo', String(sess.id_astronomo));
                 if (sess.usuario) u.searchParams.set('usuario', String(sess.usuario));
                 return u.toString();
@@ -2631,7 +3068,7 @@
                 const url = buildUrl();
                 const resp = await fetch(url, { method:'POST', headers:{'Accept':'application/json'} });
                 if (resp && resp.ok) {
-                    try{ data = await resp.json(); }catch(_){ data = null; }
+                    data = await readResponsePayload(resp);
                 } else {
                     const txt = resp ? await resp.text().catch(()=>'') : '';
                     throw new Error(`HTTP ${resp ? resp.status : '??'}: ${txt || 'erro'}`);
@@ -2645,7 +3082,7 @@
                     const url = buildUrl();
                     const resp = await fetch(url, { method:'GET', headers:{'Accept':'application/json'} });
                     if (resp && resp.ok) {
-                        try{ data = await resp.json(); }catch(_){ data = null; }
+                        data = await readResponsePayload(resp);
                     } else {
                         const txt = resp ? await resp.text().catch(()=>'') : '';
                         throw new Error(`HTTP ${resp ? resp.status : '??'}: ${txt || 'erro'}`);

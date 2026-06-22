@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Sistema Astronômico</title>
+    <title>Login Admin - Painel RH</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
         .login-header p {
@@ -88,46 +88,52 @@
     <div class="space-layer galaxies"></div>
 
     <div class="login-container">
-        <div class="login-card" style="box-shadow: 0 0 40px rgba(34, 211, 238, 0.15); border: 1px solid rgba(34, 211, 238, 0.3);">
+        <div class="login-card" style="box-shadow: 0 0 40px rgba(217, 70, 239, 0.15); border: 1px solid rgba(217, 70, 239, 0.3);">
             <div class="login-header">
                 <div class="logo" style="margin-bottom: 20px;">
-                    <i class="fas fa-satellite-dish" style="color: var(--neon-cyan); font-size: 2.2rem; text-shadow: 0 0 20px rgba(34, 211, 238, 0.4);"></i>
-                    <h1 style="background: linear-gradient(135deg, #ffffff, var(--neon-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Urania Planetário</h1>
+                    <i class="fas fa-user-shield" style="color: var(--neon-purple); font-size: 2.2rem; text-shadow: 0 0 20px rgba(217, 70, 239, 0.4);"></i>
+                    <h1 style="background: linear-gradient(135deg, #ffffff, var(--neon-purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Painel RH Admin</h1>
                 </div>
-                <p style="font-size: 1.05rem; color: var(--text-body); font-weight: 500;">Agenda Inteligente de Astrônomos</p>
-                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px;">Demonstração estática e local (Modo Portfólio)</p>
+                <p style="font-size: 1.05rem; color: var(--text-body); font-weight: 500;">Administração Urania Planetário</p>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 6px;">Gestão de Astrônomos e Agendas (Demo)</p>
             </div>
 
-            <div class="webhook-status status-connected" id="webhook-status" style="border-left-color: var(--neon-cyan); background: rgba(34, 211, 238, 0.05); margin-bottom: 24px;">
+            <div class="webhook-status status-connected" id="webhook-status" style="border-left-color: var(--neon-purple); background: rgba(217, 70, 239, 0.05); margin-bottom: 24px;">
                 <div class="info-item">
-                    <span class="info-label" style="color: var(--text-body);">Status do Sistema:</span>
-                    <span class="info-value" id="connection-status" style="color: var(--neon-cyan); font-weight: 600;">Pronto para Acessar</span>
+                    <span class="info-label" style="color: var(--text-body);">Status do Painel:</span>
+                    <span class="info-value" id="connection-status" style="color: var(--neon-purple); font-weight: 600;">Pronto para Acessar</span>
                 </div>
             </div>
 
             <form id="login-form" class="login-form">
                 <!-- Inputs ocultos para compatibilidade com o script de autenticação original -->
-                <input id="usuario" name="usuario" type="hidden" value="astronomo">
-                <input id="senha" name="senha" type="hidden" value="senha123">
+                <input id="usuario" name="usuario" type="hidden" value="admin">
+                <input id="senha" name="senha" type="hidden" value="admin">
                 <input id="remember" type="checkbox" style="display:none;">
 
-                <button id="btn-login" class="login-btn" type="submit" style="background: linear-gradient(135deg, var(--neon-blue), var(--neon-cyan)); font-size: 1.1rem; padding: 16px 20px; border-radius: 8px; font-weight: 700; width: 100%; border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(59, 130, 246, 0.3); transition: all 0.3s ease;">
-                    <i class="fas fa-rocket" style="font-size: 1.2rem;"></i> Acessar Sistema (Demo)
+                <button id="btn-login" class="login-btn" type="submit" style="background: linear-gradient(135deg, var(--neon-purple), var(--neon-blue)); font-size: 1.1rem; padding: 16px 20px; border-radius: 8px; font-weight: 700; width: 100%; border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 20px rgba(217, 70, 239, 0.3); transition: all 0.3s ease;">
+                    <i class="fas fa-lock" style="font-size: 1.2rem;"></i> Acessar Painel RH
                 </button>
             </form>
 
             <div id="login-message" class="login-message" style="margin-top: 15px;"></div>
             <div class="login-footer" style="margin-top: 24px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 16px;">
-                <a href="admin-login.html" style="color: var(--neon-purple); text-decoration: none; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--neon-purple)'">
-                    <i class="fas fa-user-shield"></i> Acessar como Administrador (RH)
+                <a href="login.html" style="color: var(--neon-cyan); text-decoration: none; font-weight: 600; transition: color 0.2s;" onmouseover="this.style.color='var(--text-main)'" onmouseout="this.style.color='var(--neon-cyan)'">
+                    <i class="fas fa-arrow-left"></i> Voltar para Login de Astrônomo
                 </a>
             </div>
         </div>
     </div>
 
     <script>
-        const AUTH_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/novo-astronomo-1';
-        const AUTH_ACTION = 'login';
+        // Admin login usa o mesmo endpoint do login padrão,
+        // mudando apenas a action.
+        const ADMIN_AUTH_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/novo-astronomo-1';
+        const ADMIN_AUTH_ACTION = 'admin';
+
+        const ADMIN_SESSION_KEY = 'admin_session';
+        const SAVED_USER_KEY = 'savedAdminUser';
+
         const form = document.getElementById('login-form');
         const inputUsuario = document.getElementById('usuario');
         const inputSenha = document.getElementById('senha');
@@ -137,6 +143,14 @@
         const webhookStatus = document.getElementById('webhook-status');
         const connectionStatus = document.getElementById('connection-status');
         const msg = document.getElementById('login-message');
+
+        const params = new URLSearchParams(window.location.search || '');
+        const redirectTarget = (() => {
+            const value = (params.get('redirect') || '').trim();
+            if (!value) return 'rh-astronomos.html';
+            if (value.toLowerCase().includes('admin-login')) return 'rh-astronomos.html';
+            return value;
+        })();
 
         function showMessage(text, type) {
             msg.textContent = text;
@@ -187,10 +201,9 @@
             }
             const user = firstObject(
                 payload && (
-                    payload.astronomer ||
+                    payload.admin ||
                     payload.user ||
                     payload.usuario_data ||
-                    payload.astronomo ||
                     payload.profile ||
                     payload.dados
                 )
@@ -212,47 +225,12 @@
                 if (lowerMsg.includes('senha incorreta') || lowerMsg.includes('unauthorized') || lowerMsg.includes('acesso negado')) return false;
             }
             if (p.success === true || p.ok === true || p.allow === true || p.autorizado === true || p.authenticated === true) return true;
-            return !!(user && (user.id_astronomo != null || user.usuario || user.username || user.nome_completo));
+            return !!(user && (user.usuario || user.username || user.nome_completo || user.nome || user.email || user.role || user.admin));
         }
 
-        function numberOrNull(value) {
-            if (value === null || value === undefined || value === '') return null;
-            const num = Number(value);
-            return Number.isFinite(num) ? num : null;
-        }
-
-        function parseProfitRate(raw) {
-            if (raw === undefined || raw === null || raw === '') return null;
-            const cleaned = String(raw).replace('%', '').replace(',', '.').trim();
-            const num = Number(cleaned);
-            if (!Number.isFinite(num)) return null;
-            if (num >= 0 && num <= 1) return num;
-            if (num > 1 && num <= 100) return num / 100;
-            return null;
-        }
-
-        function deriveAstronomoId(base) {
-            const candidates = [
-                base.id_astronomo, base.astronomo_id, base.id, base.user_id,
-                base.usuario_id, base.assistant_id, base.row_number, base.row_num
-            ];
-            for (const val of candidates) {
-                if (val === undefined || val === null || val === '') continue;
-                const asNum = Number(val);
-                if (Number.isFinite(asNum)) return asNum;
-                return val;
-            }
-            return null;
-        }
-
-        function saveSession(userData, plainPassword) {
+        function saveAdminSession(userData, plainPassword) {
             const base = (userData && typeof userData === 'object') ? { ...userData } : {};
-            const token = 'astro_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now().toString(36);
-            const idAstronomo = deriveAstronomoId(base);
-            const lucroDecimal = parseProfitRate(
-                base.percentual_lucro ?? base.porcentagem_lucro ?? base.taxa_lucro ?? base.lucro_percentual
-            );
-            const lucroPercent = lucroDecimal != null ? lucroDecimal * 100 : null;
+            const token = 'admin_' + Math.random().toString(36).slice(2, 11) + '_' + Date.now().toString(36);
             const unified = {
                 ...base,
                 loggedIn: true,
@@ -261,37 +239,27 @@
                 sessionId: token,
                 session_id: token,
                 token,
-                id_astronomo: idAstronomo,
+                role: base.role || 'admin',
                 usuario: base.usuario || base.username || inputUsuario.value.trim() || null,
                 username: base.username || base.usuario || inputUsuario.value.trim() || null,
-                astronomo: base.astronomo || base.nome_completo || base.nome || base.usuario || inputUsuario.value.trim() || null,
-                nome_completo: base.nome_completo || base.nome || base.astronomo || base.usuario || inputUsuario.value.trim() || null,
-                senha: plainPassword || null,
-                lucro_percentual_decimal: lucroDecimal,
-                lucro_percentual: lucroPercent,
-                percentual_lucro: lucroPercent != null ? lucroPercent : numberOrNull(base.percentual_lucro)
+                nome_completo: base.nome_completo || base.nome || base.usuario || inputUsuario.value.trim() || null,
+                senha: plainPassword || null
             };
-            localStorage.setItem('astronomo_session', JSON.stringify(unified));
-            localStorage.setItem('userSession', JSON.stringify({
-                astronomer: base,
-                loginTime: unified.loginTime,
-                token
-            }));
-            localStorage.setItem('astronomersData', JSON.stringify([base]));
+            localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(unified));
             if (remember.checked && unified.usuario) {
-                localStorage.setItem('savedUser', unified.usuario);
+                localStorage.setItem(SAVED_USER_KEY, unified.usuario);
             } else {
-                localStorage.removeItem('savedUser');
+                localStorage.removeItem(SAVED_USER_KEY);
             }
         }
 
         async function callAuthWebhook(usuario, senha) {
             const body = new URLSearchParams();
-            body.set('action', AUTH_ACTION);
+            body.set('action', ADMIN_AUTH_ACTION);
             body.set('usuario', usuario);
             body.set('senha', senha);
 
-            const response = await fetch(AUTH_WEBHOOK_URL, {
+            const response = await fetch(ADMIN_AUTH_WEBHOOK_URL, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -330,7 +298,7 @@
 
             btnLogin.disabled = true;
             btnLogin.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Autenticando...';
-            setConnectionState('Validando com n8n...', 'status-connected');
+            setConnectionState('Validando com webhook...', 'status-connected');
 
             try {
                 const raw = await callAuthWebhook(usuario, senha);
@@ -348,31 +316,31 @@
                 }
 
                 const authUser = normalized.user || normalized.payload || { usuario };
-                saveSession(authUser, senha);
-                const welcomeUser = authUser?.usuario || authUser?.username || authUser?.astronomo || authUser?.nome_completo || usuario;
-                showMessage(`Seja Bem vindo ${welcomeUser}`, 'success');
+                saveAdminSession(authUser, senha);
+                const welcomeUser = authUser?.usuario || authUser?.username || authUser?.nome_completo || usuario;
+                showMessage(`Seja bem-vindo(a), ${welcomeUser}`, 'success');
                 setConnectionState('Autenticado', 'status-connected');
-                setTimeout(() => { window.location.href = 'index.html'; }, 600);
+                setTimeout(() => { window.location.href = redirectTarget; }, 600);
             } catch (err) {
                 showMessage('Falha no login: ' + (err && err.message ? err.message : 'erro desconhecido'), 'error');
                 setConnectionState('Erro de autenticação', 'status-error');
             } finally {
                 btnLogin.disabled = false;
-                btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar no Sistema';
+                btnLogin.innerHTML = '<i class="fas fa-sign-in-alt"></i> Entrar no Painel RH';
             }
         }
 
         (function init() {
-            const saved = localStorage.getItem('savedUser');
+            const saved = localStorage.getItem(SAVED_USER_KEY);
             if (saved) {
                 inputUsuario.value = saved;
                 remember.checked = true;
             }
-            localStorage.removeItem('astronomo_session');
-            localStorage.removeItem('userSession');
+            // Garante que o login sempre cria uma nova sessão admin
+            localStorage.removeItem(ADMIN_SESSION_KEY);
             form.addEventListener('submit', handleSubmit);
             if (togglePasswordButton) togglePasswordButton.addEventListener('click', togglePasswordVisibility);
-            showMessage('Informe usuario e senha para acessar o sistema.', 'info');
+            showMessage('Informe usuario e senha de administrador.', 'info');
         })();
     </script>
 </body>

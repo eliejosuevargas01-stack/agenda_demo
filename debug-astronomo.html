@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Astrônomo - Comparação de Tabelas</title>
+    <link rel="stylesheet" href="css/rh-astronomos.css">
+    <style>
+        .debug-page .panel-card { margin-bottom: 16px; }
+        .page-container { max-width: 1280px; margin: 0 auto; padding: 24px; }
+        .page-header { display:flex; justify-content:space-between; align-items:center; margin-bottom: 16px; }
+        .page-header h1 { font-size: 1.3rem; font-weight: 700; }
+        .debug-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+        .debug-controls .btn { min-width: 180px; }
+        .debug-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+        .debug-kpi { background: var(--bg-card); border:1px solid var(--border-color); border-radius: var(--radius); padding: 14px 16px; box-shadow: var(--shadow-sm); }
+        .debug-kpi h3 { margin:0 0 6px; font-size: 0.9rem; color: var(--text-secondary); }
+        .debug-kpi .value { font-size: 1.4rem; font-weight: 700; color: var(--text-main); }
+        .debug-empty { padding: 16px; color: var(--text-secondary); }
+        .debug-status { font-size:0.9rem; color: var(--text-secondary); }
+        .debug-help { font-size:0.9rem; color: var(--text-secondary); margin-top: 4px; }
+        .debug-raw { white-space: pre-wrap; max-height: 240px; overflow:auto; background: #0f172a; color:#e2e8f0; border:1px solid rgba(15,23,42,0.2); border-radius: var(--radius); padding: 10px 12px; font-size: 0.82rem; }
+        .debug-badge { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius: 999px; font-size: 0.75rem; background: rgba(59,130,246,0.12); color: var(--primary); border:1px solid rgba(59,130,246,0.35); }
+        .compare-list { display:flex; flex-direction:column; gap:12px; }
+        .compare-item { border:1px solid var(--border-color); border-radius: var(--radius); padding: 10px; background: #fff; box-shadow: var(--shadow-sm); }
+        .compare-row { display:grid; grid-template-columns: 1fr 70px 1fr; gap:12px; align-items: stretch; }
+        .compare-card { border:1px solid var(--border-color); background: var(--bg-card); border-radius: var(--radius); padding: 12px 14px; min-height: 110px; box-shadow: var(--shadow-sm); }
+        .compare-card h4 { margin:0 0 6px; font-size: 0.9rem; color: var(--text-main); display:flex; align-items:center; gap:8px; }
+        .compare-meta { font-size:0.82rem; color: var(--text-secondary); line-height:1.35; }
+        .compare-status { display:inline-flex; align-items:center; gap:6px; padding:4px 8px; border-radius: 999px; font-size:0.75rem; font-weight:700; }
+        .compare-status.ok { color:#065f46; background: rgba(16,185,129,0.15); border:1px solid rgba(16,185,129,0.35); }
+        .compare-status.warn { color:#92400e; background: rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.35); }
+        .compare-status.miss { color:#991b1b; background: rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.35); }
+        .compare-status .dot { font-size:0.9rem; }
+        .compare-pair { display:flex; flex-direction:column; gap:6px; }
+        .compare-link { display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; }
+        .compare-line { width:2px; flex:1; background: linear-gradient(180deg, rgba(148,163,184,0.2), rgba(148,163,184,0.8), rgba(148,163,184,0.2)); border-radius: 2px; }
+        .compare-chip { font-size:0.72rem; font-weight:700; padding:4px 8px; border-radius:999px; border:1px solid var(--border-color); background: #fff; color: var(--text-secondary); }
+        .compare-chip.ok { color:#065f46; border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
+        .compare-chip.bad { color:#991b1b; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); }
+        .compare-chip.id { color:#1d4ed8; border-color: rgba(59,130,246,0.45); background: rgba(59,130,246,0.12); }
+        .compare-chip.sig { color:#6b7280; border-color: rgba(107,114,128,0.4); background: rgba(107,114,128,0.12); }
+        .compare-details { display:none; margin-top: 10px; border-top: 1px dashed var(--border-color); padding-top: 10px; }
+        .compare-details.open { display:block; }
+        .compare-detail-head { display:grid; grid-template-columns: 1fr 1fr 1fr 120px; gap:10px; font-size:0.75rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; }
+        .compare-detail-row { display:grid; grid-template-columns: 1fr 1fr 1fr 120px; gap:10px; padding: 8px; border-radius: 8px; align-items: center; }
+        .compare-detail-row.ok { background: rgba(16,185,129,0.08); }
+        .compare-detail-row.warn { background: rgba(245,158,11,0.08); }
+        .compare-detail-row.bad { background: rgba(239,68,68,0.08); }
+        .compare-detail-key { font-weight: 700; color: var(--text-main); font-size: 0.82rem; }
+        .compare-detail-val { font-size: 0.82rem; color: var(--text-secondary); word-break: break-word; }
+        .compare-detail-status { font-weight: 800; font-size: 0.78rem; text-align:center; padding:4px 6px; border-radius: 999px; border:1px solid var(--border-color); }
+        .compare-detail-status.ok { color:#065f46; border-color: rgba(16,185,129,0.45); background: rgba(16,185,129,0.12); }
+        .compare-detail-status.warn { color:#92400e; border-color: rgba(245,158,11,0.45); background: rgba(245,158,11,0.12); }
+        .compare-detail-status.bad { color:#991b1b; border-color: rgba(239,68,68,0.45); background: rgba(239,68,68,0.12); }
+        .compare-detail-empty { padding: 10px; font-size: 0.82rem; color: var(--text-secondary); border: 1px dashed var(--border-color); border-radius: 8px; text-align: center; }
+        .column-filter-accordion { border:1px solid var(--border-color); border-radius: var(--radius); background:#fff; box-shadow: var(--shadow-sm); }
+        .column-filter-accordion summary { padding:10px 12px; font-weight:700; color: var(--text-main); cursor:pointer; list-style:none; }
+        .column-filter-accordion summary::-webkit-details-marker { display:none; }
+        .column-filter-accordion summary::after { content:"▾"; float:right; color: var(--text-secondary); }
+        .column-filter-accordion[open] summary::after { content:"▴"; }
+        .column-filter-list { padding:10px 12px 14px; display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:8px; border-top:1px solid var(--border-color); }
+        .column-filter-item { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius: 10px; border:1px solid var(--border-color); background: #f8fafc; font-size: 0.8rem; color: var(--text-main); cursor:pointer; }
+        .column-filter-item input { accent-color: var(--primary); }
+        .column-filter-actions { display:flex; gap:8px; flex-wrap:wrap; }
+        .btn.btn-small { padding: 6px 10px; font-size: 0.8rem; }
+        .navigation { display:flex; flex-wrap:wrap; gap:8px; margin-bottom: 16px; }
+        .nav-button { text-decoration:none; border:1px solid var(--border-color); background: #fff; color: var(--text-main); padding: 8px 12px; border-radius: var(--radius); font-weight: 600; font-size: 0.9rem; }
+        .nav-button:hover { border-color: #cbd5e1; background: var(--bg-hover); }
+        @media (max-width: 900px){
+            .compare-row { grid-template-columns: 1fr; }
+            .compare-link { display:none; }
+            .compare-detail-head,
+            .compare-detail-row { grid-template-columns: 1fr; }
+            .compare-detail-status { text-align:left; width: fit-content; }
+        }
+    </style>
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
+    <script src="demo-data.js"></script>
+    <script src="demo-interceptor.js"></script>
+</head>
+<body class="presentation-page rh-page debug-page">
+    <div class="space-layer stars"></div>
+    <div class="space-layer twinkle"></div>
+    <div class="space-layer nebula"></div>
+    <div class="space-layer galaxies"></div>
+
+    <div class="page-wrapper">
+        <div class="page-container">
+            <header class="page-header">
+                <div>
+                    <h1>🧪 Debug do Astrônomo</h1>
+                    <div class="debug-status" id="debug-status">Pronto para comparar as tabelas.</div>
+                    <div class="debug-help">Compare os eventos originais e veja se falta algo em alguma das tabelas.</div>
+                    <div class="debug-help" id="debug-astronomo-nome"></div>
+                </div>
+                <span class="debug-badge">Comparação: Metabase vs Agenda Astrônomo</span>
+            </header>
+
+            <div class="navigation">
+                <a href="index.html" class="nav-button"><i class="fas fa-calendar-alt"></i> Agenda</a>
+                <a href="feedbacks.html" class="nav-button"><i class="fas fa-comment-dots"></i> Feedbacks</a>
+                <a href="despesas.html" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Despesas</a>
+                <a href="historico.html" class="nav-button"><i class="fas fa-history"></i> Históricos</a>
+                <a href="account.html" class="nav-button account-header-btn"><i class="fas fa-user-astronaut"></i> Minha Conta</a>
+                <a href="rotas.html" class="nav-button"><i class="fas fa-route"></i> Rotas</a>
+            </div>
+
+            <div class="panel-card">
+                <div class="debug-controls">
+                    <button id="btn-run-debug" class="btn btn-primary">Comparar dados</button>
+                    <button id="btn-clear" class="btn btn-secondary">Limpar resultado</button>
+                    <span class="debug-status" id="debug-status-secondary"></span>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <span>Colunas para comparar</span>
+                    <div class="column-filter-actions">
+                        <button class="btn btn-secondary btn-small" id="btn-columns-all">Todas</button>
+                        <button class="btn btn-secondary btn-small" id="btn-columns-none">Nenhuma</button>
+                    </div>
+                </div>
+                <details class="column-filter-accordion" open>
+                    <summary>Selecionar colunas</summary>
+                    <div class="column-filter-list" id="column-filters">
+                        <span class="debug-empty">Carregue os dados para ver as colunas.</span>
+                    </div>
+                </details>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Resumo da comparação</span>
+                </div>
+                <div class="debug-grid">
+                    <div class="debug-kpi">
+                        <h3>Eventos (tabela original - debug)</h3>
+                        <div class="value" id="kpi-original">0</div>
+                    </div>
+                    <div class="debug-kpi">
+                        <h3>Eventos (tabela enriquecida)</h3>
+                        <div class="value" id="kpi-enriched">0</div>
+                    </div>
+                    <div class="debug-kpi">
+                        <h3>Faltando em alguma tabela</h3>
+                        <div class="value" id="kpi-missing">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Eventos faltando em alguma tabela</span>
+                </div>
+                <div id="missing-container" class="debug-empty">Nenhum dado carregado.</div>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Resposta bruta (debug)</span>
+                </div>
+                <pre class="debug-raw" id="raw-debug">Sem dados.</pre>
+            </div>
+
+            <div class="panel-card">
+                <div class="panel-title">
+                    <span>Resposta bruta (enriquecida)</span>
+                </div>
+                <pre class="debug-raw" id="raw-enriched">Sem dados.</pre>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_AGENDA = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos';
+
+        const statusEl = document.getElementById('debug-status');
+        const statusSecondaryEl = document.getElementById('debug-status-secondary');
+        const kpiOriginalEl = document.getElementById('kpi-original');
+        const kpiEnrichedEl = document.getElementById('kpi-enriched');
+        const kpiMissingEl = document.getElementById('kpi-missing');
+        const missingContainer = document.getElementById('missing-container');
+        const rawDebugEl = document.getElementById('raw-debug');
+        const rawEnrichedEl = document.getElementById('raw-enriched');
+        const btnRun = document.getElementById('btn-run-debug');
+        const btnClear = document.getElementById('btn-clear');
+        const columnFiltersEl = document.getElementById('column-filters');
+        const btnColumnsAll = document.getElementById('btn-columns-all');
+        const btnColumnsNone = document.getElementById('btn-columns-none');
+
+        let SELECTED_ASTRONOMER = null;
+        let availableColumns = [];
+        let columnLabels = new Map();
+        let selectedColumns = new Set();
+        let columnsInitialized = false;
+        let lastOriginalEvents = [];
+        let lastEnrichedEvents = [];
+
+        function setStatus(message) {
+            if (statusEl) statusEl.textContent = message;
+            if (statusSecondaryEl) statusSecondaryEl.textContent = message;
+        }
+
+        if (btnColumnsAll) {
+            btnColumnsAll.addEventListener('click', () => {
+                selectedColumns = new Set(availableColumns);
+                renderColumnFilters();
+                renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+            });
+        }
+        if (btnColumnsNone) {
+            btnColumnsNone.addEventListener('click', () => {
+                selectedColumns = new Set();
+                renderColumnFilters();
+                renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+            });
+        }
+
+        async function readResponsePayload(resp) {
+            let text = '';
+            try { text = await resp.text(); } catch (_) { text = ''; }
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (_) { return text; }
+        }
+
+        function normalizeAgendaPayload(data){
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (typeof data !== 'object') return [];
+            if (Array.isArray(data.eventos)) return data.eventos;
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.events)) return data.events;
+            if (Array.isArray(data.agenda)) return data.agenda;
+            return [data];
+        }
+
+        function pickIdCandidates(ev){
+            if (!ev || typeof ev !== 'object') return [];
+            const ids = [
+                ev.id_evento,
+                ev.id_evento_unico,
+                ev.id_agendamento,
+                ev.id,
+                ev.uuid,
+                ev.evento_id,
+                ev.event_id
+            ].filter(v => v !== undefined && v !== null && v !== '');
+            return ids.map(v => String(v));
+        }
+
+        function taskTypeId(ev){
+            return ev?.id_tipo_tarefa ?? ev?.id_tipo ?? ev?.tipo_tarefa_id ?? ev?.tipo_id ?? null;
+        }
+
+        function taskTypeLabel(ev){
+            return ev?.tipo_tarefa || ev?.tipo_da_tarefa || ev?.tipo || ev?.task_type || ev?.taskType || null;
+        }
+
+        function safeText(val){
+            if (val == null) return '';
+            return String(val).trim();
+        }
+
+        function signature(ev){
+            const date = safeText(ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?._date);
+            const school = safeText(ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead);
+            const city = safeText(ev?.cidade || ev?.cidade_destino || ev?.cidade_origem);
+            const content = safeText(ev?.conteudo_da_apresentacao || ev?.conteudo_apresentacao || ev?.apresentacao);
+            return [date, school, city, content].filter(Boolean).join('|').toLowerCase();
+        }
+
+        function eventText(ev){
+            const date = safeText(ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?._date);
+            const school = safeText(ev?.nome_da_escola || ev?.nome_escola || ev?.escola || ev?.nome_lead);
+            const city = safeText(ev?.cidade || ev?.cidade_destino || ev?.cidade_origem);
+            const content = safeText(ev?.conteudo_da_apresentacao || ev?.conteudo_apresentacao || ev?.apresentacao);
+            return [date, school, city, content].filter(Boolean).join(' | ');
+        }
+
+        function normalizeCompareText(text){
+            return String(text || '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g,'')
+                .toLowerCase()
+                .replace(/\s+/g,' ')
+                .trim();
+        }
+
+        function similarityScore(a, b){
+            const na = normalizeCompareText(a);
+            const nb = normalizeCompareText(b);
+            if (!na && !nb) return 1;
+            if (!na || !nb) return 0;
+            if (na === nb) return 1;
+            const ta = new Set(na.split(' ').filter(Boolean));
+            const tb = new Set(nb.split(' ').filter(Boolean));
+            if (!ta.size || !tb.size) return 0;
+            let inter = 0;
+            ta.forEach(t => { if (tb.has(t)) inter++; });
+            const union = ta.size + tb.size - inter;
+            return union ? inter / union : 0;
+        }
+
+        function normalizeFieldLabel(key){
+            let label = String(key || '').replace(/_/g, ' ').replace(/([A-Z])/g, ' $1').trim();
+            return label.charAt(0).toUpperCase() + label.slice(1);
+        }
+
+        function buildColumnCatalog(originals, enriched){
+            const keys = new Set();
+            const labels = new Map();
+            const addKeys = (ev) => {
+                getComparableEntries(ev).forEach(([key]) => {
+                    keys.add(key);
+                    if (!labels.has(key)) labels.set(key, normalizeFieldLabel(key));
+                });
+            };
+            (originals || []).forEach(addKeys);
+            (enriched || []).forEach(addKeys);
+            const ordered = Array.from(keys).sort((a, b) => {
+                const la = labels.get(a) || a;
+                const lb = labels.get(b) || b;
+                return la.localeCompare(lb, 'pt-BR');
+            });
+            return { ordered, labels };
+        }
+
+        function renderColumnFilters(){
+            if (!columnFiltersEl) return;
+            if (!availableColumns.length) {
+                columnFiltersEl.innerHTML = '<span class="debug-empty">Carregue os dados para ver as colunas.</span>';
+                return;
+            }
+            columnFiltersEl.innerHTML = availableColumns.map(key => {
+                const label = columnLabels.get(key) || normalizeFieldLabel(key);
+                const checked = selectedColumns.has(key);
+                return `
+                    <label class="column-filter-item">
+                        <input type="checkbox" data-col-key="${key}" ${checked ? 'checked' : ''}>
+                        <span>${label}</span>
+                    </label>
+                `;
+            }).join('');
+            columnFiltersEl.querySelectorAll('input[type="checkbox"]').forEach(input => {
+                input.addEventListener('change', () => {
+                    const key = input.getAttribute('data-col-key');
+                    if (!key) return;
+                    if (input.checked) selectedColumns.add(key);
+                    else selectedColumns.delete(key);
+                    renderCompareList(lastOriginalEvents, lastEnrichedEvents);
+                });
+            });
+        }
+
+        function syncColumnFilters(originals, enriched){
+            const catalog = buildColumnCatalog(originals, enriched);
+            availableColumns = catalog.ordered;
+            columnLabels = catalog.labels;
+            if (!availableColumns.length) {
+                renderColumnFilters();
+                return;
+            }
+            if (!columnsInitialized) {
+                selectedColumns = new Set(availableColumns);
+                columnsInitialized = true;
+            } else {
+                const next = new Set();
+                availableColumns.forEach(key => {
+                    if (selectedColumns.has(key)) next.add(key);
+                });
+                selectedColumns = next;
+            }
+            renderColumnFilters();
+        }
+
+        function buildComparableMap(ev){
+            if (!ev || typeof ev !== 'object') return {};
+            const map = { ...ev };
+            if (map.id_tarefa == null) {
+                const ids = pickIdCandidates(ev);
+                map.id_tarefa = ids.length ? ids[0] : null;
+            }
+            if (map.id == null && map.id_tarefa != null) {
+                map.id = map.id_tarefa;
+            }
+            if (map.id_tarefa == null && map.id != null) {
+                map.id_tarefa = map.id;
+            }
+            if (map.id_tipo_tarefa == null) {
+                map.id_tipo_tarefa = taskTypeId(ev);
+            }
+            if (map.data_agendamento == null) {
+                map.data_agendamento = ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?._date || null;
+            }
+            if (map.data_e_hora_agendamento == null && map.data_agendamento != null) {
+                map.data_e_hora_agendamento = map.data_agendamento;
+            }
+            if (map.data_agendamento == null && map.data_e_hora_agendamento != null) {
+                map.data_agendamento = map.data_e_hora_agendamento;
+            }
+            return map;
+        }
+
+        function getComparableEntries(ev){
+            if (!ev || typeof ev !== 'object') return [];
+            const map = buildComparableMap(ev);
+            const exclude = new Set();
+            if (map.id_tarefa != null) exclude.add('id');
+            if (map.data_agendamento != null) exclude.add('data_e_hora_agendamento');
+            const entries = Object.entries(map).filter(([key]) => !exclude.has(key));
+            return entries;
+        }
+
+        function stringifyVal(val){
+            if (val === null || val === undefined) return '';
+            if (typeof val === 'object') {
+                try { return JSON.stringify(val); } catch (_) { return String(val); }
+            }
+            return String(val);
+        }
+
+        function buildLookup(events){
+            const byId = new Map();
+            const bySig = new Map();
+            (events || []).forEach(ev => {
+                pickIdCandidates(ev).forEach(id => {
+                    if (!byId.has(id)) byId.set(id, ev);
+                });
+                const sig = signature(ev);
+                if (sig && !bySig.has(sig)) bySig.set(sig, ev);
+            });
+            return { byId, bySig };
+        }
+
+        function findMatch(ev, lookup){
+            if (!ev || !lookup) return { match: null, matchType: '' };
+            const ids = pickIdCandidates(ev);
+            for (const id of ids) {
+                if (lookup.byId.has(id)) return { match: lookup.byId.get(id), matchType: 'id' };
+            }
+            const sig = signature(ev);
+            if (sig && lookup.bySig.has(sig)) return { match: lookup.bySig.get(sig), matchType: 'sig' };
+            return { match: null, matchType: '' };
+        }
+
+        function buildCompareRow({ originalEvent, enrichedEvent, matchType, displayIndex, enrichedOnly }){
+            const origText = eventText(originalEvent);
+            const enrichedText = enrichedEvent ? eventText(enrichedEvent) : '';
+            const hasMatch = !!(originalEvent && enrichedEvent);
+            const sameText = hasMatch && normalizeCompareText(origText) === normalizeCompareText(enrichedText);
+            const origTaskId = taskTypeId(originalEvent);
+            const enrichedTaskId = enrichedEvent ? taskTypeId(enrichedEvent) : null;
+            const origTaskLabel = taskTypeLabel(originalEvent);
+            const enrichedTaskLabel = enrichedEvent ? taskTypeLabel(enrichedEvent) : null;
+            let sameTaskId = false;
+            if (hasMatch) {
+                if (origTaskId != null && enrichedTaskId != null) {
+                    sameTaskId = String(origTaskId) === String(enrichedTaskId);
+                } else if (origTaskId == null && enrichedTaskId == null) {
+                    sameTaskId = true;
+                }
+            }
+            let statusClass = 'miss';
+            let statusLabel = 'Ausente';
+            let statusIcon = '✖';
+            if (hasMatch && sameText && sameTaskId) {
+                statusClass = 'ok';
+                statusLabel = 'Presente';
+                statusIcon = '✔';
+            } else if (hasMatch) {
+                statusClass = 'warn';
+                statusLabel = 'Divergente';
+                statusIcon = '⚠';
+            }
+            const taskChipClass = hasMatch ? (sameTaskId ? 'ok' : 'bad') : '';
+            const taskChipLabel = hasMatch ? (sameTaskId ? 'Tipo OK' : 'Tipo diferente') : 'Sem comparação';
+            const origIds = originalEvent ? (pickIdCandidates(originalEvent).join(', ') || '—') : '—';
+            const enrichedIds = enrichedEvent ? (pickIdCandidates(enrichedEvent).join(', ') || '—') : '—';
+            const origEntries = getComparableEntries(originalEvent);
+            const enrichedEntries = getComparableEntries(enrichedEvent);
+            const originalMap = originalEvent ? buildComparableMap(originalEvent) : {};
+            const enrichedMap = enrichedEvent ? buildComparableMap(enrichedEvent) : {};
+            const keys = Array.from(new Set([...origEntries.map(([k])=>k), ...enrichedEntries.map(([k])=>k)]));
+            const filteredKeys = selectedColumns.size ? keys.filter(key => selectedColumns.has(key)) : keys;
+            const detailRows = filteredKeys.map((key) => {
+                const aVal = stringifyVal(originalEvent ? (key in originalMap ? originalMap[key] : originalEvent[key]) : '');
+                const bVal = stringifyVal(enrichedEvent ? (key in enrichedMap ? enrichedMap[key] : enrichedEvent[key]) : '');
+                const bothMissing = (!aVal && !bVal);
+                if (bothMissing) return '';
+                const score = similarityScore(aVal, bVal);
+                let cls = 'bad';
+                let label = 'Diferente';
+                if (!aVal && bVal) {
+                    cls = 'bad';
+                    label = 'Falta no Metabase';
+                } else if (aVal && !bVal) {
+                    cls = 'bad';
+                    label = 'Falta na Agenda';
+                } else if (score === 1) {
+                    cls = 'ok';
+                    label = 'Igual';
+                } else if (score >= 0.6) {
+                    cls = 'warn';
+                    label = 'Parcial';
+                }
+                return `
+                    <div class="compare-detail-row ${cls}">
+                        <div class="compare-detail-key">${normalizeFieldLabel(key)}</div>
+                        <div class="compare-detail-val">${aVal || '—'}</div>
+                        <div class="compare-detail-val">${bVal || '—'}</div>
+                        <div class="compare-detail-status ${cls}">${label}</div>
+                    </div>
+                `;
+            }).filter(Boolean).join('');
+
+            const detailsBody = detailRows || `<div class="compare-detail-empty">Selecione colunas para comparar.</div>`;
+
+            const origTitle = originalEvent ? `Original #${displayIndex}` : 'Original (ausente)';
+            const enrichedTitle = 'Enriquecida';
+
+            return `
+                <div class="compare-item" data-idx="${displayIndex}">
+                    <div class="compare-row compare-summary">
+                        <div class="compare-card">
+                            <div class="compare-pair">
+                                <h4>${origTitle} <span class="compare-status ${statusClass}"><span class="dot">${statusIcon}</span> ${statusLabel}</span></h4>
+                                <div class="compare-meta"><strong>ID(s):</strong> ${origIds}</div>
+                                <div class="compare-meta"><strong>ID tipo tarefa:</strong> ${origTaskId ?? '—'}</div>
+                                <div class="compare-meta"><strong>Tipo tarefa:</strong> ${origTaskLabel ?? '—'}</div>
+                                <div class="compare-meta"><strong>Texto:</strong> ${origText || '—'}</div>
+                            </div>
+                        </div>
+                        <div class="compare-link">
+                            <div class="compare-line"></div>
+                            ${matchType === 'id' ? '<span class="compare-chip id">ID</span>' : (matchType === 'sig' ? '<span class="compare-chip sig">Assinatura</span>' : '<span class="compare-chip">Sem match</span>')}
+                            <span class="compare-chip ${taskChipClass}">${taskChipLabel}</span>
+                            <div class="compare-line"></div>
+                        </div>
+                        <div class="compare-card">
+                            <div class="compare-pair">
+                                <h4>${enrichedTitle}${enrichedOnly ? ` #${displayIndex}` : ''}</h4>
+                                <div class="compare-meta"><strong>ID(s):</strong> ${enrichedIds}</div>
+                                <div class="compare-meta"><strong>ID tipo tarefa:</strong> ${enrichedTaskId ?? '—'}</div>
+                                <div class="compare-meta"><strong>Tipo tarefa:</strong> ${enrichedTaskLabel ?? '—'}</div>
+                                <div class="compare-meta"><strong>Texto:</strong> ${enrichedText || '—'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="compare-details">
+                        <div class="compare-detail-head">
+                            <div>Campo</div>
+                            <div>Metabase</div>
+                            <div>Agenda Astrônomo</div>
+                            <div>Status</div>
+                        </div>
+                        ${detailsBody}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderCompareList(originalEvents, enrichedEvents){
+            const originals = Array.isArray(originalEvents) ? originalEvents : [];
+            const enriched = Array.isArray(enrichedEvents) ? enrichedEvents : [];
+            lastOriginalEvents = originals;
+            lastEnrichedEvents = enriched;
+            syncColumnFilters(originals, enriched);
+            if (!originals.length && !enriched.length) {
+                missingContainer.innerHTML = '<div class="debug-empty">Nenhum evento para comparar.</div>';
+                return;
+            }
+
+            const enrichedLookup = buildLookup(enriched);
+            const originalLookup = buildLookup(originals);
+            const rows = [];
+
+            originals.forEach((orig, idx) => {
+                const { match, matchType } = findMatch(orig, enrichedLookup);
+                rows.push({
+                    html: buildCompareRow({
+                        originalEvent: orig,
+                        enrichedEvent: match,
+                        matchType,
+                        displayIndex: idx + 1
+                    }),
+                    missingSide: orig && !match ? 'enriched' : null
+                });
+            });
+
+            let extraIndex = 0;
+            enriched.forEach((enr) => {
+                const { match } = findMatch(enr, originalLookup);
+                if (match) return;
+                extraIndex += 1;
+                rows.push({
+                    html: buildCompareRow({
+                        originalEvent: null,
+                        enrichedEvent: enr,
+                        matchType: '',
+                        displayIndex: extraIndex,
+                        enrichedOnly: true
+                    }),
+                    missingSide: 'original'
+                });
+            });
+
+            const missingRows = rows.filter(row => row.missingSide);
+            const otherRows = rows.filter(row => !row.missingSide);
+            const ordered = [...missingRows, ...otherRows].map(row => row.html).join('');
+
+            missingContainer.innerHTML = ordered
+                ? `<div class="compare-list">${ordered}</div>`
+                : '<div class="debug-empty">Nenhum evento para comparar.</div>';
+        }
+
+        function getSessionTaskIds(sess){
+            const parseId = (v) => {
+                if (v === undefined || v === null || v === '') return null;
+                const n = Number(v);
+                if (Number.isFinite(n)) return String(n);
+                const s = String(v).trim();
+                return s || null;
+            };
+            return {
+                visita: parseId(sess?.id_visita || sess?.visita_id),
+                pre: parseId(sess?.id_pre || sess?.pre_id),
+                reserva: parseId(sess?.id_reserva || sess?.reserva_id),
+                nao_marcar: parseId(sess?.id_n_marcar || sess?.id_nao_marcar || sess?.nao_marcar_id)
+            };
+        }
+
+        function getLoggedSession(){
+            try{
+                const raw = localStorage.getItem('astronomo_session');
+                const s = raw ? JSON.parse(raw) : null;
+                if (s && s.loggedIn !== false) return s;
+            }catch(_){}
+            try{
+                const legacyRaw = localStorage.getItem('userSession');
+                const legacy = legacyRaw ? JSON.parse(legacyRaw) : null;
+                if (legacy && typeof legacy === 'object') return legacy;
+            }catch(_){}
+            return null;
+        }
+
+        function findAstronomerFromCache(sess){
+            try{
+                const raw = localStorage.getItem('astronomersData');
+                const list = raw ? JSON.parse(raw) : null;
+                if (!Array.isArray(list) || !list.length) return null;
+                const id = sess?.id_astronomo ?? sess?.assistant_id ?? sess?.id ?? null;
+                const user = (sess?.usuario || sess?.username || sess?.astronomo || '').toString().trim().toLowerCase();
+                return list.find(a => {
+                    if (!a || typeof a !== 'object') return false;
+                    const aId = a.id_astronomo ?? a.id ?? a.assistant_id ?? null;
+                    if (id != null && String(aId) === String(id)) return true;
+                    const aUser = (a.usuario || a.username || a.astronomo || '').toString().trim().toLowerCase();
+                    return user && aUser && aUser === user;
+                }) || null;
+            }catch(_){
+                return null;
+            }
+        }
+
+        function buildSessionPayload(sess){
+            const cached = findAstronomerFromCache(sess);
+            return { ...(cached || {}), ...(sess || {}) };
+        }
+
+        function buildPayload(action){
+            const sess = SELECTED_ASTRONOMER;
+            const payload = { action };
+            if (sess && sess.id_astronomo != null) payload.id_astronomo = sess.id_astronomo;
+            const user = sess?.usuario || sess?.username || sess?.astronomo;
+            if (user) payload.usuario = user;
+            const ids = getSessionTaskIds(sess || null);
+            if (ids.visita) payload.id_visita = ids.visita;
+            if (ids.pre) payload.id_pre = ids.pre;
+            if (ids.reserva) payload.id_reserva = ids.reserva;
+            if (ids.nao_marcar) payload.id_n_marcar = ids.nao_marcar;
+            return payload;
+        }
+
+        async function fetchAgenda(action){
+            const payload = buildPayload(action);
+            const resp = await fetch(API_AGENDA, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await readResponsePayload(resp);
+            if (!resp.ok) {
+                const msg = typeof data === 'string' ? data : '';
+                throw new Error(msg || `HTTP ${resp.status}`);
+            }
+            return data;
+        }
+
+        function agendaCacheKey(sess){
+            const ns = (sess && (sess.id_astronomo ?? sess.usuario ?? sess.username)) || 'anon';
+            return `agenda_cache_v1::${String(ns).toLowerCase()}`;
+        }
+
+        function loadCachedAgenda(sess){
+            try{
+                const key = agendaCacheKey(sess);
+                const raw = key ? localStorage.getItem(key) : null;
+                if (!raw) return null;
+                const parsed = JSON.parse(raw);
+                if (!parsed || !Array.isArray(parsed.events)) return null;
+                return parsed.events;
+            }catch(_){
+                return null;
+            }
+        }
+
+        async function runComparison(){
+            if (!SELECTED_ASTRONOMER) {
+                setStatus('Sessão não encontrada. Faça login para comparar seus dados.');
+                return;
+            }
+            btnRun.disabled = true;
+            setStatus('Buscando dados do n8n...');
+            try{
+                const [rawDebug, rawEnriched] = await Promise.all([
+                    fetchAgenda('debug'),
+                    fetchAgenda('atualizar_agenda')
+                ]);
+
+                const debugEvents = normalizeAgendaPayload(rawDebug);
+                let enrichedEvents = normalizeAgendaPayload(rawEnriched);
+                if (!enrichedEvents.length) {
+                    const cached = loadCachedAgenda(SELECTED_ASTRONOMER);
+                    if (Array.isArray(cached) && cached.length) {
+                        enrichedEvents = cached;
+                    }
+                }
+
+                rawDebugEl.textContent = JSON.stringify(rawDebug, null, 2);
+                rawEnrichedEl.textContent = JSON.stringify(rawEnriched, null, 2);
+
+                const enrichedLookup = buildLookup(enrichedEvents);
+                const originalLookup = buildLookup(debugEvents);
+                const missingFromEnriched = debugEvents.filter(ev => !findMatch(ev, enrichedLookup).match);
+                const missingFromOriginal = enrichedEvents.filter(ev => !findMatch(ev, originalLookup).match);
+                const missingTotal = missingFromEnriched.length + missingFromOriginal.length;
+
+                kpiOriginalEl.textContent = debugEvents.length.toLocaleString('pt-BR');
+                kpiEnrichedEl.textContent = enrichedEvents.length.toLocaleString('pt-BR');
+                kpiMissingEl.textContent = missingTotal.toLocaleString('pt-BR');
+
+                renderCompareList(debugEvents, enrichedEvents);
+                bindCompareToggles();
+                setStatus('Comparação concluída.');
+            }catch(err){
+                console.error(err);
+                setStatus('Erro ao comparar: ' + (err && err.message ? err.message : err));
+                renderCompareList([], []);
+            }finally{
+                btnRun.disabled = false;
+            }
+        }
+
+        function clearUI(){
+            kpiOriginalEl.textContent = '0';
+            kpiEnrichedEl.textContent = '0';
+            kpiMissingEl.textContent = '0';
+            rawDebugEl.textContent = 'Sem dados.';
+            rawEnrichedEl.textContent = 'Sem dados.';
+            missingContainer.innerHTML = '<div class="debug-empty">Nenhum dado carregado.</div>';
+            availableColumns = [];
+            columnLabels = new Map();
+            selectedColumns = new Set();
+            columnsInitialized = false;
+            lastOriginalEvents = [];
+            lastEnrichedEvents = [];
+            renderColumnFilters();
+            setStatus('Pronto para comparar as tabelas.');
+        }
+
+        function bindCompareToggles(){
+            const items = Array.from(document.querySelectorAll('.compare-item'));
+            items.forEach(item => {
+                const summary = item.querySelector('.compare-summary');
+                const details = item.querySelector('.compare-details');
+                if (!summary || !details) return;
+                summary.addEventListener('click', () => {
+                    details.classList.toggle('open');
+                });
+            });
+        }
+
+        btnRun.addEventListener('click', runComparison);
+        btnClear.addEventListener('click', clearUI);
+        document.addEventListener('DOMContentLoaded', () => {
+            const sess = getLoggedSession();
+            if (!sess || sess.id_astronomo == null) {
+                setStatus('Sessão não encontrada. Faça login para comparar seus dados.');
+                return;
+            }
+            SELECTED_ASTRONOMER = buildSessionPayload(sess);
+            const nomeEl = document.getElementById('debug-astronomo-nome');
+            if (nomeEl) {
+                const nome = SELECTED_ASTRONOMER?.nome_completo || SELECTED_ASTRONOMER?.astronomo || SELECTED_ASTRONOMER?.usuario || SELECTED_ASTRONOMER?.username || '';
+                const id = SELECTED_ASTRONOMER?.id_astronomo != null ? `#${SELECTED_ASTRONOMER.id_astronomo}` : '';
+                nomeEl.textContent = nome ? `Astrônomo logado: ${nome} ${id}`.trim() : (id ? `Astrônomo logado: ${id}` : '');
+            }
+            setStatus('Comparando dados do astrônomo logado.');
+            runComparison();
+        });
+    </script>
+</body>
+</html>

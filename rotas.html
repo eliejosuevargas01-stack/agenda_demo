@@ -6,9 +6,12 @@
     <title>Rotas - Agenda do Astrônomo</title>
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <link rel="stylesheet" href="css/styles.css">
+    <script src="auth.js"></script>
+    <script src="demo-data.js"></script>
+    <script src="demo-interceptor.js"></script>
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <!-- <link rel="stylesheet" href="css/style.css"> -->
-    <!-- <link rel="stylesheet" href="css/docs-urania.css"> -->
+    <!-- <link rel="stylesheet" href="css/docs-app.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
     <!-- <style>
         body{ margin:0; }
@@ -49,6 +52,36 @@
         .distancia-rota{ font-weight:600; }
         .distancia-valor{ font-weight:700; color:#34d1f3; }
         .distancia-total{ margin-top:10px; text-align:center; padding:10px; border-radius:10px; background: linear-gradient(135deg, #7b5cff, #34d1f3); color:#050815; font-weight:800; }
+        .info-icon{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:20px;
+            height:20px;
+            border-radius:50%;
+            background: linear-gradient(135deg, #22d3ee, #a855f7);
+            color:#0b0f1d;
+            font-size:0.8rem;
+            font-weight:700;
+            cursor:pointer;
+            margin-left:6px;
+            box-shadow:0 0 0 2px rgba(56,189,248,0.25), 0 8px 18px rgba(168,85,247,0.25);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .info-icon:hover{
+            transform: translateY(-1px) scale(1.05);
+            box-shadow:0 0 0 2px rgba(56,189,248,0.35), 0 10px 24px rgba(168,85,247,0.35);
+        }
+        .info-icon:active{
+            transform: translateY(0) scale(0.98);
+        }
+        .gasto-modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:100000; pointer-events:none; }
+        .gasto-modal.open{ display:flex; pointer-events:auto; }
+        .gasto-modal-backdrop{ position:absolute; inset:0; background:rgba(6,8,20,0.6); }
+        .gasto-modal-card{ position:relative; max-width:520px; width:92%; max-height:80vh; overflow:auto; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px; box-shadow:0 20px 60px rgba(0,0,0,0.45); }
+        .gasto-modal-title{ font-size:1.05rem; font-weight:700; margin-bottom:6px; }
+        .gasto-modal-body{ font-size:0.9rem; line-height:1.5; color:#cbd5f5; }
+        .gasto-modal-close{ position:absolute; top:10px; right:10px; background:transparent; border:0; color:#e2e8f0; font-size:1.1rem; cursor:pointer; }
         .error, .demo-data{ border:1px solid rgba(255,255,255,0.1); border-radius:10px; padding:12px; margin:12px 0; background: rgba(255,255,255,0.03); }
         .loading{ text-align:center; color: var(--muted, #aeb4c5); }
         .spinner{ border:3px solid rgba(255,255,255,0.12); border-top:3px solid #7b5cff; border-radius:50%; width:32px; height:32px; animation: spin 1s linear infinite; margin:0 auto 8px; }
@@ -58,6 +91,40 @@
         .astro-line{ display:flex; gap:6px; align-items:center; font-size:0.95rem; flex-wrap:wrap; }
         .astro-line strong{ color:#fff; }
     </style> -->
+    <style>
+        .info-icon{
+            display:inline-flex;
+            align-items:center;
+            justify-content:center;
+            width:20px;
+            height:20px;
+            border-radius:50%;
+            background: linear-gradient(135deg, #22d3ee, #a855f7);
+            color:#0b0f1d;
+            font-size:0.8rem;
+            font-weight:700;
+            cursor:pointer;
+            margin-left:6px;
+            box-shadow:0 0 0 2px rgba(56,189,248,0.25), 0 8px 18px rgba(168,85,247,0.25);
+            transition: transform 0.15s ease, box-shadow 0.2s ease;
+        }
+        .info-icon:hover{
+            transform: translateY(-1px) scale(1.05);
+            box-shadow:0 0 0 2px rgba(56,189,248,0.35), 0 10px 24px rgba(168,85,247,0.35);
+        }
+        .info-icon:active{
+            transform: translateY(0) scale(0.98);
+        }
+        .gasto-modal{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; z-index:100000; pointer-events:none; }
+        .gasto-modal.open{ display:flex; pointer-events:auto; }
+        .gasto-modal-backdrop{ position:absolute; inset:0; background:rgba(6,8,20,0.6); }
+        .gasto-modal-card{ position:relative; max-width:520px; width:92%; max-height:80vh; overflow:auto; background:#0f172a; color:#e2e8f0; border:1px solid rgba(255,255,255,0.08); border-radius:14px; padding:16px 18px; box-shadow:0 20px 60px rgba(0,0,0,0.45); }
+        .gasto-modal-title{ font-size:1.05rem; font-weight:700; margin-bottom:6px; }
+        .gasto-modal-body{ font-size:0.9rem; line-height:1.5; color:#cbd5f5; }
+        .gasto-modal-close{ position:absolute; top:10px; right:10px; background:transparent; border:0; color:#e2e8f0; font-size:1.1rem; cursor:pointer; }
+    </style>
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page rotas-page">
     <div class="space-layer stars"></div>
@@ -70,7 +137,7 @@
             <header class="page-header">
                 <div>
                     <h1>Rotas do Astrônomo</h1>
-                    <p class="subtitle">Agenda Inteligente Urânia</p>
+                    <p class="subtitle">Agenda Inteligente</p>
                 </div>
                 <a href="account.html" class="nav-button">
                     <i class="fas fa-user-astronaut"></i> Minha Conta
@@ -78,69 +145,16 @@
             </header>
 
             <div class="navigation">
-                <a href="apresentacao.html" class="nav-button"><i class="fas fa-clipboard-list"></i> Apresentação</a>
                 <a href="index.html" class="nav-button"><i class="fas fa-calendar-alt"></i> Agenda</a>
                 <a href="feedbacks.html" class="nav-button"><i class="fas fa-comment-dots"></i> Feedbacks</a>
                 <a href="despesas.html" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Despesas</a>
                 <a href="historico.html" class="nav-button"><i class="fas fa-history"></i> Históricos</a>
                 <a href="account.html" class="nav-button account-header-btn"><i class="fas fa-user-astronaut"></i> Minha Conta</a>
                 <a href="rotas.html" class="nav-button active"><i class="fas fa-route"></i> Rotas</a>
+                <a href="debug-astronomo.html" class="nav-button"><i class="fas fa-bug"></i> Debug</a>
             </div>
 
             <main>
-                <section class="hero">
-                    <div>
-                        <span class="hero-eyebrow"><i class="fas fa-route"></i> Rotas</span>
-                        <h1>Planeje deslocamentos com visão clara dos eventos.</h1>
-                        <p>Monte a rota do astrônomo a partir do cache da agenda e visualize distâncias com precisão operacional.</p>
-                    </div>
-                    <div class="panel-card">
-                        <div class="panel-title">
-                            <span>Painel rápido</span>
-                            <span class="panel-tag">Atualização automática</span>
-                        </div>
-                        <div class="panel-list">
-                            <div class="panel-item">
-                                <span class="panel-label">Agenda local</span>
-                                <span class="panel-value">Cache sincronizado</span>
-                            </div>
-                            <div class="panel-item">
-                                <span class="panel-label">Distâncias</span>
-                                <span class="panel-value">Cálculo contínuo</span>
-                            </div>
-                            <div class="panel-item">
-                                <span class="panel-label">Rota pronta</span>
-                                <span class="panel-value">Resumo imediato</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="section">
-                    <div class="section-header">
-                        <h2>Atualizar rotas</h2>
-                        <p>Carregue os eventos do cache da agenda ou use dados de demonstração.</p>
-                    </div>
-                    <div class="panel-card">
-                        <div class="filters-row">
-                            <button class="btn btn-primary" onclick="carregarRotas()" id="btnCarregar">
-                                <i class="fas fa-satellite-dish"></i> Carregar rotas da agenda
-                            </button>
-                            <button class="btn btn-secondary" onclick="usarDadosDemo()" id="btnDemo">
-                                <i class="fas fa-bullseye"></i> Usar dados de demonstração
-                            </button>
-                            <div class="status-text" id="status-text"></div>
-                        </div>
-                        <div class="demo-data hidden" id="demoAlert">
-                            📝 <strong>Modo Demonstração:</strong> Usando dados de exemplo para teste
-                        </div>
-                        <div class="loading hidden" id="loading">
-                            <div class="spinner"></div>
-                            <p>Buscando rotas e calculando distâncias...</p>
-                        </div>
-                    </div>
-                </section>
-
                 <section class="section">
                     <div class="section-header">
                         <h2>Rotas geradas</h2>
@@ -151,6 +165,15 @@
                     </div>
                 </section>
             </main>
+        </div>
+    </div>
+
+    <div class="gasto-modal" id="gasto-modal" hidden>
+        <div class="gasto-modal-backdrop" id="gasto-modal-backdrop"></div>
+        <div class="gasto-modal-card">
+            <button class="gasto-modal-close" id="gasto-modal-close" aria-label="Fechar">✕</button>
+            <div class="gasto-modal-title" id="gasto-modal-title">Estimativa de gastos</div>
+            <div class="gasto-modal-body" id="gasto-modal-body"></div>
         </div>
     </div>
 
@@ -183,7 +206,7 @@
             }catch(_){}
         })();
 
-        const API_AGENDA = "https://myn8n.seommerce.shop/webhook/agenda_inteligente_demo";
+        const COORD_CACHE_KEY = 'coord_cache_nominatim_v1';
         const DADOS_DEMO = [
             {
                 "astronomo": "Nathalia",
@@ -193,7 +216,7 @@
                     {
                         "id": 8103925,
                         "cidade": "Jardim - MS",
-                        "data_e_hora_do_agendamento": "2025-11-26T18:03:00.000Z",
+                        "data_e_hora_agendamento": "2025-11-26T18:03:00.000Z",
                         "distancia_km": "571.46",
                         "destino_lat": "-21.4799410",
                         "destino_lon": "-56.1489020"
@@ -201,7 +224,7 @@
                     {
                         "id": 7572341,
                         "cidade": "Itaporã-MS",
-                        "data_e_hora_do_agendamento": "2025-11-27T19:25:00.000Z",
+                        "data_e_hora_agendamento": "2025-11-27T19:25:00.000Z",
                         "distancia_km": "382.52",
                         "destino_lat": "-22.0799142",
                         "destino_lon": "-54.7874239"
@@ -209,7 +232,7 @@
                     {
                         "id": 8174175,
                         "cidade": "Chapecó - SC",
-                        "data_e_hora_do_agendamento": "2025-11-28T17:47:00.000Z",
+                        "data_e_hora_agendamento": "2025-11-28T17:47:00.000Z",
                         "distancia_km": "412.41",
                         "destino_lat": "-27.0922364",
                         "destino_lon": "-52.6166878"
@@ -227,7 +250,7 @@
                     {
                         "id": 8070185,
                         "cidade": "Santa Cruz do Sul - RS",
-                        "data_e_hora_do_agendamento": "2025-11-27T18:59:00.000Z",
+                        "data_e_hora_agendamento": "2025-11-27T18:59:00.000Z",
                         "distancia_km": "380.63",
                         "destino_lat": "-29.7142090",
                         "destino_lon": "-52.4285807"
@@ -235,7 +258,7 @@
                     {
                         "id": 7898385,
                         "cidade": "Canoas - RS",
-                        "data_e_hora_do_agendamento": "2025-11-28T13:18:00.000Z",
+                        "data_e_hora_agendamento": "2025-11-28T13:18:00.000Z",
                         "distancia_km": "240.47",
                         "destino_lat": "-29.9216045",
                         "destino_lon": "-51.1799525"
@@ -250,7 +273,50 @@
         const AGENDA_CACHE_PREFIX = 'agenda_cache_v1';
         const ROTAS_CACHE_KEY = 'rotas_cache_v1';
         const ROTA_OVERRIDE_PREFIX = 'rotas_override_v1';
+        const AGENDA_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos';
         let sessaoAtual = null;
+
+        function agendaCacheKey(sess){
+            const ns = (sess && (sess.id_astronomo ?? sess.usuario ?? sess.username ?? sess.astronomo)) || 'anon';
+            return `${AGENDA_CACHE_PREFIX}::${String(ns).toLowerCase()}`;
+        }
+
+        function saveAgendaCache(events, sess){
+            try{
+                const key = agendaCacheKey(sess);
+                const payload = { ts: Date.now(), events: Array.isArray(events) ? events : [] };
+                localStorage.setItem(key, JSON.stringify(payload));
+            }catch(err){
+                console.warn('Falha ao salvar cache local da agenda:', err);
+            }
+        }
+
+        function saveRotasCache(events, sess){
+            try{
+                const payload = { ts: Date.now(), session: sess || null, events: Array.isArray(events) ? events : [] };
+                localStorage.setItem(ROTAS_CACHE_KEY, JSON.stringify(payload));
+            }catch(err){
+                console.warn('Falha ao salvar cache de rotas:', err);
+            }
+        }
+
+        async function readResponsePayload(resp){
+            let text = '';
+            try { text = await resp.text(); } catch (_) { text = ''; }
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (_) { return text; }
+        }
+
+        function normalizeAgendaPayload(data){
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (typeof data !== 'object') return [];
+            if (Array.isArray(data.eventos)) return data.eventos;
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.events)) return data.events;
+            if (Array.isArray(data.agenda)) return data.agenda;
+            return [data];
+        }
 
         function safeText(v){
             return v == null ? '' : String(v).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch] || ch));
@@ -339,12 +405,288 @@
             return null;
         }
 
+        function getEventoDistanciaKm(ev){
+            if (!ev || typeof ev !== 'object') return null;
+            const candidates = [
+                ev.distancia_km,
+                ev.distancia_prevista_km,
+                ev.distancia_real_km,
+                ev.distancia_km_prevista,
+                ev.distancia_km_real,
+                ev.distancia,
+                ev.km,
+                ev.dist_km,
+                ev.distanciaKm
+            ];
+            for (const c of candidates){
+                const num = toNumber(c);
+                if (Number.isFinite(num) && num > 0) return num;
+            }
+            return null;
+        }
+
+        function getTotalKmFromEventDistances(eventos){
+            if (!Array.isArray(eventos) || !eventos.length) return null;
+            let sum = 0;
+            let count = 0;
+            eventos.forEach(ev => {
+                const km = getEventoDistanciaKm(ev);
+                if (!Number.isFinite(km)) return;
+                const isContinua = ev && (ev.rota_continua === true || ev.rota_continua === 'true' || ev.rota === true || ev.continua === true);
+                sum += isContinua ? km : km * 2;
+                count += 1;
+            });
+            return count ? Number(sum.toFixed(2)) : null;
+        }
+
+        function getBaseDistancesFromEventPayload(eventos){
+            if (!Array.isArray(eventos) || !eventos.length) return { baseIda: null, baseVolta: null };
+            const first = eventos[0];
+            const last = eventos[eventos.length - 1];
+            const baseIda = getEventoDistanciaKm(first);
+            const baseVolta = getEventoDistanciaKm(last);
+            return {
+                baseIda: Number.isFinite(baseIda) ? baseIda : null,
+                baseVolta: Number.isFinite(baseVolta) ? baseVolta : null
+            };
+        }
+
+        function getValorCombustivel(sess){
+            if (!sess || typeof sess !== 'object') return null;
+            const prefer = (mediaKey, normalKey) => {
+                const media = toNumber(sess[mediaKey]);
+                if (Number.isFinite(media) && media > 0) return media;
+                const normal = toNumber(sess[normalKey]);
+                return Number.isFinite(normal) && normal > 0 ? normal : null;
+            };
+            return (
+                prefer('valor_litro_media', 'valor_litro') ??
+                prefer('valor_litro_real_media', 'valor_litro_real') ??
+                null
+            );
+        }
+
+        function getConsumoKmL(sess){
+            if (!sess || typeof sess !== 'object') return null;
+            const prefer = (mediaKey, normalKey) => {
+                const media = toNumber(sess[mediaKey]);
+                if (Number.isFinite(media) && media > 0) return media;
+                const normal = toNumber(sess[normalKey]);
+                return Number.isFinite(normal) && normal > 0 ? normal : null;
+            };
+            return (
+                prefer('consumo_km_l_media', 'consumo_km_l') ??
+                prefer('consumo_media', 'consumo') ??
+                null
+            );
+        }
+
         function getEventoDate(ev){
-            const raw = ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?.date;
+            if (ev && ev._spanStart instanceof Date && !Number.isNaN(ev._spanStart.getTime())) return ev._spanStart;
+            if (ev && ev._date instanceof Date && !Number.isNaN(ev._date.getTime())) return ev._date;
+            const raw = ev?.data_e_hora_agendamento || ev?.data_e_hora_do_agendamento || ev?.data_agendamento || ev?.data || ev?.date;
             if (!raw) return null;
             const d = new Date(raw);
             if (Number.isNaN(d.getTime())) return null;
             return d;
+        }
+
+        function isVisitaEvent(ev){
+            if (!ev || typeof ev !== 'object') return false;
+            const sess = sessaoAtual || getLoggedSession();
+            const ids = getSessionTaskIds(buildSessionPayload(sess || {}));
+            const idVisita = ids?.visita ? String(ids.visita) : null;
+            if (idVisita) {
+                const tipoId = ev.id_tipo_tarefa ?? ev.id_tipo ?? ev.tipo_tarefa_id ?? ev.tipo_id ?? ev.id_tipo_evento ?? '';
+                if (tipoId != null && String(tipoId) === idVisita) return true;
+            }
+            const raw = [
+                ev.tipo_da_tarefa,
+                ev.tipo_evento,
+                ev.tipo,
+                ev.TIPO,
+                ev.task_type,
+                ev.tarefa_tipo
+            ].filter(Boolean).join(' ').toLowerCase();
+            if (raw.includes('visita')) return true;
+            const tipoKey = String(ev.tipo || '').toLowerCase();
+            if (tipoKey === 'visita') return true;
+            return false;
+        }
+
+        function getEventoEndDate(ev){
+            if (ev && ev._spanEnd instanceof Date && !Number.isNaN(ev._spanEnd.getTime())) return ev._spanEnd;
+            const start = getEventoDate(ev);
+            if (!start) return null;
+            const rawEnd = ev?.data_fim || ev?.data_final || ev?.data_fim_agendamento || ev?.data_finalizacao;
+            if (rawEnd) {
+                const endDate = new Date(rawEnd);
+                if (!Number.isNaN(endDate.getTime())) return endDate;
+            }
+            return start;
+        }
+
+        function dayKey(date){
+            return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+        }
+
+        function getEventoIdCandidates(ev){
+            if (!ev || typeof ev !== 'object') return [];
+            const ids = [
+                ev.id_evento,
+                ev.id_evento_unico,
+                ev.id_agendamento,
+                ev.id,
+                ev.uuid,
+                ev.evento_id
+            ].filter(v => v !== undefined && v !== null && v !== '');
+            return ids.map(v => String(v));
+        }
+
+        function scoreEventoForMerge(ev){
+            if (!ev || typeof ev !== 'object') return 0;
+            let score = 0;
+            if (ev.id_evento != null) score += 6;
+            if (ev.id_evento_unico != null) score += 5;
+            if (ev.id_agendamento != null) score += 4;
+            if (ev.id != null) score += 3;
+            if (ev.uuid) score += 2;
+            if (ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data) score += 2;
+            if (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead) score += 2;
+            if (ev.cidade || ev.cidade_destino) score += 1;
+            if (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao) score += 1;
+            if (ev.finalizado === true || ev.finalizado === 'true') score += 1;
+            return score;
+        }
+
+        function mergeDuplicateEventos(base, incoming){
+            if (!base) return incoming;
+            if (!incoming) return base;
+            const incomingWins = scoreEventoForMerge(incoming) > scoreEventoForMerge(base);
+            const primary = incomingWins ? incoming : base;
+            const secondary = incomingWins ? base : incoming;
+            const merged = { ...primary };
+            Object.entries(secondary).forEach(([k,v]) => {
+                if (merged[k] === undefined || merged[k] === null || merged[k] === '' || merged[k] === 'null') {
+                    merged[k] = v;
+                }
+            });
+            const ids = new Set([...getEventoIdCandidates(base), ...getEventoIdCandidates(incoming)]);
+            if (ids.size > 1) merged._duplicate_ids = Array.from(ids);
+            return merged;
+        }
+
+        function canonicalEventoSignature(ev){
+            if (!ev || typeof ev !== 'object') return '';
+            const baseDate = getEventoDate(ev);
+            const dateStr = baseDate instanceof Date && !Number.isNaN(baseDate.getTime())
+                ? baseDate.toISOString()
+                : '';
+            const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '').toString().trim().toLowerCase();
+            const cidade = (ev.cidade || ev.cidade_destino || ev.cidade_origem || '').toString().trim().toLowerCase();
+            const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
+            const tipo = (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
+            return JSON.stringify({ dateStr, escola, cidade, conteudo, tipo });
+        }
+
+        function dedupeEventosPorAssinatura(arr){
+            if (!Array.isArray(arr)) return [];
+            const sigMap = new Map();
+            const result = [];
+            arr.forEach(ev => {
+                const sig = canonicalEventoSignature(ev);
+                if (!sig) {
+                    result.push(ev);
+                    return;
+                }
+                if (sigMap.has(sig)) {
+                    const merged = mergeDuplicateEventos(sigMap.get(sig), ev);
+                    const idx = result.indexOf(sigMap.get(sig));
+                    if (idx >= 0) result[idx] = merged;
+                    sigMap.set(sig, merged);
+                } else {
+                    sigMap.set(sig, ev);
+                    result.push(ev);
+                }
+            });
+            return result;
+        }
+
+        function eventoGroupKey(ev){
+            if (!ev || typeof ev !== 'object') return '';
+            const escola = (ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '').toString().trim().toLowerCase();
+            const cidade = (ev.cidade || ev.cidade_destino || ev.cidade_origem || '').toString().trim().toLowerCase();
+            const conteudo = (ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '').toString().trim().toLowerCase();
+            const tipo = (ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '').toString().trim().toLowerCase();
+            const idTipo = ev.id_tipo_tarefa ?? ev.id_tipo ?? ev.tipo_tarefa_id ?? ev.tipo_id ?? '';
+            const astroId = ev.id_astronomo ?? ev.astronomo_id ?? ev.astronomoId ?? '';
+            return JSON.stringify({ escola, cidade, conteudo, tipo, idTipo: String(idTipo), astroId: String(astroId) });
+        }
+
+        function collapseConsecutiveDuplicatedEventos(list){
+            if (!Array.isArray(list) || !list.length) return [];
+            const sorted = list.slice().sort((a, b) => {
+                const da = getEventoDate(a);
+                const db = getEventoDate(b);
+                if (!da && !db) return 0;
+                if (!da) return 1;
+                if (!db) return -1;
+                return da - db;
+            });
+            const result = [];
+            let current = null;
+            for (const ev of sorted) {
+                if (!current) {
+                    current = { ...ev };
+                    const start = getEventoDate(current);
+                    const end = getEventoEndDate(current) || start;
+                    if (start) current._spanStart = start;
+                    if (end) current._spanEnd = end;
+                    continue;
+                }
+                const sameKey = eventoGroupKey(current) === eventoGroupKey(ev);
+                const consecutive = isConsecutiveEventDay(current, ev);
+                if (sameKey && consecutive) {
+                    current = mergeDuplicateEventos(current, ev);
+                    const end = getEventoEndDate(ev) || getEventoDate(ev);
+                    if (end) current._spanEnd = end;
+                    if (!current._spanStart) current._spanStart = getEventoDate(current);
+                    continue;
+                }
+                result.push(current);
+                current = { ...ev };
+                const start = getEventoDate(current);
+                const end = getEventoEndDate(current) || start;
+                if (start) current._spanStart = start;
+                if (end) current._spanEnd = end;
+            }
+            if (current) result.push(current);
+            return result;
+        }
+
+        function startOfDay(date){
+            if (!(date instanceof Date) || Number.isNaN(date.getTime())) return null;
+            return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        }
+
+        function filterEventosFromToday(eventos){
+            const todayStart = startOfDay(new Date());
+            if (!todayStart) return [];
+            return (Array.isArray(eventos) ? eventos : []).filter(ev => {
+                const endDate = getEventoEndDate(ev) || getEventoDate(ev);
+                if (!endDate) return false;
+                const endDay = startOfDay(endDate);
+                if (!endDay) return false;
+                return endDay.getTime() >= todayStart.getTime();
+            });
+        }
+
+        function isConsecutiveEventDay(prev, current){
+            const prevDate = startOfDay(getEventoEndDate(prev));
+            const currDate = startOfDay(getEventoDate(current));
+            if (!prevDate || !currDate) return false;
+            const diffDays = Math.round((currDate.getTime() - prevDate.getTime()) / 86400000);
+            return diffDays === 1;
         }
 
         function loadAgendaEvents(sess){
@@ -384,7 +726,8 @@
 
         function construirRotaDaAgenda(eventos, sess){
             const lista = Array.isArray(eventos) ? eventos.slice() : [];
-            lista.sort((a,b) => {
+            const listaSemDuplicados = collapseConsecutiveDuplicatedEventos(lista);
+            listaSemDuplicados.sort((a,b) => {
                 const da = getEventoDate(a);
                 const db = getEventoDate(b);
                 if (!da && !db) return 0;
@@ -392,18 +735,41 @@
                 if (!db) return -1;
                 return da - db;
             });
-            const inicio = lista[0] ? getEventoDate(lista[0]) : null;
-            const fim = lista[lista.length - 1] ? getEventoDate(lista[lista.length - 1]) : null;
-            const nome = sess?.nome_completo || sess?.astronomo || sess?.usuario || sess?.username || 'Agenda';
-            return {
-                astronomo: nome,
-                rota_id: 'Rota da agenda',
-                quantidade_eventos: lista.length,
-                eventos: lista,
-                data_inicio: inicio ? inicio.toISOString() : null,
-                data_fim: fim ? fim.toISOString() : null,
-                distancia_total: null
-            };
+            const nomeEvento = listaSemDuplicados.find(ev => ev?.astronomo || ev?.astronomo_validacao)?.astronomo
+                || listaSemDuplicados.find(ev => ev?.astronomo || ev?.astronomo_validacao)?.astronomo_validacao;
+            const nome = sess?.nome_completo || sess?.astronomo || sess?.usuario || sess?.username || nomeEvento || 'Astrônomo';
+            const rotas = [];
+            let grupoAtual = [];
+            for (let i = 0; i < listaSemDuplicados.length; i++){
+                const ev = listaSemDuplicados[i];
+                if (grupoAtual.length === 0) {
+                    grupoAtual.push(ev);
+                    continue;
+                }
+                const prev = grupoAtual[grupoAtual.length - 1];
+                if (isConsecutiveEventDay(prev, ev)) {
+                    grupoAtual.push(ev);
+                } else {
+                    rotas.push(grupoAtual);
+                    grupoAtual = [ev];
+                }
+            }
+            if (grupoAtual.length) rotas.push(grupoAtual);
+
+            return rotas.map((grupo, idx) => {
+                const inicio = grupo[0] ? getEventoDate(grupo[0]) : null;
+                const fim = grupo[grupo.length - 1] ? getEventoDate(grupo[grupo.length - 1]) : null;
+                const rotaIndex = idx + 1;
+                return {
+                    astronomo: nome,
+                    rota_id: `Rota ${rotaIndex}`,
+                    quantidade_eventos: grupo.length,
+                    eventos: grupo,
+                    data_inicio: inicio ? inicio.toISOString() : null,
+                    data_fim: fim ? fim.toISOString() : null,
+                    distancia_total: null
+                };
+            });
         }
 
         function pickAstronomoId(obj){
@@ -474,6 +840,82 @@
             return null;
         }
 
+        function getSessionTaskIds(sess){
+            const base = buildSessionPayload(sess);
+            const parseId = (v) => {
+                if (v === undefined || v === null || v === '') return null;
+                const n = Number(v);
+                if (Number.isFinite(n)) return String(n);
+                const s = String(v).trim();
+                return s || null;
+            };
+            return {
+                visita: parseId(base?.id_visita || base?.visita_id),
+                pre: parseId(base?.id_pre || base?.pre_id),
+                reserva: parseId(base?.id_reserva || base?.reserva_id),
+                nao_marcar: parseId(base?.id_n_marcar || base?.id_nao_marcar || base?.nao_marcar_id)
+            };
+        }
+
+        function findAstronomerFromCache(sess){
+            try{
+                const raw = localStorage.getItem('astronomersData');
+                const list = raw ? JSON.parse(raw) : null;
+                if (!Array.isArray(list) || !list.length) return null;
+                const id = sess?.id_astronomo ?? sess?.assistant_id ?? sess?.id ?? null;
+                const user = (sess?.usuario || sess?.username || sess?.astronomo || '').toString().trim().toLowerCase();
+                return list.find(a => {
+                    if (!a || typeof a !== 'object') return false;
+                    const aId = a.id_astronomo ?? a.id ?? a.assistant_id ?? null;
+                    if (id != null && String(aId) === String(id)) return true;
+                    const aUser = (a.usuario || a.username || a.astronomo || '').toString().trim().toLowerCase();
+                    return user && aUser && aUser === user;
+                }) || null;
+            }catch(_){
+                return null;
+            }
+        }
+
+        function buildSessionPayload(sess){
+            const cached = findAstronomerFromCache(sess);
+            return { ...(cached || {}), ...(sess || {}) };
+        }
+
+        async function callAgendaWebhook(action, params){
+            const payload = { action, ...(params || {}) };
+            if (action === 'atualizar_agenda') payload.tipo = 'TODOS';
+            const sess = getLoggedSession();
+            const base = buildSessionPayload(sess);
+            if (base) {
+                if (payload.id_astronomo == null && base.id_astronomo != null) payload.id_astronomo = base.id_astronomo;
+                if (payload.usuario == null) {
+                    const u = base.usuario || base.username || base.astronomo;
+                    if (u) payload.usuario = u;
+                }
+                const ids = getSessionTaskIds(base || null);
+                if (payload.id_visita == null && ids && ids.visita) payload.id_visita = ids.visita;
+                if (payload.id_pre == null && ids && ids.pre) payload.id_pre = ids.pre;
+                if (payload.id_reserva == null && ids && ids.reserva) payload.id_reserva = ids.reserva;
+                if (payload.id_n_marcar == null && ids && ids.nao_marcar) payload.id_n_marcar = ids.nao_marcar;
+            }
+            const bodyParams = new URLSearchParams();
+            Object.entries(payload || {}).forEach(([key, value]) => {
+                if (value === undefined || value === null || value === '') return;
+                bodyParams.set(key, String(value));
+            });
+            const resp = await fetch(AGENDA_WEBHOOK_URL, {
+                method:'POST',
+                headers:{ 'Accept':'application/json', 'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8' },
+                body: bodyParams.toString()
+            });
+            const data = await readResponsePayload(resp);
+            if (!resp.ok) {
+                const msg = typeof data === 'string' ? data : '';
+                throw new Error(msg || `HTTP ${resp.status}`);
+            }
+            return data;
+        }
+
         function describeSession(sess){
             if (!sess) return '<div class="astro-line">Nenhum astrônomo logado.</div>';
             const nome = safeText(sess.nome_completo || sess.astronomo || sess.usuario || sess.username || 'Astrônomo');
@@ -540,15 +982,13 @@
 
         function registrarOverridesRotaContinua(rota, distancias, sess){
             const overrides = {};
-            const idsContinua = loadRotaContinuaIds();
             const eventos = Array.isArray(rota?.eventos) ? rota.eventos : [];
-            const rotaContinua = rota?.rota_continua === true || rota?.continua === true || (rota?.tipo || '').toString().toLowerCase().includes('continua');
             for (let i = 1; i < eventos.length; i++){
                 const ev = eventos[i];
                 const prev = eventos[i-1];
                 const id = ev?.id_evento || ev?.id_evento_unico || ev?.id || ev?.id_agendamento || ev?.uuid;
                 if (id == null) continue;
-                const isContinua = rotaContinua || idsContinua.has(String(id)) || ev?.rota_continua === true || prev?.rota_continua === true;
+                const isContinua = isConsecutiveEventDay(prev, ev);
                 if (!isContinua) continue;
                 const dist = distancias[i-1];
                 if (dist !== null && dist !== undefined && Number.isFinite(dist)) {
@@ -571,11 +1011,11 @@
             sessaoAtual = sess;
             const sessVal = sessaoAtual || sess;
 
-            loading.classList.remove('hidden');
-            demoAlert.classList.add('hidden');
+            if (loading) loading.classList.remove('hidden');
+            if (demoAlert) demoAlert.classList.add('hidden');
             if (btnCarregar) btnCarregar.disabled = true;
             rotasContainer.innerHTML = '';
-            statusText.textContent = '';
+            if (statusText) statusText.textContent = '';
 
             if (!sessVal || sessVal.id_astronomo == null) {
                 if (!auto) {
@@ -588,18 +1028,40 @@
             }
 
             try {
-                const eventos = carregarEventosLocais(sessVal);
+                let eventos = [];
+                let hadRawEventos = false;
+                try{
+                    const raw = await callAgendaWebhook('atualizar_agenda', sessVal?.id_astronomo != null ? { id_astronomo: sessVal.id_astronomo } : {});
+                    const rawEventos = normalizeAgendaPayload(raw);
+                    if ((!rawEventos || !rawEventos.length) && typeof showNoDataPopup === 'function') {
+                        showNoDataPopup('Sem dados retornados do n8n.');
+                    }
+                    if (rawEventos.length) hadRawEventos = true;
+                    eventos = filterEventosFromToday(rawEventos).filter(isVisitaEvent);
+                    if (eventos.length) {
+                        saveAgendaCache(eventos, sessVal);
+                        saveRotasCache(eventos, sessVal);
+                    }
+                }catch(err){
+                    console.warn('Falha ao carregar agenda via webhook, tentando cache local:', err);
+                }
+
+                if (!eventos.length) {
+                    const cachedEventos = carregarEventosLocais(sessVal);
+                    if (cachedEventos.length) hadRawEventos = true;
+                    eventos = filterEventosFromToday(cachedEventos).filter(isVisitaEvent);
+                }
                 if (!eventos.length) {
                     rotasContainer.innerHTML = `
                         <div class="error">
-                            Nenhum evento encontrado no cache da agenda. Volte para a Agenda e atualize antes de abrir Rotas.
+                            ${hadRawEventos ? 'Nenhum evento a partir de hoje.' : 'Nenhum evento encontrado no cache da agenda. Abra a Agenda e atualize os eventos.'}
                         </div>
                     `;
                     return;
                 }
 
-                const rotaUnica = construirRotaDaAgenda(eventos, sessVal);
-                if (!rotaUnica.eventos.length) {
+                const rotas = construirRotaDaAgenda(eventos, sessVal);
+                if (!rotas.length) {
                     rotasContainer.innerHTML = `
                         <div class="error">
                             Nenhum evento válido para montar rotas.
@@ -608,12 +1070,18 @@
                     return;
                 }
 
-                await exibirRota(rotaUnica, rotasContainer);
-                const eventosCount = Number.isFinite(rotaUnica.quantidade_eventos)
-                    ? rotaUnica.quantidade_eventos
-                    : rotaUnica.eventos.length;
-                const eventosLabel = eventosCount === 1 ? 'evento' : 'eventos';
-                statusText.textContent = `Rota criada a partir dos eventos salvos na agenda local (${eventosCount} ${eventosLabel}).`;
+                for (const rota of rotas) {
+                    await exibirRota(rota, rotasContainer);
+                }
+                const totalEventos = rotas.reduce((acc, rota) => {
+                    const count = Number.isFinite(rota.quantidade_eventos) ? rota.quantidade_eventos : rota.eventos.length;
+                    return acc + count;
+                }, 0);
+                const eventosLabel = totalEventos === 1 ? 'evento' : 'eventos';
+                const rotasLabel = rotas.length === 1 ? 'rota' : 'rotas';
+                if (statusText) {
+                    statusText.textContent = `${rotas.length} ${rotasLabel} criada(s) (${totalEventos} ${eventosLabel}).`;
+                }
 
             } catch (error) {
                 console.error('Erro:', error);
@@ -627,7 +1095,7 @@
                     </div>
                 `;
             } finally {
-                loading.classList.add('hidden');
+                if (loading) loading.classList.add('hidden');
                 if (btnCarregar) btnCarregar.disabled = false;
             }
         }
@@ -638,10 +1106,10 @@
             const demoAlert = document.getElementById('demoAlert');
             const statusText = document.getElementById('status-text');
 
-            loading.classList.remove('hidden');
-            demoAlert.classList.remove('hidden');
+            if (loading) loading.classList.remove('hidden');
+            if (demoAlert) demoAlert.classList.remove('hidden');
             rotasContainer.innerHTML = '';
-            statusText.textContent = 'Modo demonstração ativo.';
+            if (statusText) statusText.textContent = 'Modo demonstração ativo.';
 
             setTimeout(async () => {
                 try {
@@ -656,20 +1124,15 @@
                         </div>
                     `;
                 } finally {
-                    loading.classList.add('hidden');
+                    if (loading) loading.classList.add('hidden');
                 }
             }, 500);
         }
 
         async function exibirRota(rota, container) {
-            const rotaDiv = document.createElement('div');
-            rotaDiv.className = 'rota-card';
+            const rotaDiv = document.createElement('details');
+            rotaDiv.className = 'rota-card rota-tile';
 
-            const distancias = await calcularDistanciasRota(rota.eventos);
-            const overrides = registrarOverridesRotaContinua(rota, distancias, sessaoAtual);
-            const baseInfo = calcularDistanciasComBase(rota.eventos);
-            const totalKm = Number(((baseInfo.baseIda || 0) + distancias.reduce((s,d)=> s + (d||0),0) + (baseInfo.baseVolta || 0)).toFixed(2));
-            const gastos = calcularGastosEstimados(rota, totalKm);
             const timelineHTML = criarTimelineVisual(rota.eventos);
             const isCompactTimeline = rota.eventos.length > 12;
             const timelineHint = isCompactTimeline ? '<span class="rota-visual-hint">Role para ver</span>' : '';
@@ -685,65 +1148,319 @@
                 : rota.eventos.length;
             const eventosLabel = eventosCount === 1 ? 'evento' : 'eventos';
 
+            const cidadesEnvolvidas = [...new Set(rota.eventos.map(ev => (ev.cidade || 'Cidade não informada').split(' - ')[0].trim()).filter(Boolean))];
+            const cidadesLabel = cidadesEnvolvidas.length ? cidadesEnvolvidas.join(', ') : 'Cidade não informada';
+            const cidadePrincipal = cidadesEnvolvidas[0] || 'Cidade não informada';
+            const isSingleEvent = rota.eventos.length === 1;
+            const basePayload = getBaseDistancesFromEventPayload(rota.eventos);
+            const fallbackKm = isSingleEvent && Number.isFinite(basePayload.baseIda)
+                ? Number((basePayload.baseIda * 2).toFixed(2))
+                : null;
+            const totalKmLabel = Number.isFinite(rota.distancia_total)
+                ? `${Number(rota.distancia_total).toFixed(1)} km`
+                : (Number.isFinite(fallbackKm) ? `${fallbackKm.toFixed(1)} km` : 'Clique para calcular');
+            let gastosLabel = '—';
+            if (Number.isFinite(fallbackKm)) {
+                const gastosPreview = calcularGastosEstimados(rota, fallbackKm);
+                if (gastosPreview && Number.isFinite(gastosPreview.total)) {
+                    gastosLabel = `R$ ${gastosPreview.total.toFixed(2)}`;
+                }
+            }
+
             rotaDiv.innerHTML = `
-                <div class="rota-header">
-                    <div class="rota-info">
-                        <h3 class="rota-title">${rota.astronomo} - ${rota.rota_id}</h3>
-                        <div class="rota-subtitle">
-                            📅 ${periodoLabel} • 🎯 ${eventosCount} ${eventosLabel}
+                <summary class="rota-summary">
+                    <div class="rota-summary-top">
+                        <div class="rota-summary-title">${rota.rota_id}</div>
+                        <div class="rota-badge" data-total-km>
+                            ${totalKmLabel}
                         </div>
                     </div>
-                    <div class="rota-badge">
-                        ${Number.isFinite(totalKm) ? totalKm.toFixed(1) + ' km' : (rota.distancia_total ? rota.distancia_total + ' km' : 'Calculando...')}
+                    <div class="rota-summary-hero">${cidadePrincipal}</div>
+                    <div class="rota-summary-grid">
+                        <div class="rota-summary-item">
+                            <span class="label">Período</span>
+                            <span class="value">📅 ${periodoLabel}</span>
+                        </div>
+                        <div class="rota-summary-item">
+                            <span class="label">Eventos</span>
+                            <span class="value">🎯 ${eventosCount} ${eventosLabel}</span>
+                        </div>
+                        <div class="rota-summary-item rota-summary-span">
+                            <span class="label">Cidades envolvidas</span>
+                            <span class="value">🧭 ${cidadesLabel}</span>
+                        </div>
+                        <div class="rota-summary-item">
+                            <span class="label">Gastos estimados <span class="info-icon" data-action="gasto-info" role="button" tabindex="0" aria-label="Ver detalhes do cálculo" title="Ver detalhes do cálculo">ℹ️</span></span>
+                            <span class="value">💸 <span data-gasto-resumo>${gastosLabel}</span></span>
+                        </div>
+                        <div class="rota-summary-item">
+                            <span class="label">Astrônomo</span>
+                            <span class="value">🧑‍🚀 ${rota.astronomo}</span>
+                        </div>
                     </div>
-                </div>
+                    <div class="rota-summary-action">Ver detalhes completos</div>
+                </summary>
 
-                <div class="rota-visual">
-                    <div class="rota-visual-title">
-                        <span><strong>Sequência da rota</strong> <span class="rota-visual-note">(0 = base)</span></span>
-                        ${timelineHint}
-                    </div>
-                    <div class="rota-timeline ${isCompactTimeline ? 'timeline-compact' : ''}">
-                        <div class="timeline-line"></div>
-                        ${timelineHTML}
-                    </div>
-                </div>
-
-                <div class="eventos-list">
-                    ${rota.eventos.map((evento, index) => `
-                        <div class="evento-item">
-                            <div class="evento-icon">${index + 1}</div>
-                            <div class="evento-info">
-                                <p class="evento-cidade">${evento.cidade || 'Cidade não informada'}</p>
-                                <div class="evento-detalhes">
-                                    <span>📅 ${new Date(evento.data_e_hora_do_agendamento).toLocaleDateString('pt-BR')}</span>
-                                    <span>
-                                        📍 ${
-                                            (() => {
-                                                const id = evento.id_evento || evento.id || evento.id_agendamento || evento.uuid;
-                                                const override = id != null ? overrides[String(id)] : null;
-                                                if (override !== undefined && override !== null) {
-                                                    return `${override.toFixed(1)} km (rota contínua)`;
-                                                }
-                                                return evento.distancia_km ? `${evento.distancia_km} km da base` : 'Distância não informada';
-                                            })()
-                                        }
-                                    </span>
-                                </div>
+                <div class="rota-details">
+                    <div class="rota-header">
+                        <div class="rota-info">
+                            <h3 class="rota-title">${rota.astronomo} - ${rota.rota_id}</h3>
+                            <div class="rota-subtitle">
+                                📅 ${periodoLabel} • 🎯 ${eventosCount} ${eventosLabel}
                             </div>
                         </div>
-                    `).join('')}
-                </div>
+                        <div class="rota-badge" data-total-km>
+                            ${totalKmLabel}
+                        </div>
+                    </div>
+
+                    <div class="rota-visual" data-rota-visual>
+                        <div class="rota-visual-title">
+                            <span><strong>Sequência da rota</strong> <span class="rota-visual-note">(0 = base)</span></span>
+                            ${timelineHint}
+                        </div>
+                        <svg class="rota-svg-container">
+                            <path class="svg-road-border" fill="none" stroke="#7b5cff" stroke-width="18" stroke-linecap="round" />
+                            <path class="svg-road-bg" fill="none" stroke="#1e1b4b" stroke-width="14" stroke-linecap="round" />
+                            <path class="svg-dashed-line" fill="none" stroke="#34d1f3" stroke-width="2" stroke-linecap="round" stroke-dasharray="12 12" />
+                        </svg>
+                        <div class="rota-timeline ${isCompactTimeline ? 'timeline-compact' : ''}">
+                            ${timelineHTML}
+                        </div>
+                    </div>
+
+                    <div class="eventos-list">
+                        ${rota.eventos.map((evento, index) => {
+                            const id = evento.id_evento || evento.id || evento.id_agendamento || evento.uuid || `idx-${index}`;
+                            const start = evento._spanStart instanceof Date ? evento._spanStart : null;
+                            const end = evento._spanEnd instanceof Date ? evento._spanEnd : null;
+                            const dataEvento = evento.data_e_hora_agendamento || evento.data_e_hora_do_agendamento || evento.data_agendamento || evento.data;
+                            const baseDate = dataEvento ? new Date(dataEvento) : null;
+                            const dateStart = start || (baseDate instanceof Date && !Number.isNaN(baseDate.getTime()) ? baseDate : null);
+                            const dateEnd = end || dateStart;
+                            const dataLabel = dateStart
+                                ? (dateEnd && dateEnd.getTime() !== dateStart.getTime()
+                                    ? `${dateStart.toLocaleDateString('pt-BR')} → ${dateEnd.toLocaleDateString('pt-BR')}`
+                                    : dateStart.toLocaleDateString('pt-BR'))
+                                : 'Data não informada';
+                            return `
+                                <div class="evento-item">
+                                    <div class="evento-icon">${index + 1}</div>
+                                    <div class="evento-info">
+                                        <p class="evento-cidade">${evento.cidade || 'Cidade não informada'}</p>
+                                        <div class="evento-detalhes">
+                                            <span>📅 ${dataLabel}</span>
+                                            <span data-distance-id="${id}">📍 Distância: clique para calcular</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
 
                 <div class="distancias-section">
                     <div class="distancias-title">Distâncias entre as cidades</div>
-                    ${Number.isFinite(baseInfo.baseIda) ? `
+                    <div class="distancias-list" data-distancias-list>
+                        <div class="distancia-item">
+                            <span class="distancia-rota">Clique para calcular as distâncias</span>
+                            <span class="distancia-valor">—</span>
+                        </div>
+                    </div>
+                    <div class="distancia-total" data-distancia-total>
+                        🚗 Distância total da rota: —
+                    </div>
+                    <div class="distancias-title" style="margin-top:10px;">Gastos estimados <span class="info-icon" data-action="gasto-info" role="button" tabindex="0" aria-label="Ver detalhes do cálculo" title="Ver detalhes do cálculo">ℹ️</span></div>
+                    <div class="distancia-item">
+                        <span class="distancia-rota">Combustível</span>
+                        <span class="distancia-valor" data-gasto="combustivel">—</span>
+                    </div>
+                    <div class="distancia-item">
+                        <span class="distancia-rota">Hospedagem</span>
+                        <span class="distancia-valor" data-gasto="hospedagem">—</span>
+                    </div>
+                    <div class="distancia-item">
+                        <span class="distancia-rota">Alimentação</span>
+                        <span class="distancia-valor" data-gasto="alimentacao">—</span>
+                    </div>
+                    <div class="distancia-item">
+                        <span class="distancia-rota">Pedágios</span>
+                        <span class="distancia-valor" data-gasto="pedagios">—</span>
+                    </div>
+                    <div class="distancia-total" data-gasto="total">
+                        💸 Total estimado: —
+                    </div>
+                </div>
+                </div>
+            `;
+
+            container.appendChild(rotaDiv);
+
+            rotaDiv.addEventListener('click', (e) => {
+                const info = e.target && e.target.closest ? e.target.closest('[data-action="gasto-info"]') : null;
+                if (!info) return;
+                e.preventDefault();
+                e.stopPropagation();
+                showGastoBreakdown(rota, rotaDiv);
+            });
+            rotaDiv.addEventListener('keydown', (e) => {
+                const info = e.target && e.target.closest ? e.target.closest('[data-action="gasto-info"]') : null;
+                if (!info) return;
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    showGastoBreakdown(rota, rotaDiv);
+                }
+            });
+
+            rotaDiv.addEventListener('toggle', () => {
+                if (!rotaDiv.open || rotaDiv.dataset.loaded === 'true') return;
+                carregarDetalhesRota(rota, rotaDiv).catch(err => {
+                    console.warn('Falha ao carregar detalhes da rota:', err);
+                });
+            });
+        }
+
+        async function carregarDetalhesRota(rota, rotaDiv){
+            if (!rotaDiv || rotaDiv.dataset.loaded === 'true') return;
+            rotaDiv.dataset.loaded = 'loading';
+            const badgeEls = rotaDiv.querySelectorAll('[data-total-km]');
+            badgeEls.forEach(el => { el.textContent = 'Calculando...'; });
+            const gastoResumoEl = rotaDiv.querySelector('[data-gasto-resumo]');
+            if (gastoResumoEl) gastoResumoEl.textContent = 'Calculando...';
+
+            if (Array.isArray(rota?.eventos) && rota.eventos.length === 1) {
+                const evento = rota.eventos[0];
+                let kmBase = getEventoDistanciaKm(evento);
+                if (!Number.isFinite(kmBase)) {
+                    try { kmBase = await calcularDistanciaBaseEvento(evento); } catch (_) { kmBase = null; }
+                }
+                const totalKm = Number.isFinite(kmBase) ? Number((kmBase * 2).toFixed(2)) : null;
+                const gastos = calcularGastosEstimados(rota, totalKm);
+                const totalLabel = Number.isFinite(totalKm) ? `${totalKm.toFixed(1)} km` : '—';
+
+                badgeEls.forEach(el => { el.textContent = totalLabel; });
+                if (gastoResumoEl) {
+                    gastoResumoEl.textContent = Number.isFinite(gastos.total) ? `R$ ${gastos.total.toFixed(2)}` : '—';
+                }
+                if (rotaDiv) {
+                    rotaDiv.dataset.totalKm = Number.isFinite(totalKm) ? String(totalKm) : '';
+                    rotaDiv.dataset.gastoCombustivel = Number.isFinite(gastos.combustivel) ? String(gastos.combustivel) : '';
+                    rotaDiv.dataset.gastoAlimentacao = Number.isFinite(gastos.alimentacao) ? String(gastos.alimentacao) : '';
+                    rotaDiv.dataset.gastoHospedagem = Number.isFinite(gastos.hospedagem) ? String(gastos.hospedagem) : '';
+                    rotaDiv.dataset.gastoPedagios = Number.isFinite(gastos.pedagios) ? String(gastos.pedagios) : '';
+                    rotaDiv.dataset.gastoTotal = Number.isFinite(gastos.total) ? String(gastos.total) : '';
+                    rotaDiv.dataset.diariasTotal = Number.isFinite(gastos.diariasTotal) ? String(gastos.diariasTotal) : '';
+                    rotaDiv.dataset.noitesTotal = Number.isFinite(gastos.noitesTotal) ? String(gastos.noitesTotal) : '';
+                    rotaDiv.dataset.consumo = Number.isFinite(gastos.consumo) ? String(gastos.consumo) : '';
+                    rotaDiv.dataset.valorLitro = Number.isFinite(gastos.valorLitro) ? String(gastos.valorLitro) : '';
+                    rotaDiv.dataset.alimentacaoDia = Number.isFinite(gastos.alimentacaoDia) ? String(gastos.alimentacaoDia) : '';
+                    rotaDiv.dataset.hospedagemDia = Number.isFinite(gastos.hospedagemDia) ? String(gastos.hospedagemDia) : '';
+                    rotaDiv.dataset.pedagiosVal = Number.isFinite(gastos.pedagiosVal) ? String(gastos.pedagiosVal) : '';
+                }
+
+                const listEl = rotaDiv.querySelector('[data-distancias-list]');
+                if (listEl) {
+                    if (Number.isFinite(kmBase)) {
+                        listEl.innerHTML = `
+                            <div class="distancia-item">
+                                <span class="distancia-rota">Base → ${evento.cidade || 'Cidade não informada'}</span>
+                                <span class="distancia-valor">${kmBase.toFixed(1)} km</span>
+                            </div>
+                            <div class="distancia-item">
+                                <span class="distancia-rota">${evento.cidade || 'Cidade não informada'} → Base</span>
+                                <span class="distancia-valor">${kmBase.toFixed(1)} km</span>
+                            </div>
+                        `;
+                    } else {
+                        listEl.innerHTML = `
+                            <div class="distancia-item">
+                                <span class="distancia-rota">Distâncias indisponíveis</span>
+                                <span class="distancia-valor">—</span>
+                            </div>
+                        `;
+                    }
+                }
+
+                const totalEl = rotaDiv.querySelector('[data-distancia-total]');
+                if (totalEl) totalEl.textContent = `🚗 Distância total da rota: ${totalLabel}`;
+
+                const gastoMap = {
+                    combustivel: gastos.combustivel,
+                    hospedagem: gastos.hospedagem,
+                    alimentacao: gastos.alimentacao,
+                    pedagios: gastos.pedagios,
+                    total: gastos.total
+                };
+                Object.entries(gastoMap).forEach(([key, val]) => {
+                    const el = rotaDiv.querySelector(`[data-gasto="${key}"]`);
+                    if (!el) return;
+                    const prefix = key === 'total' ? '💸 Total estimado: ' : '';
+                    el.textContent = Number.isFinite(val) ? `${prefix}R$ ${val.toFixed(2)}` : `${prefix}—`;
+                });
+
+                const distanceTargets = rotaDiv.querySelectorAll('[data-distance-id]');
+                distanceTargets.forEach((el) => {
+                    if (Number.isFinite(kmBase)) {
+                        el.textContent = `📍 ${kmBase.toFixed(1)} km da base`;
+                    } else {
+                        el.textContent = '📍 Distância indisponível';
+                    }
+                });
+
+                const timelineEl = rotaDiv.querySelector('.rota-timeline');
+                if (timelineEl) {
+                    requestAnimationFrame(() => {
+                        aplicarTimelineSerpentina(timelineEl);
+                        const visualEl = rotaDiv.querySelector('[data-rota-visual]');
+                        requestAnimationFrame(() => desenharLinhaSVG(visualEl));
+                    });
+                }
+
+                rotaDiv.dataset.loaded = 'true';
+                return;
+            }
+
+            const distancias = await calcularDistanciasRota(rota.eventos);
+            registrarOverridesRotaContinua(rota, distancias, sessaoAtual);
+            const baseInfo = await calcularDistanciasComBase(rota.eventos);
+            const computedKm = Number(((baseInfo.baseIda || 0) + distancias.reduce((s,d)=> s + (d||0),0) + (baseInfo.baseVolta || 0)).toFixed(2));
+            const totalKm = Number.isFinite(computedKm) && computedKm > 0 ? computedKm : null;
+            const gastos = calcularGastosEstimados(rota, totalKm);
+            const totalLabel = Number.isFinite(totalKm) ? `${totalKm.toFixed(1)} km` : '—';
+
+            badgeEls.forEach(el => { el.textContent = totalLabel; });
+            if (gastoResumoEl) {
+                gastoResumoEl.textContent = Number.isFinite(gastos.total) ? `R$ ${gastos.total.toFixed(2)}` : '—';
+            }
+            if (rotaDiv) {
+                rotaDiv.dataset.totalKm = Number.isFinite(totalKm) ? String(totalKm) : '';
+                rotaDiv.dataset.gastoCombustivel = Number.isFinite(gastos.combustivel) ? String(gastos.combustivel) : '';
+                rotaDiv.dataset.gastoAlimentacao = Number.isFinite(gastos.alimentacao) ? String(gastos.alimentacao) : '';
+                rotaDiv.dataset.gastoHospedagem = Number.isFinite(gastos.hospedagem) ? String(gastos.hospedagem) : '';
+                rotaDiv.dataset.gastoPedagios = Number.isFinite(gastos.pedagios) ? String(gastos.pedagios) : '';
+                rotaDiv.dataset.gastoTotal = Number.isFinite(gastos.total) ? String(gastos.total) : '';
+                rotaDiv.dataset.diariasTotal = Number.isFinite(gastos.diariasTotal) ? String(gastos.diariasTotal) : '';
+                rotaDiv.dataset.noitesTotal = Number.isFinite(gastos.noitesTotal) ? String(gastos.noitesTotal) : '';
+                rotaDiv.dataset.consumo = Number.isFinite(gastos.consumo) ? String(gastos.consumo) : '';
+                rotaDiv.dataset.valorLitro = Number.isFinite(gastos.valorLitro) ? String(gastos.valorLitro) : '';
+                rotaDiv.dataset.alimentacaoDia = Number.isFinite(gastos.alimentacaoDia) ? String(gastos.alimentacaoDia) : '';
+                rotaDiv.dataset.hospedagemDia = Number.isFinite(gastos.hospedagemDia) ? String(gastos.hospedagemDia) : '';
+                rotaDiv.dataset.pedagiosVal = Number.isFinite(gastos.pedagiosVal) ? String(gastos.pedagiosVal) : '';
+            }
+
+            const listEl = rotaDiv.querySelector('[data-distancias-list]');
+            if (listEl) {
+                const parts = [];
+                if (Number.isFinite(baseInfo.baseIda)) {
+                    parts.push(`
                         <div class="distancia-item">
                             <span class="distancia-rota">Base → ${rota.eventos[0].cidade}</span>
                             <span class="distancia-valor">${baseInfo.baseIda.toFixed(1)} km</span>
                         </div>
-                    ` : ''}
-                    ${distancias.map((distancia, index) => `
+                    `);
+                }
+                distancias.forEach((distancia, index) => {
+                    parts.push(`
                         <div class="distancia-item">
                             <span class="distancia-rota">
                                 ${rota.eventos[index].cidade} → ${rota.eventos[index + 1].cidade}
@@ -752,43 +1469,68 @@
                                 ${distancia ? distancia.toFixed(1) + ' km' : 'Não calculada'}
                             </span>
                         </div>
-                    `).join('')}
-                    ${Number.isFinite(baseInfo.baseVolta) ? `
+                    `);
+                });
+                if (Number.isFinite(baseInfo.baseVolta)) {
+                    parts.push(`
                         <div class="distancia-item">
                             <span class="distancia-rota">${rota.eventos[rota.eventos.length-1].cidade} → Base</span>
                             <span class="distancia-valor">${baseInfo.baseVolta.toFixed(1)} km</span>
                         </div>
-                    ` : ''}
-                    
-                    ${distancias.length > 0 ? `
-                        <div class="distancia-total">
-                            🚗 Distância total da rota: ${totalKm.toFixed(1)} km
-                        </div>
-                    ` : ''}
-                    <div class="distancias-title" style="margin-top:10px;">Gastos estimados</div>
+                    `);
+                }
+                listEl.innerHTML = parts.length ? parts.join('') : `
                     <div class="distancia-item">
-                        <span class="distancia-rota">Combustível</span>
-                        <span class="distancia-valor">${gastos.combustivel != null ? 'R$ ' + gastos.combustivel.toFixed(2) : '—'}</span>
+                        <span class="distancia-rota">Distâncias indisponíveis</span>
+                        <span class="distancia-valor">—</span>
                     </div>
-                    <div class="distancia-item">
-                        <span class="distancia-rota">Hospedagem</span>
-                        <span class="distancia-valor">${gastos.hospedagem != null ? 'R$ ' + gastos.hospedagem.toFixed(2) : '—'}</span>
-                    </div>
-                    <div class="distancia-item">
-                        <span class="distancia-rota">Alimentação</span>
-                        <span class="distancia-valor">${gastos.alimentacao != null ? 'R$ ' + gastos.alimentacao.toFixed(2) : '—'}</span>
-                    </div>
-                    <div class="distancia-item">
-                        <span class="distancia-rota">Pedágios</span>
-                        <span class="distancia-valor">${gastos.pedagios != null ? 'R$ ' + gastos.pedagios.toFixed(2) : '—'}</span>
-                    </div>
-                    <div class="distancia-total">
-                        💸 Total estimado: ${gastos.total != null ? 'R$ ' + gastos.total.toFixed(2) : '—'}
-                    </div>
-                </div>
-            `;
+                `;
+            }
 
-            container.appendChild(rotaDiv);
+            const totalEl = rotaDiv.querySelector('[data-distancia-total]');
+            if (totalEl) totalEl.textContent = `🚗 Distância total da rota: ${totalLabel}`;
+
+            const gastoMap = {
+                combustivel: gastos.combustivel,
+                hospedagem: gastos.hospedagem,
+                alimentacao: gastos.alimentacao,
+                pedagios: gastos.pedagios,
+                total: gastos.total
+            };
+            Object.entries(gastoMap).forEach(([key, val]) => {
+                const el = rotaDiv.querySelector(`[data-gasto="${key}"]`);
+                if (!el) return;
+                const prefix = key === 'total' ? '💸 Total estimado: ' : '';
+                el.textContent = Number.isFinite(val) ? `${prefix}R$ ${val.toFixed(2)}` : `${prefix}—`;
+            });
+
+            const distanceTargets = rotaDiv.querySelectorAll('[data-distance-id]');
+            distanceTargets.forEach(async (el) => {
+                const evId = el.getAttribute('data-distance-id');
+                const evento = rota.eventos.find(ev => String(ev.id_evento || ev.id || ev.id_agendamento || ev.uuid || '') === String(evId));
+                if (!evento) return;
+                try {
+                    const km = await calcularDistanciaBaseEvento(evento);
+                    if (Number.isFinite(km)) {
+                        el.textContent = `📍 ${km.toFixed(1)} km da base`;
+                    } else {
+                        el.textContent = '📍 Distância indisponível';
+                    }
+                } catch (_) {
+                    el.textContent = '📍 Distância indisponível';
+                }
+            });
+
+            const timelineEl = rotaDiv.querySelector('.rota-timeline');
+            if (timelineEl) {
+                requestAnimationFrame(() => {
+                    aplicarTimelineSerpentina(timelineEl);
+                    const visualEl = rotaDiv.querySelector('[data-rota-visual]');
+                    requestAnimationFrame(() => desenharLinhaSVG(visualEl));
+                });
+            }
+
+            rotaDiv.dataset.loaded = 'true';
         }
 
         function criarTimelineVisual(eventos) {
@@ -817,6 +1559,97 @@
                 </div>
             `);
             return pontos.join('');
+        }
+
+        function aplicarTimelineSerpentina(timelineEl){
+            if (!timelineEl) return;
+            const points = Array.from(timelineEl.querySelectorAll('.timeline-point'));
+            if (!points.length) {
+                return;
+            }
+            const baseStart = points[0];
+            const baseEnd = points.length > 1 ? points[points.length - 1] : null;
+            const eventPoints = points.slice(1, -1);
+            const maxEventsPerRow = 6;
+            const rowsCount = Math.max(1, Math.ceil(eventPoints.length / maxEventsPerRow));
+            const rows = [];
+
+            for (let i = 0; i < rowsCount; i++) {
+                const start = i * maxEventsPerRow;
+                const slice = eventPoints.slice(start, start + maxEventsPerRow);
+                rows.push(slice);
+            }
+
+            if (!rows.length) rows.push([]);
+            rows[0].unshift(baseStart);
+            if (baseEnd) rows[rows.length - 1].push(baseEnd);
+
+            timelineEl.innerHTML = '';
+            timelineEl.classList.add('rota-timeline-serpentine');
+            rows.forEach((row, idx) => {
+                const rowEl = document.createElement('div');
+                rowEl.className = `timeline-row${idx % 2 === 1 ? ' reverse' : ''}`;
+                row.forEach(point => rowEl.appendChild(point));
+                timelineEl.appendChild(rowEl);
+            });
+        }
+
+        function desenharLinhaSVG(container) {
+            if (!container) return;
+            const svg = container.querySelector('.rota-svg-container');
+            const pathBorder = container.querySelector('.svg-road-border');
+            const pathBg = container.querySelector('.svg-road-bg');
+            const pathDash = container.querySelector('.svg-dashed-line');
+            const points = Array.from(container.querySelectorAll('.timeline-point'));
+
+            if (!svg || !pathBorder || !pathBg || !pathDash || points.length < 2) return;
+
+            const rectContainer = container.getBoundingClientRect();
+            if (rectContainer.width <= 0 || rectContainer.height <= 0) return;
+            svg.setAttribute('viewBox', `0 0 ${rectContainer.width} ${rectContainer.height}`);
+
+            let d = '';
+            const firstRect = points[0].getBoundingClientRect();
+            let startX = firstRect.left - rectContainer.left + (firstRect.width / 2);
+            let startY = firstRect.top - rectContainer.top + (firstRect.height / 2);
+            d += `M ${startX} ${startY}`;
+
+            for (let i = 0; i < points.length - 1; i++) {
+                const p1 = points[i];
+                const p2 = points[i + 1];
+                const r1 = p1.getBoundingClientRect();
+                const r2 = p2.getBoundingClientRect();
+                const x1 = r1.left - rectContainer.left + (r1.width / 2);
+                const y1 = r1.top - rectContainer.top + (r1.height / 2);
+                const x2 = r2.left - rectContainer.left + (r2.width / 2);
+                const y2 = r2.top - rectContainer.top + (r2.height / 2);
+
+                if (Math.abs(y1 - y2) < 20) {
+                    d += ` L ${x2} ${y2}`;
+                } else {
+                    const isRightTurn = x1 > (rectContainer.width / 2);
+                    const controlOffset = isRightTurn ? 80 : -80;
+                    const cp1x = x1 + controlOffset;
+                    const cp1y = y1;
+                    const cp2x = x2 + controlOffset;
+                    const cp2y = y2;
+                    d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
+                }
+            }
+
+            pathBorder.setAttribute('d', d);
+            pathBg.setAttribute('d', d);
+            pathDash.setAttribute('d', d);
+        }
+
+        if (!window.__rotaSvgResizeBound) {
+            window.__rotaSvgResizeBound = true;
+            window.addEventListener('resize', () => {
+                document.querySelectorAll('.rota-card').forEach(card => {
+                    const visualEl = card.querySelector('.rota-visual');
+                    desenharLinhaSVG(visualEl);
+                });
+            });
         }
 
         async function calcularDistanciasRota(eventos) {
@@ -852,52 +1685,108 @@
             return distancias;
         }
 
-        function calcularDistanciasComBase(eventos){
-            const baseLat = toNumber(sessaoAtual?.origem_lat);
-            const baseLon = toNumber(sessaoAtual?.origem_lon);
+        function getBaseCity(){
+            return sessaoAtual?.cidade_base || sessaoAtual?.cidade || sessaoAtual?.cidade_origem || '';
+        }
+
+        function getDestinoCity(evento){
+            return evento?.cidade || evento?.cidade_destino || '';
+        }
+
+        function getLatLon(evento, prefix){
+            const latKey = prefix === 'origem'
+                ? ['origem_lat','base_lat','latitude_origem','lat_origem']
+                : ['destino_lat','latitude','lat','lat_destino'];
+            const lonKey = prefix === 'origem'
+                ? ['origem_lon','base_lon','longitude_origem','lon_origem']
+                : ['destino_lon','longitude','lon','lon_destino'];
+            let lat = null;
+            let lon = null;
+            latKey.some(k => {
+                const val = toNumber(evento?.[k] ?? sessaoAtual?.[k]);
+                if (Number.isFinite(val)) { lat = val; return true; }
+                return false;
+            });
+            lonKey.some(k => {
+                const val = toNumber(evento?.[k] ?? sessaoAtual?.[k]);
+                if (Number.isFinite(val)) { lon = val; return true; }
+                return false;
+            });
+            return Number.isFinite(lat) && Number.isFinite(lon) ? [lat, lon] : null;
+        }
+
+        async function calcularDistanciaBaseEvento(evento){
+            const baseCoords = getLatLon(evento, 'origem');
+            const destCoords = getLatLon(evento, 'destino');
+            if (baseCoords && destCoords) {
+                return calcularDistanciaHaversine(baseCoords, destCoords);
+            }
+            const baseCity = getBaseCity();
+            const destCity = getDestinoCity(evento);
+            if (baseCity && destCity) {
+                return await calcularDistanciaPorCidades(baseCity, destCity);
+            }
+            return null;
+        }
+
+        async function calcularDistanciasComBase(eventos){
             let baseIda = null;
             let baseVolta = null;
             const first = eventos && eventos[0];
             const last = eventos && eventos[eventos.length-1];
-            if (first && Number.isFinite(baseLat) && Number.isFinite(baseLon) && first.destino_lat && first.destino_lon){
-                baseIda = calcularDistanciaHaversine(
-                    [baseLat, baseLon],
-                    [parseFloat(first.destino_lat), parseFloat(first.destino_lon)]
-                );
+            if (first) {
+                const payloadIda = getEventoDistanciaKm(first);
+                if (Number.isFinite(payloadIda)) {
+                    baseIda = payloadIda;
+                } else {
+                    try { baseIda = await calcularDistanciaBaseEvento(first); } catch (_) { baseIda = null; }
+                }
             }
-            if (last && Number.isFinite(baseLat) && Number.isFinite(baseLon) && last.destino_lat && last.destino_lon){
-                baseVolta = calcularDistanciaHaversine(
-                    [parseFloat(last.destino_lat), parseFloat(last.destino_lon)],
-                    [baseLat, baseLon]
-                );
+            if (last) {
+                const payloadVolta = getEventoDistanciaKm(last);
+                if (Number.isFinite(payloadVolta)) {
+                    baseVolta = payloadVolta;
+                } else {
+                    try { baseVolta = await calcularDistanciaBaseEvento(last); } catch (_) { baseVolta = null; }
+                }
             }
             return { baseIda, baseVolta };
         }
 
         function calcularGastosEstimados(rota, totalKm){
             const evs = Array.isArray(rota?.eventos) ? rota.eventos : [];
-            let diariasTotal = 0;
-            let noitesTotal = 0;
+            const daysSet = new Set();
             evs.forEach(ev => {
-                const d = Number(ev.numero_diarias || ev.numero_de_diarias || ev.diarias || 1);
-                const diariasEv = Number.isFinite(d) && d > 0 ? d : 1;
-                diariasTotal += diariasEv;
-                noitesTotal += Math.max(diariasEv - 1, 0);
+                const start = getEventoDate(ev);
+                if (!start) return;
+                const end = getEventoEndDate(ev) || start;
+                let cur = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+                const endDay = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+                if (endDay < cur) {
+                    daysSet.add(dayKey(cur));
+                    return;
+                }
+                while (cur <= endDay) {
+                    daysSet.add(dayKey(cur));
+                    cur.setDate(cur.getDate() + 1);
+                }
             });
+            const diariasTotal = Math.max(daysSet.size, 1);
+            const noitesTotal = Math.max(diariasTotal - 1, 0);
 
             const sess = sessaoAtual || {};
             const preferMedia = (mediaKey, normalKey) => {
-                const media = Number(sess[mediaKey]);
+                const media = toNumber(sess[mediaKey]);
                 if (Number.isFinite(media) && media > 0) return media;
-                const normal = Number(sess[normalKey]);
+                const normal = toNumber(sess[normalKey]);
                 return Number.isFinite(normal) && normal > 0 ? normal : null;
             };
 
-            const valorLitro = preferMedia('valor_litro_media', 'valor_litro');
-            const consumo = preferMedia('consumo_km_l_media', 'consumo_km_l');
-            const alimentacaoDia = preferMedia('alimentacao_diaria_media', 'alimentacao_diaria');
-            const hospedagemDia = preferMedia('diaria_hospedagem_media', 'diaria_hospedagem');
-            const pedagiosVal = preferMedia('pedagios_media', 'pedagios');
+            const valorLitro = preferMedia('valor_litro_media', 'valor_litro') ?? 6.2;
+            const consumo = preferMedia('consumo_km_l_media', 'consumo_km_l') ?? 10;
+            const alimentacaoDia = preferMedia('alimentacao_diaria_media', 'alimentacao_diaria') ?? 120;
+            const hospedagemDia = preferMedia('diaria_hospedagem_media', 'diaria_hospedagem') ?? 180;
+            const pedagiosVal = preferMedia('pedagios_media', 'pedagios') ?? 30;
             const combustivelMedio = preferMedia('gasto_combustivel_media', 'custo_combustivel_medio');
 
             let combustivel = null;
@@ -911,7 +1800,21 @@
             const pedagios = Number.isFinite(pedagiosVal) ? pedagiosVal : null;
             const totalParts = [combustivel, alimentacao, hospedagem, pedagios].filter(v => Number.isFinite(v));
             const total = totalParts.length ? totalParts.reduce((a,b)=>a+b,0) : null;
-            return { combustivel, alimentacao, hospedagem, pedagios: Number.isFinite(pedagios) ? pedagios : null, total };
+            return {
+                combustivel,
+                alimentacao,
+                hospedagem,
+                pedagios: Number.isFinite(pedagios) ? pedagios : null,
+                total,
+                diariasTotal,
+                noitesTotal,
+                consumo,
+                valorLitro,
+                alimentacaoDia,
+                hospedagemDia,
+                pedagiosVal,
+                totalKm
+            };
         }
 
         async function calcularDistanciaPorCidades(cidadeOrigem, cidadeDestino) {
@@ -933,19 +1836,51 @@
             }
         }
 
+        function loadCoordCache(){
+            try{
+                const raw = localStorage.getItem(COORD_CACHE_KEY);
+                const parsed = raw ? JSON.parse(raw) : null;
+                return parsed && typeof parsed === 'object' ? parsed : {};
+            }catch(_){
+                return {};
+            }
+        }
+
+        function saveCoordCache(cache){
+            try{
+                localStorage.setItem(COORD_CACHE_KEY, JSON.stringify(cache));
+            }catch(_){}
+        }
+
+        let nominatimLastCall = 0;
+        async function throttledNominatimFetch(url){
+            const elapsed = Date.now() - nominatimLastCall;
+            const wait = elapsed < 1100 ? 1100 - elapsed : 0;
+            if (wait) await new Promise(r => setTimeout(r, wait));
+            nominatimLastCall = Date.now();
+            return fetch(url, { headers: { 'Accept': 'application/json' } });
+        }
+
         async function obterCoordenadas(cidade) {
             try {
-                const response = await fetch(
+                const cityKey = cidade ? cidade.toLowerCase().trim() : '';
+                if (!cityKey) return null;
+                const cache = loadCoordCache();
+                if (cache[cityKey]) return cache[cityKey];
+
+                const response = await throttledNominatimFetch(
                     `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cidade + ', Brasil')}&limit=1`
                 );
-                
                 const data = await response.json();
                 
                 if (data && data.length > 0) {
-                    return [
+                    const coords = [
                         parseFloat(data[0].lat),
                         parseFloat(data[0].lon)
                     ];
+                    cache[cityKey] = coords;
+                    saveCoordCache(cache);
+                    return coords;
                 }
                 
                 return null;
@@ -972,13 +1907,82 @@
             return R * c;
         }
 
+        function openGastoModal(title, bodyHtml){
+            const modal = document.getElementById('gasto-modal');
+            const titleEl = document.getElementById('gasto-modal-title');
+            const bodyEl = document.getElementById('gasto-modal-body');
+            if (!modal || !titleEl || !bodyEl) return;
+            titleEl.textContent = title || 'Estimativa de gastos';
+            bodyEl.innerHTML = bodyHtml || '';
+            modal.hidden = false;
+            modal.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeGastoModal(){
+            const modal = document.getElementById('gasto-modal');
+            if (modal) {
+                modal.classList.remove('open');
+                modal.hidden = true;
+            }
+            document.body.style.overflow = '';
+        }
+
+        function formatMoney(val){
+            return Number.isFinite(val) ? `R$ ${val.toFixed(2)}` : '—';
+        }
+
+        function getDatasetNumber(el, key){
+            if (!el) return null;
+            const raw = el.dataset[key];
+            const n = Number(raw);
+            return Number.isFinite(n) ? n : null;
+        }
+
+        function showGastoBreakdown(rota, rotaDiv){
+            const totalKm = getDatasetNumber(rotaDiv, 'totalKm');
+            const combustivel = getDatasetNumber(rotaDiv, 'gastoCombustivel');
+            const alimentacao = getDatasetNumber(rotaDiv, 'gastoAlimentacao');
+            const hospedagem = getDatasetNumber(rotaDiv, 'gastoHospedagem');
+            const pedagios = getDatasetNumber(rotaDiv, 'gastoPedagios');
+            const total = getDatasetNumber(rotaDiv, 'gastoTotal');
+            const diarias = getDatasetNumber(rotaDiv, 'diariasTotal');
+            const noites = getDatasetNumber(rotaDiv, 'noitesTotal');
+            const consumo = getDatasetNumber(rotaDiv, 'consumo');
+            const valorLitro = getDatasetNumber(rotaDiv, 'valorLitro');
+            const alimentacaoDia = getDatasetNumber(rotaDiv, 'alimentacaoDia');
+            const hospedagemDia = getDatasetNumber(rotaDiv, 'hospedagemDia');
+            const pedagiosVal = getDatasetNumber(rotaDiv, 'pedagiosVal');
+
+            if (!Number.isFinite(totalKm)) {
+                openGastoModal('Estimativa de gastos', 'Abra os detalhes da rota para calcular a distância e o custo estimado.');
+                return;
+            }
+
+            const lines = [];
+            lines.push(`<div><strong>Evento:</strong> ${rota.rota_id} — ${rota.astronomo}</div>`);
+            lines.push(`<div><strong>Distância (ida + volta):</strong> ${totalKm.toFixed(1)} km</div>`);
+            lines.push(`<div><strong>Consumo do veículo:</strong> ${Number.isFinite(consumo) ? consumo.toFixed(1) + ' km/L' : '—'}</div>`);
+            lines.push(`<div><strong>Valor do litro:</strong> ${Number.isFinite(valorLitro) ? `R$ ${valorLitro.toFixed(2)}` : '—'}</div>`);
+            lines.push(`<div style="margin-top:8px;"><strong>Cálculo prático:</strong> (${totalKm.toFixed(1)} ÷ ${Number.isFinite(consumo) ? consumo.toFixed(1) : '—'}) × ${Number.isFinite(valorLitro) ? `R$ ${valorLitro.toFixed(2)}` : '—'} = ${formatMoney(combustivel)}</div>`);
+            lines.push(`<div><strong>Alimentação:</strong> ${formatMoney(alimentacao)} ${Number.isFinite(alimentacaoDia) ? `(R$ ${alimentacaoDia.toFixed(2)} × ${Number.isFinite(diarias) ? diarias : 1} diária(s))` : ''}</div>`);
+            lines.push(`<div><strong>Pedágios:</strong> ${formatMoney(pedagios)} ${Number.isFinite(pedagiosVal) ? `(R$ ${pedagiosVal.toFixed(2)} fixo)` : ''}</div>`);
+            lines.push(`<div><strong>Hospedagem:</strong> ${formatMoney(hospedagem)} ${Number.isFinite(hospedagemDia) ? `(R$ ${hospedagemDia.toFixed(2)} × ${Number.isFinite(noites) ? noites : 0} noite(s))` : ''}</div>`);
+            lines.push(`<div style="margin-top:8px;"><strong>Total estimado:</strong> ${formatMoney(total)}</div>`);
+
+            openGastoModal('Como calculamos o gasto', lines.join(''));
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const sess = getLoggedSession();
             sessaoAtual = sess;
             const astroInfoEl = document.getElementById('astro-info');
             if (astroInfoEl) astroInfoEl.innerHTML = describeSession(sessaoAtual);
-
-            carregarRotas(true).catch(err => console.warn('Auto-carregamento de rotas falhou:', err));
+            carregarRotas(true);
+            const modalBackdrop = document.getElementById('gasto-modal-backdrop');
+            const modalClose = document.getElementById('gasto-modal-close');
+            if (modalBackdrop) modalBackdrop.addEventListener('click', closeGastoModal);
+            if (modalClose) modalClose.addEventListener('click', closeGastoModal);
         });
     </script>
 </body>

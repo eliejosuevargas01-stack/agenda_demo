@@ -6,13 +6,18 @@
     <title>Feedbacks - Astrônomos</title>
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <link rel="stylesheet" href="css/styles.css">
+    <script src="auth.js"></script>
+    <script src="demo-data.js"></script>
+    <script src="demo-interceptor.js"></script>
     <!-- <link rel="stylesheet" href="css/main-responsive.css"> -->
     <!-- <link rel="stylesheet" href="css/style.css"> -->
-    <!-- <link rel="stylesheet" href="css/docs-urania.css"> -->
+    <!-- <link rel="stylesheet" href="css/docs-app.css"> -->
     <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"> -->
+    <link rel="stylesheet" href="css/feedback-widget.css">
+    <script src="feedback-widget.js" defer></script>
 </head>
 <body class="presentation-page feedbacks-page">
-    <!-- Fundo galáctico (coeso com a Agenda Urânia) -->
+    <!-- Fundo galáctico (coeso com a Agenda Inteligente) -->
     <div class="space-layer stars"></div>
     <div class="space-layer twinkle"></div>
     <div class="space-layer nebula"></div>
@@ -23,49 +28,21 @@
             <header class="page-header">
                 <div>
                     <h1>Feedbacks</h1>
-                    <p class="subtitle">Agenda Inteligente Urânia</p>
+                    <p class="subtitle">Agenda Inteligente</p>
                 </div>
             </header>
             
             <div class="navigation">
-                <a href="apresentacao.html" class="nav-button"><i class="fas fa-clipboard-list"></i> Apresentação</a>
                 <a href="index.html" class="nav-button"><i class="fas fa-calendar-alt"></i> Agenda</a>
                 <a href="feedbacks.html" class="nav-button active"><i class="fas fa-comment-dots"></i> Feedbacks</a>
                 <a href="despesas.html" class="nav-button"><i class="fas fa-file-invoice-dollar"></i> Despesas</a>
                 <a href="historico.html" class="nav-button"><i class="fas fa-history"></i> Históricos</a>
                 <a href="account.html" class="nav-button account-header-btn"><i class="fas fa-user-astronaut"></i> Minha Conta</a>
                 <a href="rotas.html" class="nav-button"><i class="fas fa-route"></i> Rotas</a>
+                <a href="debug-astronomo.html" class="nav-button"><i class="fas fa-bug"></i> Debug</a>
             </div>
             
             <main>
-                <section class="hero">
-                    <div>
-                        <span class="hero-eyebrow"><i class="fas fa-comment-dots"></i> Feedbacks</span>
-                        <h1>Feedbacks dos astrônomos em tempo real.</h1>
-                        <p>Carregue, filtre e acompanhe percepções por cidade, sentimento e resultado das sessões.</p>
-                    </div>
-                    <div class="panel-card">
-                        <div class="panel-title">
-                            <span>Painel rápido</span>
-                            <span class="panel-tag">Atualização automática</span>
-                        </div>
-                        <div class="panel-list">
-                            <div class="panel-item">
-                                <span class="panel-label">Cobertura</span>
-                                <span class="panel-value">Visão consolidada</span>
-                            </div>
-                            <div class="panel-item">
-                                <span class="panel-label">Sentimento</span>
-                                <span class="panel-value">Leitura instantânea</span>
-                            </div>
-                            <div class="panel-item">
-                                <span class="panel-label">Qualidade</span>
-                                <span class="panel-value">Ajustes recomendados</span>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-                
                 <section class="section" id="indicadores">
                     <div class="section-header">
                         <h2>Indicadores de feedback</h2>
@@ -136,7 +113,7 @@
                         <div class="empty-state">
                             <i class="fas fa-comment-slash"></i>
                             <h3>Nenhum feedback encontrado</h3>
-                            <p>Clique em "Buscar Dados" para carregar os feedbacks dos astrônomos</p>
+                            <p>Os feedbacks são carregados automaticamente ao abrir esta página</p>
                         </div>
                     </div>
                     
@@ -207,7 +184,7 @@
         const countNegativeElement = document.getElementById('count-negative');
 
         // Configuração do Webhook (novo endpoint)
-        const AGENDA_WEBHOOK_URL = 'https://myn8n.seommerce.shop/webhook/agenda_inteligente_demo';
+        const AGENDA_WEBHOOK_URL = 'https://urania-planetario-n8n.mmjkgs.easypanel.host/webhook/agenda-astronomos';
         const AGENDA_CACHE_PREFIX = 'agenda_cache_v1';
 
         // Utilitários de sessão e webhook
@@ -225,17 +202,91 @@
             return `${AGENDA_CACHE_PREFIX}::${String(ns).toLowerCase()}`;
         }
 
-        function buildUrl(base, params){
-            const usp = new URLSearchParams();
-            Object.entries(params||{}).forEach(([k,v])=>{ if (v!==undefined && v!==null) usp.append(k, String(v)); });
-            const sep = base.includes('?') ? '&' : '?';
-            return base + sep + usp.toString();
+        function findAstronomerFromCache(sess){
+            try{
+                const raw = localStorage.getItem('astronomersData');
+                const list = raw ? JSON.parse(raw) : null;
+                if (!Array.isArray(list) || !list.length) return null;
+                const id = sess?.id_astronomo ?? sess?.assistant_id ?? sess?.id ?? null;
+                const user = (sess?.usuario || sess?.username || sess?.astronomo || '').toString().trim().toLowerCase();
+                return list.find(a => {
+                    if (!a || typeof a !== 'object') return false;
+                    const aId = a.id_astronomo ?? a.id ?? a.assistant_id ?? null;
+                    if (id != null && String(aId) === String(id)) return true;
+                    const aUser = (a.usuario || a.username || a.astronomo || '').toString().trim().toLowerCase();
+                    return user && aUser && aUser === user;
+                }) || null;
+            }catch(_){
+                return null;
+            }
+        }
+
+        function buildSessionPayload(sess){
+            const cached = findAstronomerFromCache(sess);
+            return { ...(cached || {}), ...(sess || {}) };
+        }
+
+        function getSessionTaskIds(sess){
+            const base = buildSessionPayload(sess);
+            const parseId = (v) => {
+                if (v === undefined || v === null || v === '') return null;
+                const n = Number(v);
+                if (Number.isFinite(n)) return String(n);
+                const s = String(v).trim();
+                return s || null;
+            };
+            return {
+                visita: parseId(base?.id_visita || base?.visita_id),
+                pre: parseId(base?.id_pre || base?.pre_id),
+                reserva: parseId(base?.id_reserva || base?.reserva_id),
+                nao_marcar: parseId(base?.id_n_marcar || base?.id_nao_marcar || base?.nao_marcar_id)
+            };
+        }
+
+        async function readResponsePayload(resp){
+            let text = '';
+            try { text = await resp.text(); } catch (_) { text = ''; }
+            if (!text) return null;
+            try { return JSON.parse(text); } catch (_) { return text; }
+        }
+        function normalizeAgendaPayload(data){
+            if (!data) return [];
+            if (Array.isArray(data)) return data;
+            if (typeof data !== 'object') return [];
+            if (Array.isArray(data.eventos)) return data.eventos;
+            if (Array.isArray(data.data)) return data.data;
+            if (Array.isArray(data.events)) return data.events;
+            if (Array.isArray(data.agenda)) return data.agenda;
+            return [data];
         }
         async function callAgendaWebhook(action, params){
-            const url = buildUrl(AGENDA_WEBHOOK_URL, { action, ...(params||{}) });
-            const resp = await fetch(url, { method:'GET', headers:{ 'Accept':'application/json' } });
-            if (!resp.ok) throw new Error(`Erro HTTP ${resp.status}`);
-            try{ return await resp.json(); }catch(_){ return null; }
+            const payload = { action, ...(params||{}) };
+            if (action === 'atualizar_agenda') payload.tipo = 'TODOS';
+            const sess = getLoggedSession();
+            const base = buildSessionPayload(sess);
+            if (base){
+                if (payload.id_astronomo == null && base.id_astronomo != null) payload.id_astronomo = base.id_astronomo;
+                if (payload.usuario == null) {
+                    const u = base.usuario || base.username || base.astronomo;
+                    if (u) payload.usuario = u;
+                }
+                const ids = getSessionTaskIds(base || null);
+                if (payload.id_visita == null && ids && ids.visita) payload.id_visita = ids.visita;
+                if (payload.id_pre == null && ids && ids.pre) payload.id_pre = ids.pre;
+                if (payload.id_reserva == null && ids && ids.reserva) payload.id_reserva = ids.reserva;
+                if (payload.id_n_marcar == null && ids && ids.nao_marcar) payload.id_n_marcar = ids.nao_marcar;
+            }
+            const resp = await fetch(AGENDA_WEBHOOK_URL, {
+                method:'POST',
+                headers:{ 'Accept':'application/json', 'Content-Type':'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const data = await readResponsePayload(resp);
+            if (!resp.ok) {
+                const txt = typeof data === 'string' ? data : '';
+                throw new Error(`HTTP ${resp ? resp.status : '??'}: ${txt || 'erro'}`);
+            }
+            return data;
         }
 
         function loadCachedAgenda(sess){
@@ -267,6 +318,79 @@
         const feedbacksPerPage = 12;
 
         function norm(v){ return String(v||'').trim().toLowerCase(); }
+        function getEventIdCandidates(ev){
+            if (!ev || typeof ev !== 'object') return [];
+            const ids = [
+                ev.id_evento,
+                ev.id_evento_unico,
+                ev.id_agendamento,
+                ev.id,
+                ev.uuid,
+                ev.evento_id
+            ].filter(v => v !== undefined && v !== null && v !== '');
+            return ids.map(v => String(v));
+        }
+        function scoreEventForMerge(ev){
+            if (!ev || typeof ev !== 'object') return 0;
+            let score = 0;
+            if (ev.id_evento != null) score += 4;
+            if (ev.id_evento_unico != null) score += 3;
+            if (ev.id_agendamento != null) score += 2;
+            if (ev.id != null) score += 1;
+            if (extractFeedbackText(ev)) score += 3;
+            if (extractNotaNpm(ev) != null) score += 2;
+            if (ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data) score += 1;
+            return score;
+        }
+        function mergeDuplicateEvents(base, incoming){
+            if (!base) return incoming;
+            if (!incoming) return base;
+            const incomingWins = scoreEventForMerge(incoming) > scoreEventForMerge(base);
+            const primary = incomingWins ? incoming : base;
+            const secondary = incomingWins ? base : incoming;
+            const merged = { ...primary };
+            Object.entries(secondary).forEach(([k,v]) => {
+                if (merged[k] === undefined || merged[k] === null || merged[k] === '' || merged[k] === 'null') {
+                    merged[k] = v;
+                }
+            });
+            const ids = new Set([...getEventIdCandidates(base), ...getEventIdCandidates(incoming)]);
+            if (ids.size > 1) merged._duplicate_ids = Array.from(ids);
+            return merged;
+        }
+        function canonicalEventSignature(ev){
+            if (!ev || typeof ev !== 'object') return '';
+            const rawDate = ev._date || ev.data_e_hora_agendamento || ev.data_e_hora_do_agendamento || ev.data_agendamento || ev.data || ev.date;
+            const dateObj = rawDate instanceof Date ? rawDate : (rawDate ? new Date(rawDate) : null);
+            const dateStr = dateObj instanceof Date && !Number.isNaN(dateObj.getTime()) ? dateObj.toISOString() : '';
+            const escola = norm(ev.nome_da_escola || ev.nome_escola || ev.escola || ev.nome_lead || '');
+            const cidade = norm(ev.cidade || ev.cidade_destino || ev.cidade_origem || '');
+            const conteudo = norm(ev.conteudo_da_apresentacao || ev.conteudo_apresentacao || ev.conteudo || ev.apresentacao || '');
+            const tipo = norm(ev.tipo_da_tarefa || ev.tipo_evento || ev.tipo || '');
+            return JSON.stringify({ dateStr, escola, cidade, conteudo, tipo });
+        }
+        function dedupeEventsBySignature(arr){
+            if (!Array.isArray(arr)) return [];
+            const sigMap = new Map();
+            const result = [];
+            arr.forEach(ev => {
+                const sig = canonicalEventSignature(ev);
+                if (!sig) {
+                    result.push(ev);
+                    return;
+                }
+                if (sigMap.has(sig)) {
+                    const merged = mergeDuplicateEvents(sigMap.get(sig), ev);
+                    const idx = result.indexOf(sigMap.get(sig));
+                    if (idx >= 0) result[idx] = merged;
+                    sigMap.set(sig, merged);
+                } else {
+                    sigMap.set(sig, ev);
+                    result.push(ev);
+                }
+            });
+            return result;
+        }
         function belongsToSession(item, s){
             if (!s) return false;
             const sid = item.assistant_id ?? item.ASSISTANT_ID;
@@ -285,11 +409,11 @@
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             // Event Listeners
-            citySelect.addEventListener('change', handleCityFilter);
-            searchInput.addEventListener('input', handleSearch);
-            prevPageButton.addEventListener('click', goToPrevPage);
-            nextPageButton.addEventListener('click', goToNextPage);
-            btnFetchData.addEventListener('click', fetchDataFromN8N);
+            if (citySelect) citySelect.addEventListener('change', handleCityFilter);
+            if (searchInput) searchInput.addEventListener('input', handleSearch);
+            if (prevPageButton) prevPageButton.addEventListener('click', goToPrevPage);
+            if (nextPageButton) nextPageButton.addEventListener('click', goToNextPage);
+            if (btnFetchData) btnFetchData.addEventListener('click', fetchDataFromN8N);
             
             sentimentFilters.forEach(filter => {
                 filter.addEventListener('click', () => {
@@ -308,19 +432,32 @@
 
         async function fetchDataFromN8N() {
             try {
-                btnFetchData.disabled = true;
-                btnFetchData.innerHTML = '<span class="loading"></span> Buscando dados...';
-                connectionStatus.textContent = 'Lendo dados sincronizados na Agenda...';
-                webhookStatus.classList.remove('status-connected', 'status-error', 'status-warning');
+                if (btnFetchData) {
+                    btnFetchData.disabled = true;
+                    btnFetchData.innerHTML = '<span class="loading"></span> Buscando dados...';
+                }
+                if (connectionStatus) connectionStatus.textContent = 'Conectando ao webhook da Agenda...';
+                if (webhookStatus) webhookStatus.classList.remove('status-connected', 'status-error', 'status-warning');
 
                 const s = getLoggedSession();
-                const cached = loadCachedAgenda(s);
-
-                if (!cached || !Array.isArray(cached.events) || cached.events.length === 0) {
-                    throw new Error('Nenhum dado em cache. Abra a Agenda (index) para sincronizar os eventos.');
+                let rawData = null;
+                try{
+                    rawData = await callAgendaWebhook('get_feedback', s?.id_astronomo != null ? { id_astronomo: s.id_astronomo } : {});
+                }catch(err){
+                    console.warn('Falha ao buscar feedbacks via webhook, tentando cache local:', err);
+                    const cached = loadCachedAgenda(s);
+                    if (cached && Array.isArray(cached.events) && cached.events.length) {
+                        rawData = cached.events;
+                    } else {
+                        throw err;
+                    }
                 }
 
-                eventsData = cached.events;
+                const normalized = normalizeAgendaPayload(rawData);
+                if ((!normalized || !normalized.length) && typeof showNoDataPopup === 'function') {
+                    showNoDataPopup('Sem dados retornados do n8n.');
+                }
+                eventsData = normalized;
 
                 // Extrair apenas eventos que têm feedback (avaliação/NPM)
                 feedbacksData = eventsData.filter(hasFeedbackFromEvent);
@@ -332,13 +469,13 @@
                     const npmCampo = extractNpmField(event);
                     const textoRaw = (typeof event?.texto_tarefa === 'object' && event?.texto_tarefa !== null) ? (event.texto_tarefa.texto ?? '') : (event?.texto_tarefa ?? '');
                     const escolaNome = (event?.nome_da_escola || event?.nome_escola || event?.escola || event?.nome_lead || '').toString().trim();
-                    const eventoNome = escolaNome || (event?.conteudo_da_apresentacao ?? textoRaw ?? '').toString() || 'Evento Astronômico';
-                    const dataBruta = event?._date || event?.data_agendamento || event?.data_e_hora_do_agendamento || event?.data || event?.date || new Date().toISOString();
+                    const eventoNome = escolaNome || (event?.conteudo_da_apresentacao ?? event?.conteudo_apresentacao ?? event?.conteudo ?? event?.apresentacao ?? textoRaw ?? '').toString() || 'Evento Astronômico';
+                    const dataBruta = event?._date || event?.data_e_hora_agendamento || event?.data_e_hora_do_agendamento || event?.data_agendamento || event?.data || event?.date || new Date().toISOString();
                     const dataObj = dataBruta instanceof Date ? dataBruta : new Date(dataBruta);
                     const data = !Number.isNaN(dataObj.getTime()) ? dataObj.toISOString() : new Date().toISOString();
-                    const cidade = (event?.cidade && event.cidade.toString().trim()) ? event.cidade : (event?.cidade_destino || 'Cidade não informada');
+                    const cidade = event?.cidade_destino || event?.cidade || event?.cidade_evento || event?.cidade_lead || event?.cidade_da_escola || 'Cidade não informada';
                     const local = (event?.local_instalacao && event.local_instalacao.toString().toLowerCase()!=='null') ? event.local_instalacao : (event?.endereco || 'Local não informado');
-                    const alunos = event?.numero_alunos_empresa ?? event?.numero_de_alunos ?? '0';
+                    const alunos = event?.numero_alunos ?? event?.faixa_de_alunos ?? event?.numero_de_alunos ?? event?.numero_alunos_empresa ?? '0';
                     const id = event?.id ?? event?.id_evento ?? event?.id_evento_unico ?? 'N/A';
                     const sentiment = analyzeSentiment(feedbackTexto, nota);
                     return {
@@ -349,27 +486,47 @@
                         data,
                         cidade,
                         local,
-                        astronomo: event?.astronomo ?? event?.astronomo_validacao ?? 'A definir',
+                        astronomo: event?.astronomo ?? event?.astronomo_validacao ?? event?.usuario ?? event?.username ?? 'A definir',
                         feedback: feedbackTexto,
                         sentiment,
                         numero_alunos: alunos,
-                        valor_total: event?.valor_total ?? '0',
+                        valor_total: event?.valor_total ?? event?.total ?? event?.valor ?? event?.custo_total ?? '0',
                         nota_npm: nota,
                         npm: npmCampo
                     };
                 });
 
+                // Filtrar por usuário logado apenas se os dados tiverem campos de sessão
+                const session = getLoggedSession();
+                if (session) {
+                    const hasSessionFields = feedbacksData.some(item =>
+                        item && (
+                            item.assistant_id != null ||
+                            item.ASSISTANT_ID != null ||
+                            item.id_astronomo != null ||
+                            item.idAstronomo != null ||
+                            item.usuario != null ||
+                            item.USERNAME != null ||
+                            item.astronomo != null ||
+                            item.astronomo_validacao != null
+                        )
+                    );
+                    if (hasSessionFields) {
+                        feedbacksData = feedbacksData.filter(item => belongsToSession(item, session));
+                    }
+                }
+
                 populateFilters();
                 
-                connectionStatus.textContent = `Carregado do cache da Agenda - ${feedbacksData.length} feedback(s)`;
-                webhookStatus.classList.add('status-connected');
-                showNotification(`${feedbacksData.length} feedbacks carregados do cache da Agenda`, 'success');
+                if (connectionStatus) connectionStatus.textContent = `Feedbacks carregados - ${feedbacksData.length} feedback(s)`;
+                if (webhookStatus) webhookStatus.classList.add('status-connected');
+                showNotification(`${feedbacksData.length} feedbacks carregados`, 'success');
                 
             } catch (error) {
                 console.error('Erro ao buscar dados do n8n:', error);
-                connectionStatus.textContent = `Erro: ${error.message}`;
-                webhookStatus.classList.add('status-error');
-                showNotification(`Abra a Agenda (index) para sincronizar: ${error.message}`, 'error');
+                if (connectionStatus) connectionStatus.textContent = `Erro: ${error.message}`;
+                if (webhookStatus) webhookStatus.classList.add('status-error');
+                showNotification(`Erro ao carregar feedbacks: ${error.message}`, 'error');
                 
                 // Em caso de erro, mostrar estado vazio
                 feedbacksData = [];
@@ -377,8 +534,10 @@
                 updatePagination();
                 updateStats();
             } finally {
-                btnFetchData.disabled = false;
-                btnFetchData.innerHTML = '<i class="fas fa-sync-alt"></i> Buscar Dados';
+                if (btnFetchData) {
+                    btnFetchData.disabled = false;
+                    btnFetchData.innerHTML = '<i class="fas fa-sync-alt"></i> Buscar Dados';
+                }
             }
         }
 
@@ -416,6 +575,41 @@
             return 'neutral';
         }
 
+        function cleanFeedbackText(value){
+            if (value === null || value === undefined) return '';
+            if (typeof value === 'number') return '';
+            let text = '';
+            if (typeof value === 'object') {
+                const obj = value;
+                const nested = obj.texto || obj.text || obj.feedback || obj.comentario || obj.avaliacao || obj.resposta;
+                if (nested !== undefined && nested !== null) {
+                    text = String(nested).trim();
+                } else {
+                    return '';
+                }
+            } else {
+                text = String(value).trim();
+            }
+            if (!text) return '';
+            const lower = text.toLowerCase();
+            if (lower === 'null' || lower === 'undefined' || lower === 'nan' || lower === 'n/a') return '';
+            if (lower.includes('nao possu') || lower.includes('não possu') || lower.includes('sem feedback') || lower.includes('sem avaliacao') || lower.includes('sem avaliação')) {
+                return '';
+            }
+            return text;
+        }
+
+        function getValuesByKeyHints(obj, hints){
+            if (!obj || typeof obj !== 'object') return [];
+            const out = [];
+            Object.entries(obj).forEach(([k,v]) => {
+                const key = String(k).toLowerCase();
+                if (!hints.some(h => key.includes(h))) return;
+                out.push(v);
+            });
+            return out;
+        }
+
         function extractFeedbackText(event){
             const candidates = [
                 event?.avaliacao,
@@ -424,13 +618,33 @@
                 event?.feedback,
                 event?.comentario_feedback,
                 event?.feedback_texto,
-                event?.avaliacao_responsavel
+                event?.avaliacao_responsavel,
+                event?.resultado,
+                event?.resultado_evento,
+                event?.resultado_apresentacao,
+                event?.comentario,
+                event?.comentarios,
+                event?.observacao,
+                event?.observacoes,
+                event?.obs
             ];
+            const hinted = getValuesByKeyHints(event, [
+                'feedback',
+                'avaliacao',
+                'coment',
+                'resultado',
+                'observa',
+                'obs',
+                'satisf'
+            ]);
             for (const c of candidates){
-                const t = (c ?? '').toString().trim();
+                const t = cleanFeedbackText(c);
                 if (!t) continue;
-                const lower = t.toLowerCase();
-                if (lower === 'null' || lower === 'undefined') continue;
+                return t;
+            }
+            for (const c of hinted){
+                const t = cleanFeedbackText(c);
+                if (!t) continue;
                 return t;
             }
             return '';
@@ -446,6 +660,14 @@
             ];
             for (const c of candidates){
                 const t = (c ?? '').toString().trim();
+                if (!t) continue;
+                if (t.toLowerCase() === 'null' || t.toLowerCase() === 'undefined') continue;
+                return t;
+            }
+            const hinted = getValuesByKeyHints(event, ['nps', 'npm', 'promoter']);
+            for (const c of hinted){
+                if (c === null || c === undefined) continue;
+                const t = String(c).trim();
                 if (!t) continue;
                 if (t.toLowerCase() === 'null' || t.toLowerCase() === 'undefined') continue;
                 return t;
@@ -469,6 +691,14 @@
                 if (!Number.isFinite(num)) continue;
                 if (num >= 0 && num <= 10) return num;
                 // aceita números fora do range, mas arredonda para 0-10
+                return Math.max(0, Math.min(10, num));
+            }
+            const hinted = getValuesByKeyHints(event, ['nota_npm', 'nota_nps', 'nps', 'npm', 'promoter']);
+            for (const c of hinted){
+                if (c === null || c === undefined) continue;
+                const num = Number(String(c).replace(',', '.'));
+                if (!Number.isFinite(num)) continue;
+                if (num >= 0 && num <= 10) return num;
                 return Math.max(0, Math.min(10, num));
             }
             return null;

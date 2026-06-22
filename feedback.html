@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sugestoes do App</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/feedback-widget.css">
+  <script src="auth.js"></script>
+  <script src="demo-data.js"></script>
+  <script src="demo-interceptor.js"></script>
+  <script src="feedback-widget.js" defer></script>
+  <style>
+    body.feedback-page {
+      background: radial-gradient(1100px 520px at 15% 10%, rgba(52, 211, 153, 0.08), transparent 60%),
+                  radial-gradient(900px 480px at 90% 92%, rgba(99, 102, 241, 0.08), transparent 58%),
+                  #020617;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    .feedback-wrap {
+      max-width: 940px;
+      margin: 0 auto;
+      padding: 22px 14px 40px;
+    }
+
+    .feedback-card {
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 16px;
+      background: rgba(15, 23, 42, 0.78);
+      backdrop-filter: blur(6px);
+      box-shadow: 0 28px 72px rgba(2, 6, 23, 0.5);
+      overflow: hidden;
+    }
+
+    .feedback-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feedback-header h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      color: #f8fafc;
+    }
+
+    .feedback-header p {
+      margin: 6px 0 0;
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    .feedback-body {
+      padding: 18px 20px 22px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .feedback-row {
+      display: grid;
+      gap: 8px;
+    }
+
+    .feedback-row label {
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #cbd5e1;
+      font-weight: 700;
+    }
+
+    .feedback-row input[type="text"],
+    .feedback-row input[type="url"],
+    .feedback-row textarea {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      padding: 10px 12px;
+      font: inherit;
+    }
+
+    .feedback-row textarea {
+      min-height: 170px;
+      resize: vertical;
+      line-height: 1.45;
+    }
+
+    .feedback-help {
+      color: #94a3b8;
+      font-size: 0.82rem;
+      margin-top: 2px;
+    }
+
+    .feedback-files {
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(15, 23, 42, 0.4);
+    }
+
+    .feedback-file-list {
+      list-style: none;
+      padding: 0;
+      margin: 8px 0 0;
+      display: grid;
+      gap: 6px;
+    }
+
+    .feedback-file-list li {
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 8px;
+      background: rgba(15, 23, 42, 0.65);
+      padding: 7px 9px;
+      font-size: 0.83rem;
+      color: #e2e8f0;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .feedback-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      margin-top: 6px;
+    }
+
+    .feedback-header .btn,
+    .feedback-actions .btn {
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.45);
+      min-height: 46px;
+      padding: 0 18px;
+      font-size: 0.95rem;
+      letter-spacing: 0.01em;
+    }
+
+    .feedback-header .btn-secondary,
+    .feedback-actions .btn-secondary {
+      background: rgba(30, 41, 59, 0.88);
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.55);
+    }
+
+    .feedback-header .btn-secondary:hover,
+    .feedback-actions .btn-secondary:hover {
+      background: rgba(51, 65, 85, 0.92);
+      color: #ffffff;
+      border-color: rgba(148, 163, 184, 0.8);
+      transform: translateY(-1px);
+    }
+
+    .feedback-actions .btn-success {
+      background: linear-gradient(135deg, #14b8a6, #0ea5e9);
+      color: #f8fafc;
+      border-color: rgba(45, 212, 191, 0.85);
+      box-shadow: 0 10px 24px rgba(14, 165, 233, 0.3);
+      font-weight: 700;
+    }
+
+    .feedback-actions .btn-success:hover {
+      filter: brightness(1.06);
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(14, 165, 233, 0.38);
+    }
+
+    .feedback-actions .btn:disabled {
+      opacity: 1;
+      background: rgba(71, 85, 105, 0.45);
+      color: rgba(226, 232, 240, 0.78);
+      border-color: rgba(148, 163, 184, 0.42);
+      box-shadow: none;
+      cursor: not-allowed;
+      transform: none;
+      filter: none;
+    }
+
+    .feedback-actions .btn:focus-visible,
+    .feedback-header .btn:focus-visible {
+      outline: 2px solid rgba(56, 189, 248, 0.9);
+      outline-offset: 2px;
+    }
+
+    .feedback-status {
+      min-height: 22px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.4);
+      padding: 8px 10px;
+      color: #cbd5e1;
+      font-size: 0.84rem;
+    }
+
+    .feedback-status.error { color: #fecaca; border-color: rgba(248, 113, 113, 0.35); }
+    .feedback-status.success { color: #bbf7d0; border-color: rgba(74, 222, 128, 0.35); }
+
+    .feedback-meta {
+      border-top: 1px solid rgba(148, 163, 184, 0.2);
+      margin-top: 2px;
+      padding-top: 10px;
+      color: #94a3b8;
+      font-size: 0.78rem;
+      display: grid;
+      gap: 4px;
+    }
+
+    @media (max-width: 760px) {
+      .feedback-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .feedback-actions .btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body class="presentation-page feedback-page">
+  <div class="space-layer stars"></div>
+  <div class="space-layer twinkle"></div>
+  <div class="space-layer nebula"></div>
+  <div class="space-layer galaxies"></div>
+
+  <div class="feedback-wrap">
+    <div class="feedback-card">
+      <div class="feedback-header">
+        <div>
+          <h1>Sugestoes para melhorar o app</h1>
+          <p>Compartilhe ideias, problemas encontrados e melhorias de usabilidade.</p>
+        </div>
+        <a class="btn btn-secondary" id="btn-voltar" href="index.html">Voltar</a>
+      </div>
+
+      <div class="feedback-body">
+        <form id="feedback-form" novalidate>
+          <div class="feedback-row">
+            <label for="feedback-subject">Assunto</label>
+            <input id="feedback-subject" name="assunto" type="text" maxlength="160" required placeholder="Ex.: Melhorar filtro da agenda por diaria">
+          </div>
+
+          <div class="feedback-row">
+            <label for="feedback-message">Mensagem</label>
+            <textarea id="feedback-message" name="mensagem" maxlength="5000" required placeholder="Explique a sugestao com o maximo de detalhes possivel"></textarea>
+            <div class="feedback-help">Descreva o contexto, o comportamento atual e o resultado esperado.</div>
+          </div>
+
+          <div class="feedback-row">
+            <label for="feedback-files">Imagens e documentos anexados</label>
+            <div class="feedback-files">
+              <input id="feedback-files" name="arquivos" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt,.csv,.zip,.rar,.7z">
+              <ul id="feedback-file-list" class="feedback-file-list"></ul>
+            </div>
+            <div class="feedback-help">Voce pode anexar prints e arquivos de apoio (max. 10 arquivos).</div>
+          </div>
+
+          <div class="feedback-actions">
+            <button type="button" class="btn btn-secondary" id="feedback-clear">Limpar</button>
+            <button type="submit" class="btn btn-success" id="feedback-submit">Enviar sugestao</button>
+          </div>
+        </form>
+
+        <div id="feedback-status" class="feedback-status">Preencha os campos e envie quando quiser.</div>
+
+        <div class="feedback-meta">
+          <span id="feedback-origin"></span>
+          <span id="feedback-session"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function initFeedbackPage(){
+      const FEEDBACK_WEBHOOK_STORAGE_KEY = 'feedback_webhook_url';
+      const FEEDBACK_DEFAULT_WEBHOOK = String(window.FEEDBACK_WEBHOOK_URL || '').trim();
+      const MAX_FILES = 10;
+
+      const form = document.getElementById('feedback-form');
+      const subjectInput = document.getElementById('feedback-subject');
+      const messageInput = document.getElementById('feedback-message');
+      const filesInput = document.getElementById('feedback-files');
+      const filesList = document.getElementById('feedback-file-list');
+      const statusEl = document.getElementById('feedback-status');
+      const submitBtn = document.getElementById('feedback-submit');
+      const clearBtn = document.getElementById('feedback-clear');
+      const originEl = document.getElementById('feedback-origin');
+      const sessionEl = document.getElementById('feedback-session');
+      const backBtn = document.getElementById('btn-voltar');
+
+      const params = new URLSearchParams(window.location.search || '');
+      const origem = params.get('origem') || document.referrer || 'Nao informado';
+      if (originEl) originEl.textContent = 'Origem: ' + origem;
+
+      if (backBtn && params.get('origem')) {
+        backBtn.href = params.get('origem');
+      }
+
+      const rawSession = localStorage.getItem('astronomo_session') || localStorage.getItem('userSession') || '';
+      let session = null;
+      try { session = rawSession ? JSON.parse(rawSession) : null; } catch (_) { session = null; }
+
+      if (sessionEl) {
+        const user = (session && (session.usuario || session.username || session.astronomo || session.nome_completo)) || 'Nao identificado';
+        const id = (session && (session.id_astronomo || session.assistant_id || session.id || '')) || '';
+        sessionEl.textContent = 'Usuario: ' + user + (id ? (' · ID ' + id) : '');
+      }
+
+      const bytesToHuman = (bytes) => {
+        const n = Number(bytes || 0);
+        if (!Number.isFinite(n) || n <= 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let value = n;
+        let idx = 0;
+        while (value >= 1024 && idx < units.length - 1) {
+          value /= 1024;
+          idx++;
+        }
+        return (idx === 0 ? value.toFixed(0) : value.toFixed(2)) + ' ' + units[idx];
+      };
+
+      function setStatus(message, type) {
+        if (!statusEl) return;
+        statusEl.textContent = message || '';
+        statusEl.className = 'feedback-status' + (type ? (' ' + type) : '');
+      }
+
+      function renderFiles() {
+        if (!filesInput || !filesList) return;
+        const files = Array.from(filesInput.files || []);
+        filesList.innerHTML = '';
+        if (!files.length) return;
+        files.forEach((file) => {
+          const li = document.createElement('li');
+          const left = document.createElement('span');
+          left.textContent = file.name || 'arquivo';
+          const right = document.createElement('span');
+          right.textContent = bytesToHuman(file.size);
+          li.appendChild(left);
+          li.appendChild(right);
+          filesList.appendChild(li);
+        });
+      }
+
+      if (filesInput) {
+        filesInput.addEventListener('change', () => {
+          let files = Array.from(filesInput.files || []);
+          if (files.length > MAX_FILES) {
+            files = files.slice(0, MAX_FILES);
+            const dt = new DataTransfer();
+            files.forEach(f => dt.items.add(f));
+            filesInput.files = dt.files;
+            setStatus('Limite de ' + MAX_FILES + ' arquivos. Os extras foram ignorados.', 'error');
+          }
+          renderFiles();
+        });
+      }
+
+      if (clearBtn) {
+        clearBtn.addEventListener('click', () => {
+          if (subjectInput) subjectInput.value = '';
+          if (messageInput) messageInput.value = '';
+          if (filesInput) filesInput.value = '';
+          renderFiles();
+          setStatus('Formulario limpo.', '');
+        });
+      }
+
+      if (!form) return;
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const assunto = String((subjectInput && subjectInput.value) || '').trim();
+        const mensagem = String((messageInput && messageInput.value) || '').trim();
+        const files = Array.from((filesInput && filesInput.files) || []);
+        const webhook = String(FEEDBACK_DEFAULT_WEBHOOK || localStorage.getItem(FEEDBACK_WEBHOOK_STORAGE_KEY) || '').trim();
+
+        if (!assunto) {
+          setStatus('Informe o assunto.', 'error');
+          if (subjectInput) subjectInput.focus();
+          return;
+        }
+        if (!mensagem) {
+          setStatus('Informe a mensagem.', 'error');
+          if (messageInput) messageInput.focus();
+          return;
+        }
+        if (!webhook) {
+          setStatus('Webhook de feedback nao configurado no codigo. Defina FEEDBACK_WEBHOOK_URL.', 'error');
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Enviando...';
+        setStatus('Enviando sugestao para o n8n...');
+
+        try {
+          const payload = new FormData();
+          payload.append('action', 'feedback_app');
+          payload.append('assunto', assunto);
+          payload.append('mensagem', mensagem);
+          payload.append('origem', origem);
+          payload.append('pagina_atual', window.location.href);
+          payload.append('timestamp', new Date().toISOString());
+          payload.append('timezone', (Intl.DateTimeFormat().resolvedOptions().timeZone || ''));
+          payload.append('user_agent', navigator.userAgent || '');
+
+          if (session && typeof session === 'object') {
+            payload.append('id_astronomo', session.id_astronomo || session.assistant_id || session.id || '');
+            payload.append('usuario', session.usuario || session.username || session.astronomo || session.nome_completo || '');
+            payload.append('session_id', session.session_id || session.sessionId || '');
+          }
+
+          files.forEach((file) => {
+            payload.append('anexos', file, file.name || 'arquivo');
+          });
+
+          const response = await fetch(webhook, {
+            method: 'POST',
+            body: payload
+          });
+
+          const text = await response.text().catch(() => '');
+          if (!response.ok) {
+            throw new Error(text || ('HTTP ' + response.status));
+          }
+
+          setStatus('Sugestao enviada com sucesso. Obrigado por contribuir!', 'success');
+          if (messageInput) messageInput.value = '';
+          if (subjectInput) subjectInput.value = '';
+          if (filesInput) filesInput.value = '';
+          renderFiles();
+        } catch (err) {
+          console.error('Erro ao enviar feedback:', err);
+          setStatus('Falha ao enviar feedback: ' + (err && err.message ? err.message : 'erro desconhecido'), 'error');
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Enviar sugestao';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
