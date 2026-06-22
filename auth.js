@@ -86,13 +86,6 @@
   }
 
   const PUBLIC_PAGES = new Set([
-    'index.html',
-    'rotas.html',
-    'despesas.html',
-    'historico.html',
-    'feedbacks.html',
-    'account.html',
-    'apresentacao.html',
   ]);
 
   function currentPage() {
